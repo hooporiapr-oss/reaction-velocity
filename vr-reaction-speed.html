@@ -1016,12 +1016,13 @@ $('sizeSw').addEventListener('click',function(){bigT=!bigT;try{localStorage.setI
 showSizeSw();
 
 // TAP BY TAP — on the final scoreboard, under Hits & Misses: every target
-// of the game in order, each hit with its time in ms, each miss marked.
+// of the game in order, each hit with its own BPM, each miss as slower than the game's BPM.
 var taps=[];
 function renderTapLog(){
   $('endTapLog').innerHTML=taps.map(function(t,i){
-    return t?'<div class="tap-chip hit"><span class="tap-bpm">#'+(i+1)+'</span><span class="tap-pts">'+t+' ms</span></div>'
-            :'<div class="tap-chip miss"><span class="tap-bpm">#'+(i+1)+'</span><span class="tap-pts">'+tx('miss')+'</span></div>';
+    // a hit shows its own speed in BPM; a miss was slower than the game's BPM
+    return t?'<div class="tap-chip hit"><span class="tap-bpm">#'+(i+1)+'</span><span class="tap-pts">'+bpmFromMs(t)+' BPM</span></div>'
+            :'<div class="tap-chip miss"><span class="tap-bpm">#'+(i+1)+'</span><span class="tap-pts">&lt;'+BPM+' BPM</span></div>';
   }).join('');
 }
 
