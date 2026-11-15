@@ -140,7 +140,20 @@ function tryEnter(){
     sessionStorage.setItem('reaction-velocity-gate-pass','1');
     sessionStorage.setItem('reaction-velocity-license', input.toUpperCase());
     sessionStorage.setItem('reaction-velocity-school', lic.school_name || '');
-    window.location.href = 'reaction-velocity.html';
+    sessionStorage.removeItem('gym-player-ok');     // a new sign-in asks "who's playing?" again (jugador.js)
+    // The code's age group (set in License Admin) goes with every saved run.
+    // No category, or no answer, simply means none — never a block.
+    return fetch(SUPABASE_URL + '/rest/v1/rpc/license_category', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_code: input, p_product: PRODUCT })
+    })
+    .then(function(r){ return r.ok ? r.json() : null })
+    .catch(function(){ return null })
+    .then(function(cat){
+      sessionStorage.setItem('reaction-velocity-category', (typeof cat === 'string' ? cat : '') || '');
+      window.location.href = 'reaction-velocity.html';
+    });
   })
   .catch(function(){
     checking = false;
