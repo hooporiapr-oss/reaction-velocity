@@ -88,41 +88,62 @@ var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 var PRODUCT = 'reaction-velocity';
 // ══════════════════════════════════════════════════════
 
+// The code is checked by the database's check_access function — the
+// same check the Cognitivo Gym uses. The licenses table itself can no
+// longer be read from a page, which is why the old direct lookup said
+// "Invalid code" to every code. check_access answers only yes or no
+// (plus the school name), judges expiry on the database's own clock,
+// and counts devices for codes that have a device limit.
+function deviceId(){
+  var id = null;
+  try { id = localStorage.getItem('gostar-device-id'); } catch(e){}
+  if (!id){
+    id = 'd-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    try { localStorage.setItem('gostar-device-id', id); } catch(e){}
+  }
+  return id;
+}
+
+var checking = false;
 function tryEnter(){
+  if (checking) return;
   var input = $('gate-code').value.trim();
   if (!input){ return; }
+  checking = true;
   $('gate-err').style.color = '';
   $('gate-err').textContent = 'Checking…';
 
-  var url = SUPABASE_URL + '/rest/v1/licenses'
-    + '?select=code,expires_at,active,product,school_name'
-    + '&code=ilike.' + encodeURIComponent(input)
-    + '&active=eq.true'
-    + '&product=eq.' + PRODUCT;
-
-  fetch(url, {
+  fetch(SUPABASE_URL + '/rest/v1/rpc/check_access', {
+    method: 'POST',
     headers: {
       'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
-    }
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_code: input, p_product: PRODUCT, p_device: deviceId() })
   })
-  .then(function(r){ return r.json(); })
-  .then(function(rows){
-    var lic = (rows && rows.length) ? rows[0] : null;
-
-    if (!lic){ return reject('Invalid code — check with your administrator'); }
-
-    if (lic.expires_at){
-      var exp = new Date(lic.expires_at + 'T23:59:59');
-      if (new Date() > exp){ return reject('This license has expired'); }
+  .then(function(r){
+    if (!r.ok) throw new Error('lookup failed');
+    return r.json();
+  })
+  .then(function(lic){
+    checking = false;
+    if (!lic || !lic.ok){
+      if (lic && lic.reason === 'devices'){
+        return reject('This code is already in use on ' + (lic.max_devices || 5) +
+                      ' devices. Ask your administrator to reset it.');
+      }
+      if (lic && lic.reason === 'expired'){ return reject('This license has expired'); }
+      if (lic && lic.reason === 'revoked'){ return reject('This code is no longer active.'); }
+      return reject('Invalid code — check with your administrator');
     }
-
     sessionStorage.setItem('reaction-velocity-gate-pass','1');
     sessionStorage.setItem('reaction-velocity-license', input.toUpperCase());
     sessionStorage.setItem('reaction-velocity-school', lic.school_name || '');
     window.location.href = 'reaction-velocity.html';
   })
   .catch(function(){
+    checking = false;
     reject('Connection problem — please try again');
   });
 }
