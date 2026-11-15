@@ -266,7 +266,7 @@ function fetchStandingsFor(gameConfig){
   // sees, or competes against, scores from a school they didn't
   // actually enter through.
   var school=sessionStorage.getItem('reaction-velocity-school')||'';
-  var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc&school_name=eq.'+encodeURIComponent(school);
+  var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc&school_name=eq.'+encodeURIComponent(school)+'&hidden=is.false';   // hidden in the admin: kept on file, off the board
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){

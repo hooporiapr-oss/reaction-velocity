@@ -200,7 +200,7 @@ document.getElementById('playAgainBtn').addEventListener('click',function(){
 //  per-quarter breakdown.
 // ══════════════════════════════════════════════════════
 function fetchFullGameStandings(){
-  var url=SUPABASE_URL+'/rest/v1/'+SB_TABLE+'?select=player_name,q1_score,q2_score,q3_score,q4_score,total_score&order=total_score.desc';
+  var url=SUPABASE_URL+'/rest/v1/'+SB_TABLE+'?select=player_name,q1_score,q2_score,q3_score,q4_score,total_score&order=total_score.desc&hidden=is.false';
   return fetch(url,{headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){

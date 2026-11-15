@@ -66,7 +66,7 @@ var SB_TABLE='reaction_velocity_standings';
 
 function fetchStandings(){
   var school=sessionStorage.getItem('reaction-velocity-standings-school')||'';
-  var url=SB_URL+'/rest/v1/'+SB_TABLE+'?select=player_name,q1_score,q2_score,q3_score,q4_score,total_score&order=total_score.desc&school_name=eq.'+encodeURIComponent(school);
+  var url=SB_URL+'/rest/v1/'+SB_TABLE+'?select=player_name,q1_score,q2_score,q3_score,q4_score,total_score&order=total_score.desc&school_name=eq.'+encodeURIComponent(school)+'&hidden=is.false';
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){
