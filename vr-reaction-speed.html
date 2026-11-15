@@ -53,6 +53,16 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .bpm-box input:focus{outline:none;border-color:#ff1e3c}
 .bpm-box span{font-size:1.05rem;font-weight:900;letter-spacing:.08em;color:#fff}
 .bpm-box.locked{opacity:.45;cursor:not-allowed}
+.beat-sw{display:inline-flex;align-items:center;gap:8px;margin:0 auto 12px;padding:8px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);color:#fff;font-family:inherit;font-size:.8rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.beat-sw.on{border-color:#ffd35a;color:#ffd35a;background:rgba(255,211,90,.1)}
+.sw-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.sw-row .beat-sw{margin:0 0 12px}
+/* My progress: the player's Free Tap speed, run by run */
+.prog-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.prog-stats .hitmiss-cell{text-align:center}
+.prog-change{text-align:center;font-size:.9rem;font-weight:900;color:#fff;margin-bottom:12px}
+.prog-change b{color:#00e5ff}
+.prog-chart{width:100%;height:auto;display:block;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px}
 .bpm-step{width:44px;height:42px;padding:0;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35) !important;color:#fff;font-family:inherit;font-size:1.6rem;font-weight:900;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
 .bpm-step:active{background:rgba(255,30,60,.35) !important}
 .bpm-step:disabled{cursor:not-allowed}
@@ -82,6 +92,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .best-line b{color:#ff1e3c}
 
 #screen-end{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);text-align:center;padding:20px}
+/* the final scoreboard scrolls when the tap-by-tap list makes it taller than the screen */
+#screen-end{overflow-y:auto;justify-content:safe center}
+#screen-end>*{flex-shrink:0}
 .final-num{font-size:6rem;font-weight:900;color:#ff1e3c;line-height:1;text-shadow:0 0 60px rgba(255,30,60,.9)}
 .final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
 .next-speed{display:none;margin-top:18px;text-align:center}
@@ -95,8 +108,12 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .hitmiss-toggle{margin-top:18px;padding:10px 20px;border-radius:999px;border:1.5px solid rgba(255,30,60,.4);background:rgba(255,30,60,.08);color:#ff8f6b;font-size:.78rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 .hitmiss-toggle .arrow{transition:transform .2s}
 .hitmiss-toggle.open .arrow{transform:rotate(180deg)}
-.hitmiss-detail{max-height:0;overflow:hidden;transition:max-height .3s ease;width:100%;max-width:280px;margin:0 auto}
-.hitmiss-detail.open{max-height:120px;margin-top:14px}
+.hitmiss-detail{max-height:0;overflow:hidden;transition:max-height .3s ease;width:100%;max-width:360px;margin:0 auto}
+.hitmiss-detail.open{max-height:62vh;margin-top:14px}
+/* tap by tap: every target of the game, hit (with its time) or miss */
+.tbt-lbl{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin:12px 0 0}
+#endTapLog{max-height:38vh;overflow-y:auto;justify-content:center}
+#endTapLog .tap-chip.hit{color:#fff}
 .hitmiss-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hitmiss-cell{border-radius:12px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);padding:12px 8px}
 .hitmiss-cell.hits{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.06)}
@@ -120,7 +137,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
    live on Shoot It. Own It. and Make It Count. This game only ever
    tracks a final score and an average reaction time per player, so
    the board here is a flat ranked list, no per-tap expand. */
-#screen-box{position:fixed;inset:0;z-index:58;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);padding:24px;overflow-y:auto}
+#screen-box,#screen-prog{position:fixed;inset:0;z-index:58;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);padding:24px;overflow-y:auto}
 .box-title{font-size:1.7rem;font-weight:900;font-style:italic;letter-spacing:.06em;text-transform:uppercase;color:#fff;text-shadow:0 0 40px rgba(255,30,60,.8);margin-bottom:2px}
 .box-title span{color:#ff1e3c}
 .box-sub{font-size:.65rem;letter-spacing:.24em;text-transform:uppercase;color:#ff1e3c;margin-bottom:22px}
@@ -193,9 +210,14 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
     <button class="speed-btn free active" data-speed="free" type="button"><span id="freeName">👆 Free Tap</span><small id="freeSub">10-tap speed check · then 25 targets at your BPM</small></button>
     <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">play Free Tap first to unlock</small></label>
   </div>
+  <div class="sw-row">
+    <button type="button" class="beat-sw on" id="beatSw" aria-pressed="true">🔊 <span id="beatTxt">Beat: on</span></button>
+    <button type="button" class="beat-sw" id="sizeSw" aria-pressed="false">🎯 <span id="sizeTxt">Targets: normal</span></button>
+  </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
   <button class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
+  <button class="box-open-btn" id="progBtn" type="button">📈 MY PROGRESS</button>
   <div class="best-line" id="bestLine"></div>
   <div class="game-switcher">
     <span class="switcher-btn game-current">Reaction<br>Speed</span>
@@ -214,11 +236,20 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="box-sub" id="boxSub">Reaction Speed · Player vs. Player</div>
   <div class="standings-tab-row" id="standingsTabRow"></div>
   <div class="standings-tab-row" id="standingsSpeedRow"></div>
+  <div class="standings-tab-row" id="standingsAgeRow" style="display:none"></div>
   <div class="box-section">
     <div class="box-section-label">Standings — Best Score Per Player</div>
     <div id="standingsList"></div>
     <div class="tap-log" id="standingsTapLog" style="display:none"></div>
   </div>
+</div>
+
+<!-- MY PROGRESS -->
+<div id="screen-prog">
+  <button class="box-back-btn" id="closeProgBtn" style="margin-top:0;margin-bottom:20px">← Back</button>
+  <div class="box-title" id="progTitle">MY <span>PROGRESS</span></div>
+  <div class="box-sub" id="progSub">Free Tap speed, run by run</div>
+  <div class="box-section"><div id="progBody"></div></div>
 </div>
 
 <!-- COUNTDOWN -->
@@ -245,8 +276,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
       <div class="hitmiss-cell hits"><div class="hitmiss-val" id="endHits">0</div><div class="hitmiss-lbl">Hits</div></div>
       <div class="hitmiss-cell miss"><div class="hitmiss-val" id="endMisses">0</div><div class="hitmiss-lbl">Misses</div></div>
     </div>
+    <div class="tbt-lbl" id="tbtLbl">Tap by tap</div>
+    <div class="tap-log" id="endTapLog"></div>
   </div>
   <button class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
+  <button class="box-open-btn" id="endProgBtn" type="button" style="max-width:280px">📈 MY PROGRESS</button>
   <button class="next-player-btn" id="nextPlayerBtn">▶ NEXT PLAYER</button>
   <a href="vr-reactific.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#ff1e3c,#ff6b35);color:#fff;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
 </div>
@@ -376,10 +410,31 @@ function renderHitMissDetail(container,hits,misses,avgMs){
     +avgLine;
 }
 
+// AGE GROUPS — runs carry the age group of the code used at sign-in.
+// When a school has more than one, the board gets a tab per group and
+// opens on the player's own; "All" shows the whole school.
+var myAge=sessionStorage.getItem('reaction-velocity-category')||'';
+var currentAge=myAge, agesSeen=[];
+function ageSort(a,b){var x=parseInt(a,10),y=parseInt(b,10);if(!isNaN(x)&&!isNaN(y)&&x!==y)return x-y;return a.localeCompare(b)}
+function renderAgeTabs(){
+  var row=$('standingsAgeRow'), list=agesSeen.slice();
+  if(currentAge&&list.indexOf(currentAge)===-1)list.push(currentAge);
+  list.sort(ageSort);
+  if(!list.length){row.style.display='none';row.innerHTML='';return}
+  row.style.display='flex';
+  row.innerHTML=[''].concat(list).map(function(a){
+    var safe=a.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return '<button class="standings-tab'+(a===currentAge?' active':'')+'" data-age="'+safe+'">'+(a?safe:tx('allAges'))+'</button>';
+  }).join('');
+  row.querySelectorAll('.standings-tab').forEach(function(btn){
+    btn.addEventListener('click',function(){currentAge=btn.dataset.age;renderStandingsForGame(currentStandingsGame)});
+  });
+}
 function fetchStandingsFor(gameConfig){
   var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms,hits,misses';
   var porVel=gameConfig.key==='reaction-speed';
   if(porVel)cols+=',speed';
+  cols+=',category';
   // Scoped to the current session's own school — two different
   // access codes are two genuinely separate boards. A player never
   // sees, or competes against, scores from a school they didn't
@@ -390,6 +445,10 @@ function fetchStandingsFor(gameConfig){
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){
+      var ages={};
+      (rows||[]).forEach(function(r){var a=(r.category||'').trim();if(a)ages[a]=1});
+      agesSeen=Object.keys(ages);
+      if(currentAge)rows=(rows||[]).filter(function(r){return (r.category||'').trim()===currentAge});
       if(porVel){
         // Every speed played here gets a tab; the board shows the one picked.
         var seen={100:1};
@@ -443,6 +502,7 @@ function renderStandingsForGame(gameKey){
   fetchStandingsFor(gameConfig).then(function(ranked){
     if(currentStandingsGame!==gameKey)return;
     renderSpeedTabs();
+    renderAgeTabs();
     if(!ranked.length){
       listEl.innerHTML='<div class="box-empty">No players yet — be the first name on the board.</div>';
       return;
@@ -670,7 +730,15 @@ var TX={
     ns_down:function(h,t,n){return h+'/'+t+' — try '+n+' BPM next'},
     ns_stay:function(h,t,n){return h+'/'+t+' — stay at '+n+' BPM and go again'},
     nsBtn:function(n){return '▶ PLAY AT '+n+' BPM'},
-    endFree:function(b,p){return 'Hits · at your speed, '+b+' BPM · '+p+' pts'}, endPts:'Total Points'
+    endFree:function(b,p){return 'Hits · at your speed, '+b+' BPM · '+p+' pts'}, endPts:'Total Points',
+    beatOn:'Beat: on', beatOff:'Beat: off', allAges:'All',
+    sizeN:'Targets: normal', sizeB:'Targets: big', tapByTap:'Tap by tap', miss:'miss',
+    progBtn:'📈 MY PROGRESS', progTitle:'MY <span>PROGRESS</span>', progSub:'Free Tap speed, run by run', back:'← Back',
+    progNoName:'Type the player’s name first.', loading:'Loading…',
+    progNone:'No Free Tap runs yet — play Free Tap to start the line.',
+    progOne:'One Free Tap run so far — play it again to see the line.',
+    first:'First', latest:'Latest', best:'Best', earlier:'earlier', runs:'runs',
+    change:function(d){return '<b>'+(d>0?'+':'')+d+' BPM</b> since the first run'}
   },
   es:{
     speed:'Velocidad', freeName:'👆 Toque Libre', freeSub:'prueba de velocidad de 10 toques · luego 25 objetivos a tu BPM',
@@ -684,7 +752,15 @@ var TX={
     ns_down:function(h,t,n){return h+'/'+t+' — prueba '+n+' BPM'},
     ns_stay:function(h,t,n){return h+'/'+t+' — quédate en '+n+' BPM y juega otra vez'},
     nsBtn:function(n){return '▶ JUGAR A '+n+' BPM'},
-    endFree:function(b,p){return 'Aciertos · a tu velocidad, '+b+' BPM · '+p+' pts'}, endPts:'Puntos Totales'
+    endFree:function(b,p){return 'Aciertos · a tu velocidad, '+b+' BPM · '+p+' pts'}, endPts:'Puntos Totales',
+    beatOn:'Pulso: sí', beatOff:'Pulso: no', allAges:'Todos',
+    sizeN:'Objetivos: normales', sizeB:'Objetivos: grandes', tapByTap:'Toque a toque', miss:'fallo',
+    progBtn:'📈 MI PROGRESO', progTitle:'MI <span>PROGRESO</span>', progSub:'Velocidad de Toque Libre, juego por juego', back:'← Atrás',
+    progNoName:'Escribe el nombre del jugador primero.', loading:'Cargando…',
+    progNone:'Todavía no hay juegos de Toque Libre — juega Toque Libre para empezar la línea.',
+    progOne:'Un juego de Toque Libre hasta ahora — juégalo otra vez para ver la línea.',
+    first:'Primero', latest:'Último', best:'Récord', earlier:'antes', runs:'juegos',
+    change:function(d){return '<b>'+(d>0?'+':'')+d+' BPM</b> desde el primer juego'}
   }
 };
 function tx(k){return (TX[introLang]||TX.en)[k]}
@@ -711,6 +787,9 @@ function applySpeedWords(){
   $('spTop').textContent=tx('spTop');$('spGo').textContent=tx('spGo');
   $('ruleT').innerHTML=SPEED==='free'?tx('ruleFree'):tx('ruleBeat');
   $('bpmNote').textContent=$('bpmInput').disabled?tx('locked'):tx('open');
+  showBeatSw();showSizeSw();
+  $('progBtn').textContent=$('endProgBtn').textContent=tx('progBtn');
+  $('tbtLbl').textContent=tx('tapByTap');
 }
 var introLang='en';
 refreshBox();   // the BPM box and the rule text, once the words above exist
@@ -765,6 +844,7 @@ function flash(){var f=$('flash');f.style.background='rgba(255,30,60,.12)';f.sty
 
 function startDrill(){
   if(phase==='running')return;
+  initAudio();   // the start tap lets the browser play the beat
   try{ if(!document.fullscreenElement && document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); } }catch(e){}
   $('screen-intro').style.display='none';
   $('countdown').style.display='flex';
@@ -779,7 +859,7 @@ function startDrill(){
 function runDrill(){
   freeStart=0;freeBPM=0;
   if(SPEED==='free'){freeStage='check';TOTAL=TOTAL_CHECK}else freeStage='';
-  phase='running';idx=0;score=0;totalRT=0;rtCount=0;bestRT=0;hitCount=0;missCount=0;
+  phase='running';idx=0;score=0;totalRT=0;rtCount=0;bestRT=0;hitCount=0;missCount=0;taps=[];
   $('hScore').textContent='0';$('hLeft').textContent=TOTAL;
   msg(freeStage==='check'?tx('check'):tx('ready'),'go');
   timers.push(setTimeout(function(){msg('','go');nextTarget()},900));
@@ -797,7 +877,7 @@ function startFreeGame(){
   if(newBest){try{localStorage.setItem(freeKey(currentPlayerName),String(freeBPM))}catch(e){}}
   BPM=freeBPM;PACE_MS=Math.round(60000/BPM);
   freeStage='play';TOTAL=TOTAL_FREE;
-  idx=0;score=0;totalRT=0;rtCount=0;bestRT=0;hitCount=0;missCount=0;
+  idx=0;score=0;totalRT=0;rtCount=0;bestRT=0;hitCount=0;missCount=0;taps=[];   // the speed check's taps are not part of the game
   $('hScore').textContent='0';$('hLeft').textContent=TOTAL;
   msg('','go');
   $('spBpm').textContent=freeBPM;
@@ -816,15 +896,18 @@ function startFreeGame(){
 
 function nextTarget(){
   if(phase!=='running')return;
-  var pad=70;
-  targetX=pad+Math.random()*(innerWidth-pad*2);
-  targetY=140+Math.random()*(innerHeight-230);
-  targetEl.style.left=targetX+'px';targetEl.style.top=targetY+'px';
   var size=Math.max(90,Math.min(150,Math.min(innerWidth,innerHeight)*0.20));
+  var extra=0;   // Big targets: 40% larger, kept a little further from the edges
+  if(bigT){extra=Math.round(size*0.2);size=Math.round(size*1.4)}
+  var pad=70+extra;
+  targetX=pad+Math.random()*(innerWidth-pad*2);
+  targetY=140+extra+Math.random()*(innerHeight-230-extra*2);
+  targetEl.style.left=targetX+'px';targetEl.style.top=targetY+'px';
   targetEl.style.width=size+'px';targetEl.style.height=size+'px';
   targetEl.classList.add('visible');
   shownAt=performance.now();
-  if(freeStage==='check'){if(!freeStart)freeStart=shownAt;return}   // speed check: no deadline
+  if(freeStage==='check'){if(!freeStart)freeStart=shownAt;return}   // speed check: no deadline, no beat
+  beatClick();
 
   // A target that isn't tapped within one beat at 100 BPM (600ms)
   // genuinely times out — counted as a miss (no score, no
@@ -847,7 +930,7 @@ function handleTimeout(){
   // (150-300) so a couple of misses don't single-handedly sink an
   // otherwise strong run, but it still stings enough to matter.
   score-=100;
-  missCount++;
+  missCount++;taps.push(0);
   $('hScore').textContent=score;
   $('hLeft').textContent=Math.max(0,TOTAL-idx);
   msg('MISSED — TOO SLOW · -100','watch');
@@ -874,7 +957,7 @@ function handleTap(){
   totalRT+=rt;rtCount++;
   if(!bestRT||rt<bestRT)bestRT=rt;
   score+=100;
-  hitCount++;
+  hitCount++;taps.push(Math.max(1,Math.round(rt)));
 
   $('hScore').textContent=score;
   $('hLeft').textContent=Math.max(0,TOTAL-idx);
@@ -888,7 +971,115 @@ function handleTap(){
   }
 }
 
-function initAudio(){}
+// THE BEAT — a soft click each time a target appears at a set BPM, so the
+// player hears the rhythm, not only sees it. Silent during the Free Tap
+// speed check (no beat there). On/off on the start screen, remembered
+// on this device.
+var actx=null, beatOn=true;
+try{beatOn=localStorage.getItem('rv-beat')!=='off'}catch(e){}
+function initAudio(){
+  if(actx)return;
+  try{var A=window.AudioContext||window.webkitAudioContext;if(A)actx=new A()}catch(e){actx=null}
+}
+function beatClick(){
+  if(!beatOn||!actx)return;
+  try{
+    if(actx.state==='suspended')actx.resume();
+    var t=actx.currentTime, o=actx.createOscillator(), g=actx.createGain();
+    o.type='sine';o.frequency.setValueAtTime(880,t);o.frequency.exponentialRampToValueAtTime(440,t+0.06);
+    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.005);g.gain.exponentialRampToValueAtTime(0.0001,t+0.09);
+    o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+0.1);
+    window.__beats=(window.__beats||0)+1;
+  }catch(e){}
+}
+function showBeatSw(){
+  var b=$('beatSw');b.classList.toggle('on',beatOn);b.setAttribute('aria-pressed',beatOn?'true':'false');
+  $('beatTxt').textContent=tx(beatOn?'beatOn':'beatOff');
+}
+$('beatSw').addEventListener('click',function(){beatOn=!beatOn;try{localStorage.setItem('rv-beat',beatOn?'on':'off')}catch(e){}showBeatSw()});
+showBeatSw();   // the beat switch as this device left it
+
+// TARGET SIZE — Normal or Big (40% larger), for younger players. Only the
+// size of the target changes; the game screen stays as it is. Remembered
+// on this device; until it is chosen, Big for age groups up to 6.
+var bigT=false;
+(function(){
+  var v='';try{v=localStorage.getItem('rv-size')||''}catch(e){}
+  if(v)bigT=v==='big';
+  else{var a=parseInt(String(myAge).replace(/^\D+/,''),10);bigT=!isNaN(a)&&a<=6}
+})();
+function showSizeSw(){
+  var b=$('sizeSw');b.classList.toggle('on',!!bigT);b.setAttribute('aria-pressed',bigT?'true':'false');
+  $('sizeTxt').textContent=tx(bigT?'sizeB':'sizeN');
+}
+$('sizeSw').addEventListener('click',function(){bigT=!bigT;try{localStorage.setItem('rv-size',bigT?'big':'normal')}catch(e){}showSizeSw()});
+showSizeSw();
+
+// TAP BY TAP — on the final scoreboard, under Hits & Misses: every target
+// of the game in order, each hit with its time in ms, each miss marked.
+var taps=[];
+function renderTapLog(){
+  $('endTapLog').innerHTML=taps.map(function(t,i){
+    return t?'<div class="tap-chip hit"><span class="tap-bpm">#'+(i+1)+'</span><span class="tap-pts">'+t+' ms</span></div>'
+            :'<div class="tap-chip miss"><span class="tap-bpm">#'+(i+1)+'</span><span class="tap-pts">'+tx('miss')+'</span></div>';
+  }).join('');
+}
+
+// MY PROGRESS — the player's Free Tap speed (BPM) over time, from every
+// Free Tap run saved to the board at this school, oldest first.
+var progReturn='screen-intro';
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function openProgress(from){
+  var n=String($('playerNameInputMain').value||currentPlayerName||'').trim();
+  progReturn=from;$(from).style.display='none';$('screen-prog').style.display='flex';
+  $('progTitle').innerHTML=tx('progTitle');$('closeProgBtn').textContent=tx('back');
+  $('progSub').textContent=tx('progSub')+(n?' · '+n:'');
+  if(!n){$('progBody').innerHTML='<div class="box-empty">'+tx('progNoName')+'</div>';return}
+  $('progBody').innerHTML='<div class="box-empty">'+tx('loading')+'</div>';
+  var school=sessionStorage.getItem('reaction-velocity-school')||'';
+  var base=SB_URL+'/rest/v1/vr_reaction_speed_standings?speed=like.free-*&hidden=is.false'+
+    '&school_name=eq.'+encodeURIComponent(school)+'&player_name=ilike.'+encodeURIComponent(n.replace(/[*%,()]/g,''));
+  var h={headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}};
+  fetch(base+'&select=speed,logged_at,admin_id&order=admin_id.asc',h)
+    .then(function(r){if(!r.ok)throw 0;return r.json()})
+    .catch(function(){return fetch(base+'&select=speed',h).then(function(r){return r.ok?r.json():[]})})
+    .then(function(rows){drawProgress(rows||[])})
+    .catch(function(){drawProgress([])});
+}
+function drawProgress(rows){
+  var pts=[];
+  rows.forEach(function(r){var v=parseInt(String(r.speed).split('-')[1],10);if(v>0)pts.push({b:v,at:r.logged_at||''})});
+  if(pts.length>40)pts=pts.slice(-40);   // the latest 40 runs
+  if(!pts.length){$('progBody').innerHTML='<div class="box-empty">'+tx('progNone')+'</div>';return}
+  var first=pts[0].b, last=pts[pts.length-1].b, top=0, topI=0;
+  pts.forEach(function(p,i){if(p.b>top){top=p.b;topI=i}});
+  var cell=function(v,l){return '<div class="hitmiss-cell hits"><div class="hitmiss-val">'+v+'</div><div class="hitmiss-lbl">'+l+' · BPM</div></div>'};
+  var html='<div class="prog-stats">'+cell(first,tx('first'))+cell(last,tx('latest'))+cell(top,tx('best'))+'</div>';
+  if(pts.length<2){$('progBody').innerHTML=html+'<div class="box-empty">'+tx('progOne')+'</div>';return}
+  html+='<div class="prog-change">'+tx('change')(last-first)+' · '+pts.length+' '+tx('runs')+'</div>';
+  // the chart
+  var W=560,H=240,L=44,R=16,T=16,B=34;
+  var lo=Math.floor((Math.min.apply(null,pts.map(function(p){return p.b}))-5)/10)*10, hi=Math.ceil((top+5)/10)*10;
+  if(hi-lo<20)hi=lo+20;
+  var X=function(i){return L+(W-L-R)*i/(pts.length-1)}, Y=function(v){return T+(H-T-B)*(hi-v)/(hi-lo)};
+  var svg='<svg class="prog-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+escH(tx('progSub'))+'">';
+  var step=(hi-lo)<=60?10:20;
+  for(var g=lo;g<=hi;g+=step){svg+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(g)+'" y2="'+Y(g)+'" stroke="rgba(255,255,255,.08)"/><text x="'+(L-8)+'" y="'+(Y(g)+4)+'" fill="#9fb3c8" font-size="12" text-anchor="end">'+g+'</text>'}
+  svg+='<polyline fill="none" stroke="#00e5ff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map(function(p,i){return X(i).toFixed(1)+','+Y(p.b).toFixed(1)}).join(' ')+'"/>';
+  pts.forEach(function(p,i){
+    var isTop=i===topI;
+    svg+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.b).toFixed(1)+'" r="'+(isTop?7:4.5)+'" fill="'+(isTop?'#ffd35a':'#00e5ff')+'" stroke="#000" stroke-width="1.5"><title>'+p.b+' BPM</title></circle>';
+  });
+  svg+='<text x="'+X(topI).toFixed(1)+'" y="'+(Y(top)-12).toFixed(1)+'" fill="#ffd35a" font-size="13" font-weight="900" text-anchor="middle">'+top+'</text>';
+  var day=function(p){if(!p.at)return tx('earlier');var d=new Date(p.at);return isNaN(d)?'':(d.getMonth()+1)+'/'+d.getDate()};
+  svg+='<text x="'+L+'" y="'+(H-10)+'" fill="#9fb3c8" font-size="12">'+day(pts[0])+'</text>';
+  svg+='<text x="'+(W-R)+'" y="'+(H-10)+'" fill="#9fb3c8" font-size="12" text-anchor="end">'+day(pts[pts.length-1])+'</text>';
+  svg+='</svg>';
+  $('progBody').innerHTML=html+svg;
+}
+$('progBtn').addEventListener('click',function(){openProgress('screen-intro')});
+$('endProgBtn').addEventListener('click',function(){openProgress('screen-end')});
+$('closeProgBtn').addEventListener('click',function(){$('screen-prog').style.display='none';$(progReturn).style.display='flex'});
 
 function endDrill(){
   if(phase==='done')return;
@@ -904,7 +1095,7 @@ function endDrill(){
     $('endLabel').textContent=tx('endFree')(freeBPM,finalScore);
     suggestNext(freeBPM,hitCount,TOTAL_FREE);
     $('endHits').textContent=hitCount;
-    $('endMisses').textContent=missCount;
+    $('endMisses').textContent=missCount;renderTapLog();
     $('screen-end').style.display='flex';
     return;
   }
@@ -918,7 +1109,7 @@ function endDrill(){
 
   $('endNum').textContent=finalScore;
   $('endHits').textContent=hitCount;
-  $('endMisses').textContent=missCount;
+  $('endMisses').textContent=missCount;renderTapLog();
   $('screen-end').style.display='flex';
 }
 
