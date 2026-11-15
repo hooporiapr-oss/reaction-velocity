@@ -18,6 +18,8 @@
      escuela   sessionStorage key holding the school of the sign-in
      categoria sessionStorage key holding its age group
      tablas    standings tables whose saved runs get the age group
+     aqui      true: "Next player" / "New player" ask for the next name
+               right in the game, instead of going back to the hub
    Names stay on this device only (localStorage) — nothing new is sent
    anywhere except the age group on each saved run.
    ══════════════════════════════════════════════════════════════════ */
@@ -85,6 +87,7 @@
   }
 
   /* ── the hub: "Who's playing?" before any game ── */
+  var alListo = null;      // in a game with aqui: what to do once the next name is in
   function preguntar(nuevo){
     var vieja = document.getElementById('jg-capa'); if (vieja) vieja.remove();
     var hay = !!nombre;
@@ -108,7 +111,8 @@
         if (!n) { document.getElementById('jg-err').textContent = 'Type the player’s name'; campo.focus(); return }
         guardar(n);
       }
-      capa.remove(); chip();
+      capa.remove();
+      if (C.modo === 'hub') chip(); else if (alListo) alListo();
     }
     document.getElementById('jg-ok').addEventListener('click', seguir);
     campo.addEventListener('keydown', function(e){ if (e.key === 'Enter') seguir() });
@@ -129,12 +133,21 @@
     var como = document.createElement('div'); como.className = 'jg-como';
     como.innerHTML = '<span>👤 ' + esc(nombre) + '</span><a href="' + esc(HUB) + '?nuevo=1">New player</a>';
     campo.parentNode.insertBefore(como, campo.nextSibling);
+    // aqui: the next player's name is asked right here; the game then
+    // opens on its start screen for them, as if just arrived from the hub.
+    alListo = function(){
+      campo.value = nombre;
+      como.querySelector('span').textContent = '👤 ' + nombre;
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    if (C.aqui) como.querySelector('a').addEventListener('click', function(e){ e.preventDefault(); preguntar(true) });
     // Some games empty the name box between rounds; it is put back before any tap reaches the game.
     document.addEventListener('pointerdown', function(){ if (!campo.value) campo.value = nombre }, true);
     document.addEventListener('click', function(e){
       if (!campo.value) campo.value = nombre;
       // "Next player" now means a new player at the hub's question.
       if (e.target.closest && e.target.closest('#nextPlayerBtn')) {
+        if (C.aqui) { preguntar(true); return }          // the game's own button takes it back to its start screen
         e.stopPropagation(); e.preventDefault();
         location.href = HUB + '?nuevo=1';
       }
