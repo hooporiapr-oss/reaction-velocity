@@ -82,6 +82,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .switcher-btn{flex:1;min-width:70px;padding:10px 4px;border-radius:12px;text-decoration:none;text-align:center;font-size:.6rem;font-weight:900;letter-spacing:.03em;text-transform:uppercase;line-height:1.3}
 .switcher-btn.game-active{border:2px solid rgba(255,107,53,.5);background:rgba(255,107,53,.12);color:#ffb38a}
 .switcher-btn.game-current{border:2px solid rgba(255,107,53,.8);background:rgba(255,107,53,.28);color:#fff}
+.speed-label{font-size:.68rem;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#ffd35a;margin:-8px 0 8px;text-align:center}
+.speed-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 auto 14px;width:100%;max-width:420px}
+.speed-btn{height:50px;border:2px solid rgba(0,217,165,.35);background:rgba(0,217,165,.07);border-radius:14px;color:#fff;font-size:1.05rem;font-weight:900;cursor:pointer;font-family:inherit}
+.speed-btn small{display:block;font-size:.55rem;color:#a7adba;letter-spacing:.08em;font-weight:700}
+.speed-btn.free{grid-column:1/-1;font-size:.95rem;text-transform:uppercase}
+.speed-btn.active{border-color:#00D9A5;background:rgba(0,217,165,.22);box-shadow:0 0 22px rgba(0,217,165,.45)}
+@media (max-height:760px){.speed-btn{height:42px}}
 .tempo-hint{font-size:.8rem;color:#9fb3c8;line-height:1.4;margin-bottom:20px;max-width:420px;min-height:2.4em;display:flex;align-items:center;justify-content:center;text-align:center}
 .best-line b{color:#00D9A5}
 
@@ -167,6 +174,16 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="vrr-logo">REACT<span>IFIC</span></div>
   <div class="vrr-sub">Reaction Velocity · To The Beat of the Ritnome</div>
   <div class="tempo-hint" id="tempoHint">Moving target, colors flash to the Ritnome — tap ONLY on RED. 25 reds.</div>
+  <div class="speed-label">Speed</div>
+  <div class="speed-row" id="speedRow">
+    <button class="speed-btn free" data-speed="free" type="button">👆 Free Tap<small>10-tap speed check · then the game at your own BPM</small></button>
+    <button class="speed-btn" data-speed="20" type="button">20<small>BPM</small></button>
+    <button class="speed-btn" data-speed="40" type="button">40<small>BPM</small></button>
+    <button class="speed-btn" data-speed="60" type="button">60<small>BPM</small></button>
+    <button class="speed-btn" data-speed="80" type="button">80<small>BPM</small></button>
+    <button class="speed-btn active" data-speed="100" type="button">100<small>BPM</small></button>
+    <button class="speed-btn" data-speed="120" type="button">120<small>BPM</small></button>
+  </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
   <button class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
@@ -187,6 +204,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="box-title">THE <span>STANDINGS</span></div>
   <div class="box-sub" id="boxSub">Reactific · Player vs. Player</div>
   <div class="standings-tab-row" id="standingsTabRow"></div>
+  <div class="standings-tab-row" id="standingsSpeedRow"></div>
   <div class="box-section">
     <div class="box-section-label">Standings — Best Score Per Player</div>
     <div id="standingsList"></div>
@@ -200,7 +218,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <!-- END -->
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
-  <div class="final-label">Total Points</div>
+  <div class="final-label" id="endLabel">Total Points</div>
   <button class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
   <button class="next-player-btn" id="nextPlayerBtn">▶ NEXT PLAYER</button>
   <a href="vr-shoot-it-own-it.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#00D9A5,#FF6B35);color:#062018;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
@@ -221,7 +239,7 @@ function recordScoreToStandings(name,finalScore,avgMs){
   return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{
     method:'POST',
     headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({player_name:name,score:finalScore,avg_ms:avgMs,school_name:sessionStorage.getItem('reaction-velocity-school')||null})
+    body:JSON.stringify({player_name:name,score:finalScore,avg_ms:avgMs,speed:speedKey(SPEED),school_name:sessionStorage.getItem('reaction-velocity-school')||null})
   }).catch(function(){});
 }
 
@@ -271,7 +289,9 @@ function fetchStandingsFor(gameConfig){
   var school=sessionStorage.getItem('reaction-velocity-school')||'';
   var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc&school_name=eq.'+encodeURIComponent(school)+'&hidden=is.false';   // hidden in the admin: kept on file, off the board
   // Reaction Speed now has a board per speed; here it shows its original 100 BPM board.
+  // Reaction Speed shows its original 100 BPM board here; Reactific's own board follows the speed tab.
   if(gameConfig.key==='reaction-speed')url+='&or=(speed.is.null,speed.eq.100)';
+  if(gameConfig.key==='reactific')url+=speedFilter();
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){
@@ -302,7 +322,9 @@ function renderStandingsForGame(gameKey){
   currentStandingsGame=gameKey;
   var gameConfig=STANDINGS_GAMES.filter(function(g){return g.key===gameKey})[0];
   renderStandingsTabs();
-  $('boxSub').textContent=gameConfig.label+' · Player vs. Player';
+  renderSpeedTabs();
+  var isFreeBoard=false;
+  $('boxSub').textContent=gameConfig.label+(gameKey==='reactific'?' · '+(currentStandingsSpeed==='free'?'Free Tap · at each player\'s own speed':currentStandingsSpeed+' BPM'):'')+' · Player vs. Player';
 
   var listEl=$('standingsList');
   var tapLogEl=$('standingsTapLog');
@@ -322,7 +344,7 @@ function renderStandingsForGame(gameKey){
       return '<div class="standings-row '+rankClass+'" data-name="'+safeName+'">'
         +'<span class="standings-rank">'+(i+1)+'</span>'
         +'<span class="standings-name">'+safeName+'</span>'
-        +'<span class="standings-pts">'+p.pts+'</span>'
+        +'<span class="standings-pts">'+p.pts+(isFreeBoard?' BPM':'')+'</span>'
         +'</div>';
     }).join('');
     if(gameConfig.rich){
@@ -346,9 +368,33 @@ function renderStandingsForGame(gameKey){
   });
 }
 function renderStandings(){renderStandingsForGame(THIS_GAME_KEY)}
+var currentStandingsSpeed=100;
+var SPEEDS=['free',20,40,60,80,100,120];
+function renderSpeedTabs(){
+  var row=$('standingsSpeedRow');
+  if(currentStandingsGame!=='reactific'){row.style.display='none';row.innerHTML='';return}
+  row.style.display='flex';
+  row.innerHTML=SPEEDS.map(function(v){
+    return '<button class="standings-tab'+(v===currentStandingsSpeed?' active':'')+'" data-speed="'+v+'">'+(v==='free'?'Free Tap':v+' BPM')+'</button>';
+  }).join('');
+  row.querySelectorAll('.standings-tab').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      currentStandingsSpeed=btn.dataset.speed==='free'?'free':parseInt(btn.dataset.speed,10);
+      renderStandingsForGame('reactific');
+    });
+  });
+}
+// Which saved runs belong to the speed board on screen. Runs from
+// before speeds existed were all at 100 BPM.
+function speedFilter(){
+  if(currentStandingsSpeed===100)return '&or=(speed.is.null,speed.eq.100)';
+  if(currentStandingsSpeed==='free')return '&speed=like.free*';
+  return '&speed=eq.'+currentStandingsSpeed;
+}
 
 var standingsReturnScreen='screen-intro';
 function openStandings(fromScreen){
+  currentStandingsSpeed=SPEED;
   standingsReturnScreen=fromScreen;
   renderStandings();
   $(fromScreen).style.display='none';
@@ -500,10 +546,35 @@ var HINTS={
   '100':'Moving target, colors flash to the Ritnome — tap ONLY on RED. 25 reds.'
 };
 function refreshIntro(){
-  $('tempoHint').textContent=HINTS[tempo]||'';
+  $('tempoHint').textContent=(typeof SPEED!=='undefined'&&SPEED==='free')?HINT_FREE:(HINTS[tempo]||'');
   $('bigStart').textContent=INTRO_I18N[introLang].start;
 }
-applyTempo('100');refreshIntro();   // fixed speed, no selection
+applyTempo('100');refreshIntro();
+
+// SPEED — chosen on the start screen; 100 BPM (the original) stays the
+// default. A speed sets both the beat and how fast the colors change.
+// 'free' (Free Tap) runs in two steps:
+//   1. speed check — 10 red targets with no beat: each waits until it
+//      is tapped, then moves; those 10 taps measure the player's BPM;
+//   2. the game — the usual go/no-go at that measured BPM, 25 reds.
+// Only the pace changes; the game screen is the same.
+var SPEED=100;
+var CHECK_TAPS=10, freeStage='', freeBPM=0;
+// A Free Tap run is saved as 'free-<measured BPM>' on the Free Tap board.
+function speedKey(v){return v==='free'?'free-'+freeBPM:String(v)}
+function setSpeed(v){
+  SPEED=v;
+  if(v!=='free'){BEAT_BPM=v;FLASH_MS=Math.round(60000/v)}
+}
+var HINT_FREE='Free Tap — first a speed check: 10 red targets with no beat, each waits for you. That measures your BPM. Then the game opens at your speed: tap ONLY on RED, 25 reds.';
+document.querySelectorAll('.speed-btn').forEach(function(btn){
+  btn.onclick=function(){
+    setSpeed(btn.dataset.speed==='free'?'free':parseInt(btn.dataset.speed,10));
+    document.querySelectorAll('.speed-btn').forEach(function(b){b.classList.toggle('active',b===btn)});
+    $('tempoHint').textContent=SPEED==='free'?HINT_FREE:HINTS['100'];
+  };
+});
+var freeStart=0,freeHits=0;
 
 // fullscreen toggle (matches the other games) — great for Promethean / big-screen play
 var fsb=$('fsBtn');
@@ -630,6 +701,13 @@ function goNoGoStart(){
   var rt=$('hRedTotal');if(rt)rt.textContent=TOTAL_REDS;
   var rl=$('hRedLabel');if(rl)rl.textContent='Reds';
   $('hReds')&&($('hReds').textContent='0');
+  freeStage='';
+  if(SPEED==='free'){                // Free Tap step 1: no beat, no color cycle — a red that waits
+    freeStage='check';freeBPM=0;freeHits=0;
+    msg('SPEED CHECK · 10 TAPS','go');
+    freeNextRed();freeStart=redOnsetAt;
+    return;
+  }
   gngRender(GNG_NONRED[0]);          // start on a non-red
   startBeat();                       // beat pulse throbs underneath
   gngTimer=setInterval(gngCycle,FLASH_MS);   // colors change at the tier's flash speed
@@ -647,6 +725,33 @@ function gngCycle(){
       timers.push(setTimeout(function(){if(phase==='running')endDrill()},FLASH_MS));
     }
   }
+}
+// Free Tap step 2: the speed check is done — the usual game opens at the
+// measured BPM, scored from zero, 25 reds.
+function startFreeGame(){
+  clrT();                      // drop the last hit's message clear, so "YOUR SPEED" stays up
+  var secs=Math.max(0.001,(performance.now()-freeStart)/1000);
+  freeBPM=Math.max(20,Math.min(200,Math.round(CHECK_TAPS*60/secs)));
+  BEAT_BPM=freeBPM;FLASH_MS=Math.round(60000/freeBPM);
+  freeStage='play';
+  hideTarget();
+  taps=0;$('hTaps').textContent='0';$('gng-score-num').textContent='0';
+  misses=0;totalRT=0;rtCount=0;redsSeen=0;gngIsRed=false;
+  $('hReds')&&($('hReds').textContent='0');
+  msg('YOUR SPEED: '+freeBPM+' BPM','go');
+  timers.push(setTimeout(function(){
+    if(phase!=='running')return;
+    msg('','go');
+    gngRender(GNG_NONRED[0]);
+    startBeat();
+    gngTimer=setInterval(gngCycle,FLASH_MS);
+  },1600));
+}
+function freeNextRed(){
+  gngIsRed=true;gngRender(RED_COLOR);
+  redOnsetAt=performance.now();
+  redsSeen++;
+  $('hReds')&&($('hReds').textContent=redsSeen);
 }
 function stopGoNoGo(){if(gngTimer){clearInterval(gngTimer);gngTimer=null}}
 
@@ -672,6 +777,11 @@ function handleTap(){
       gngIsRed=false;               // consume this red so you can't double-tap the same flash
       msg(Math.round(rt)+' MS · '+bpmFromMs(rt)+' BPM','go');
       timers.push(setTimeout(function(){if(phase==='running')msg('','go')},450));
+      if(freeStage==='check'){
+        freeHits++;
+        if(freeHits>=CHECK_TAPS)timers.push(setTimeout(function(){if(phase==='running')startFreeGame()},300));
+        else freeNextRed();
+      }
     }else{
       // NO-GO violation — tapped a non-red → penalty
       misses++;
@@ -723,6 +833,16 @@ function endDrill(){
   var isNewMs=avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
   if(isNewPts){best=finalScore;try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
   if(isNewMs){bestAvgMs=avgRT;try{localStorage.setItem(BEST_KEY+'-ms',String(bestAvgMs))}catch(e){}}
+  if(SPEED==='free'){
+    // Free Tap: the game at the player's own measured speed, on the Free
+    // Tap board. The personal best in points is left alone.
+    recordScoreToStandings(currentPlayerName,finalScore,avgRT);
+    $('endNum').textContent=finalScore;
+    $('endLabel').textContent='Total Points · at your speed, '+freeBPM+' BPM';
+    $('screen-end').style.display='flex';
+    return;
+  }
+  $('endLabel').textContent='Total Points';
   submitScore(finalScore);
   recordScoreToStandings(currentPlayerName,finalScore,avgRT);
 
