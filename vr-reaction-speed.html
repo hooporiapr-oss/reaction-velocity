@@ -84,6 +84,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 #screen-end{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);text-align:center;padding:20px}
 .final-num{font-size:6rem;font-weight:900;color:#ff1e3c;line-height:1;text-shadow:0 0 60px rgba(255,30,60,.9)}
 .final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
+.next-speed{display:none;margin-top:18px;text-align:center}
+.next-speed .ns-txt{font-size:.95rem;font-weight:800;color:#fff;margin-bottom:10px}
+.next-speed button{padding:13px 26px;border-radius:999px;border:2px solid #ffd35a;background:rgba(255,211,90,.12);color:#ffd35a;font-family:inherit;font-size:.95rem;font-weight:900;letter-spacing:.06em;cursor:pointer}
 
 /* Hits/Miss breakdown — a click-to-expand detail under the final
    score, rather than a permanent HUD box during live play, so the
@@ -184,10 +187,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   </div>
   <div class="vrr-logo">REACTION <span>SPEED</span></div>
   <div class="vrr-sub">Reaction Velocity · To The Beat</div>
-  <div class="rule-t" id="ruleT"><b>25 targets.</b> A cell lights up — tap it as fast as you can. No deadline, no guessing which color — just how fast you are. Every reaction is scored on speed, and shown as its own beats-per-minute equivalent.</div>
-  <div class="speed-label">Speed</div>
+  <div class="rule-t" id="ruleT"></div>
+  <div class="speed-label" id="speedLabel">Speed</div>
   <div class="speed-row" id="speedRow">
-    <button class="speed-btn free active" data-speed="free" type="button">👆 Free Tap<small>10-tap speed check · then 25 targets at your BPM</small></button>
+    <button class="speed-btn free active" data-speed="free" type="button"><span id="freeName">👆 Free Tap</span><small id="freeSub">10-tap speed check · then 25 targets at your BPM</small></button>
     <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">play Free Tap first to unlock</small></label>
   </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
@@ -223,11 +226,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 
 <!-- FREE TAP: YOUR SPEED -->
 <div id="screen-speed" role="status" aria-live="polite">
-  <div class="sp-top">Your speed</div>
+  <div class="sp-top" id="spTop">Your speed</div>
   <div class="final-num" id="spBpm">0</div>
   <div class="final-label">BPM</div>
   <div class="sp-sub" id="spSub"></div>
-  <div class="sp-go">25 targets at your speed · starting in</div>
+  <div class="sp-go" id="spGo">25 targets at your speed · starting in</div>
   <div id="spCount">5</div>
 </div>
 
@@ -235,6 +238,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
   <div class="final-label" id="endLabel">Total Points</div>
+  <div class="next-speed" id="nextSpeed"><div class="ns-txt" id="nsTxt"></div><button type="button" id="nsBtn"></button></div>
   <button class="hitmiss-toggle" id="hitMissToggle">📊 Hits & Misses <span class="arrow">▼</span></button>
   <div class="hitmiss-detail" id="hitMissDetail">
     <div class="hitmiss-grid">
@@ -495,10 +499,11 @@ $('closeBoxBtn').onclick=function(){
   $(standingsReturnScreen).style.display='flex';
 };
 $('nextPlayerBtn').addEventListener('click',function(){
-  currentPlayerName='';
+  currentPlayerName='';choseFree=false;
   $('playerNameInputMain').value='';
   phase='idle';
   $('screen-end').style.display='none';
+  $('nextSpeed').style.display='none';
   $('screen-intro').style.display='flex';
   $('playerNameInputMain').focus();
   refreshBox();
@@ -531,8 +536,6 @@ function handleStartClick(){
 $('playerNameInputMain').addEventListener('keydown',function(e){
   if(e.key==='Enter')handleStartClick();
 });
-var RULE_BEAT=$('ruleT').innerHTML;
-var RULE_FREE='<b>Free Tap.</b> First a <b>speed check</b>: 10 targets with no beat — each waits for you, tap it and the next one appears. That measures <b>your BPM</b>. Then the game opens at your speed for <b>25 targets</b>.';
 // The speed: Free Tap, or any BPM typed in the box (10 to 300).
 var BPM_MIN=10, BPM_MAX=300;
 function bpmFromBox(){
@@ -543,50 +546,82 @@ function bpmFromBox(){
 function pickFree(){
   setSpeed('free');
   document.querySelector('.speed-btn.free').classList.add('active');$('bpmBox').classList.remove('active');
-  $('ruleT').innerHTML=RULE_FREE;
+  $('ruleT').innerHTML=tx('ruleFree');
 }
 function pickBox(){
   if($('bpmInput').disabled)return;
   setSpeed(bpmFromBox());
   document.querySelector('.speed-btn.free').classList.remove('active');$('bpmBox').classList.add('active');
-  $('ruleT').innerHTML=RULE_BEAT;
+  $('ruleT').innerHTML=tx('ruleBeat');
 }
-document.querySelector('.speed-btn.free').onclick=pickFree;
+document.querySelector('.speed-btn.free').onclick=function(){choseFree=true;pickFree()};
 
 // The BPM box stays locked until the player has done a Free Tap. Their
 // measured speed is kept on this device, per player name, and the box
 // then opens on it as their default — they can type any other speed.
 function freeKey(n){return 'rv-free-bpm:'+String(n||'').trim().toLowerCase()}
 function savedFreeBPM(n){try{var v=parseInt(localStorage.getItem(freeKey(n)),10);return isNaN(v)?0:v}catch(e){return 0}}
-function refreshBox(){
+// The player's best Free Tap speed at this school, from every Free Tap
+// run saved to the boards — so it follows them to any tablet or phone.
+// The copy kept on this device answers at once; the database adds any
+// faster run from another device.
+var dbBest={}, dbAsked={};
+function askBestFree(n){
+  var k=String(n||'').trim().toLowerCase(); if(!k||dbAsked[k])return;
+  dbAsked[k]=1;
+  var school=sessionStorage.getItem('reaction-velocity-school')||'';
+  var url=SB_URL+'/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*&hidden=is.false'+
+    '&school_name=eq.'+encodeURIComponent(school)+'&player_name=ilike.'+encodeURIComponent(String(n).trim().replace(/[*%,()]/g,''));
+  fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    .then(function(r){return r.ok?r.json():[]})
+    .then(function(rows){
+      var top=0;(rows||[]).forEach(function(r){var v=parseInt(String(r.speed).split('-')[1],10);if(v>top)top=v});
+      dbBest[k]=top;
+      if(top>savedFreeBPM(n)){try{localStorage.setItem(freeKey(n),String(top))}catch(e){}}
+      if(String($('playerNameInputMain').value).trim().toLowerCase()===k&&$('screen-intro').style.display!=='none')refreshBox(true);
+    })
+    .catch(function(){});
+}
+// Free Tap picked by hand stays picked: a late answer about the player's
+// saved speed only unlocks the box, it never switches the choice — and
+// nothing on the start screen changes once a game is under way.
+var choseFree=false;
+function refreshBox(fromDb){
+  if(phase==='running'||$('screen-intro').style.display==='none')return;
   var n=$('playerNameInputMain').value, v=n.trim()?savedFreeBPM(n):0;
+  if(!fromDb&&n.trim())askBestFree(n);
   var box=$('bpmBox'), inp=$('bpmInput');
   $('bpmDown').disabled=$('bpmUp').disabled=!v;
   if(!v){
     inp.disabled=true;inp.value='';box.classList.add('locked');box.classList.remove('active');
-    $('bpmNote').innerHTML='play Free Tap first to unlock';
+    $('bpmNote').textContent=tx('locked');
     pickFree();
     return;
   }
+  var wasLocked=inp.disabled;
   inp.disabled=false;box.classList.remove('locked');
-  inp.value=v;
-  $('bpmNote').innerHTML='your Free Tap speed · − / + or type to change';
-  pickBox();
+  if(wasLocked||!inp.value)inp.value=v;   // a speed the player already typed is kept
+  $('bpmNote').textContent=tx('open');
+  if(!choseFree)pickBox();
 }
-$('playerNameInputMain').addEventListener('input',refreshBox);
+var nameTimer=null;
+$('playerNameInputMain').addEventListener('input',function(){
+  choseFree=false;$('bpmInput').value='';$('bpmInput').disabled=true;   // a new name starts from that player's own default
+  refreshBox(true);                                   // this device's copy at once
+  clearTimeout(nameTimer);nameTimer=setTimeout(function(){refreshBox()},500);   // the database once they stop typing
+});
 // − / + move the speed down or up 5 BPM at a time (or type any number).
 // This changes only this game's speed — the player's default stays the
 // Free Tap speed until a faster Free Tap replaces it.
 function stepBPM(d){
   if($('bpmInput').disabled)return;
   var v=bpmFromBox()+d; v=Math.max(BPM_MIN,Math.min(BPM_MAX,v));
-  $('bpmInput').value=v; pickBox();
+  choseFree=false;$('bpmInput').value=v; pickBox();
 }
 $('bpmDown').addEventListener('click',function(e){e.preventDefault();stepBPM(-5)});
 $('bpmUp').addEventListener('click',function(e){e.preventDefault();stepBPM(5)});
 document.addEventListener('DOMContentLoaded',function(){setTimeout(refreshBox,0)});   // after the player's name is filled in (jugador.js)
-refreshBox();
-$('bpmInput').addEventListener('focus',pickBox);
+$('bpmInput').addEventListener('focus',function(){choseFree=false;pickBox()});
 $('bpmInput').addEventListener('input',pickBox);
 $('bpmInput').addEventListener('change',function(){$('bpmInput').value=bpmFromBox();pickBox()});
 $('bpmInput').addEventListener('keydown',function(e){if(e.key==='Enter'){$('bpmInput').value=bpmFromBox();pickBox();$('bpmInput').blur()}});
@@ -620,12 +655,71 @@ var INTRO_I18N={
     standingsBtn:'🏆 LA CLASIFICACIÓN'
   }
 };
+// The words added with the speed choice, in both languages. tx() picks
+// the language chosen on the start screen (EN / ES).
+var TX={
+  en:{
+    speed:'Speed', freeName:'👆 Free Tap', freeSub:'10-tap speed check · then 25 targets at your BPM',
+    ruleBeat:'<b>50 targets at your BPM.</b> A cell lights up — tap it before the next beat or it counts as a miss (−100). Every hit is +100, and every reaction is shown as its own beats-per-minute.',
+    ruleFree:'<b>Free Tap.</b> First a <b>speed check</b>: 10 targets with no beat — each waits for you, tap it and the next one appears. That measures <b>your BPM</b>. Then the game opens at your speed for <b>25 targets</b>.',
+    locked:'play Free Tap first to unlock', open:'your Free Tap speed · − / + or type to change',
+    check:'SPEED CHECK · 10 TAPS', ready:'GET READY...',
+    spTop:'Your speed', spGo:'25 targets at your speed · starting in',
+    taps:function(s){return '10 taps in '+s+'s'}, newBest:function(b){return 'NEW BEST (was '+b+')'}, yourBest:function(b){return 'your best: '+b+' BPM'},
+    ns_up:function(h,t,n){return h+'/'+t+' — ready for '+n+' BPM?'},
+    ns_down:function(h,t,n){return h+'/'+t+' — try '+n+' BPM next'},
+    ns_stay:function(h,t,n){return h+'/'+t+' — stay at '+n+' BPM and go again'},
+    nsBtn:function(n){return '▶ PLAY AT '+n+' BPM'},
+    endFree:function(b,p){return 'Hits · at your speed, '+b+' BPM · '+p+' pts'}, endPts:'Total Points'
+  },
+  es:{
+    speed:'Velocidad', freeName:'👆 Toque Libre', freeSub:'prueba de velocidad de 10 toques · luego 25 objetivos a tu BPM',
+    ruleBeat:'<b>50 objetivos a tu BPM.</b> Se ilumina una celda — tócala antes del próximo pulso o cuenta como fallo (−100). Cada acierto vale +100, y cada reacción se muestra como sus propios pulsos por minuto.',
+    ruleFree:'<b>Toque Libre.</b> Primero una <b>prueba de velocidad</b>: 10 objetivos sin pulso — cada uno te espera, tócalo y aparece el próximo. Eso mide <b>tu BPM</b>. Luego el juego empieza a tu velocidad con <b>25 objetivos</b>.',
+    locked:'juega Toque Libre primero para desbloquear', open:'tu velocidad de Toque Libre · − / + o escribe para cambiar',
+    check:'PRUEBA DE VELOCIDAD · 10 TOQUES', ready:'PREPÁRATE...',
+    spTop:'Tu velocidad', spGo:'25 objetivos a tu velocidad · empieza en',
+    taps:function(s){return '10 toques en '+s+'s'}, newBest:function(b){return 'NUEVO RÉCORD (antes '+b+')'}, yourBest:function(b){return 'tu récord: '+b+' BPM'},
+    ns_up:function(h,t,n){return h+'/'+t+' — ¿listo para '+n+' BPM?'},
+    ns_down:function(h,t,n){return h+'/'+t+' — prueba '+n+' BPM'},
+    ns_stay:function(h,t,n){return h+'/'+t+' — quédate en '+n+' BPM y juega otra vez'},
+    nsBtn:function(n){return '▶ JUGAR A '+n+' BPM'},
+    endFree:function(b,p){return 'Aciertos · a tu velocidad, '+b+' BPM · '+p+' pts'}, endPts:'Puntos Totales'
+  }
+};
+function tx(k){return (TX[introLang]||TX.en)[k]}
+// After a game: the next speed to try. 88% or more of the targets hit
+// → 10 BPM faster; under 60% → 10 slower; in between → stay. The player
+// decides — the button just starts the next game at that speed.
+function suggestNext(bpm,hits,total){
+  var r=total?hits/total:0, next=bpm, k='stay';
+  if(r>=0.88){next=bpm+10;k='up'}else if(r<0.6){next=bpm-10;k='down'}
+  next=Math.max(BPM_MIN,Math.min(BPM_MAX,next));
+  $('nsTxt').textContent=tx('ns_'+k)(hits,total,next);
+  $('nsBtn').textContent=tx('nsBtn')(next);
+  $('nsBtn').onclick=function(){
+    $('screen-end').style.display='none';
+    $('hitMissToggle').classList.remove('open');$('hitMissDetail').classList.remove('open');
+    $('nextSpeed').style.display='none';
+    choseFree=false;$('bpmInput').disabled=false;$('bpmBox').classList.remove('locked');$('bpmInput').value=next;pickBox();
+    startDrill();
+  };
+  $('nextSpeed').style.display='block';
+}
+function applySpeedWords(){
+  $('speedLabel').textContent=tx('speed');$('freeName').textContent=tx('freeName');$('freeSub').textContent=tx('freeSub');
+  $('spTop').textContent=tx('spTop');$('spGo').textContent=tx('spGo');
+  $('ruleT').innerHTML=SPEED==='free'?tx('ruleFree'):tx('ruleBeat');
+  $('bpmNote').textContent=$('bpmInput').disabled?tx('locked'):tx('open');
+}
 var introLang='en';
+refreshBox();   // the BPM box and the rule text, once the words above exist
 function applyIntroTranslations(){
   var t=INTRO_I18N[introLang];
   $('fsBtn').textContent=t.fullscreen;
   $('bigStart').textContent=t.start;
   $('openBoxBtn').textContent=t.standingsBtn;
+  applySpeedWords();
 }
 $('introLangEN').addEventListener('click',function(){
   introLang='en';
@@ -687,7 +781,7 @@ function runDrill(){
   if(SPEED==='free'){freeStage='check';TOTAL=TOTAL_CHECK}else freeStage='';
   phase='running';idx=0;score=0;totalRT=0;rtCount=0;bestRT=0;hitCount=0;missCount=0;
   $('hScore').textContent='0';$('hLeft').textContent=TOTAL;
-  msg(freeStage==='check'?'SPEED CHECK · 10 TAPS':'GET READY...','go');
+  msg(freeStage==='check'?tx('check'):tx('ready'),'go');
   timers.push(setTimeout(function(){msg('','go');nextTarget()},900));
 }
 // Free Tap: the 10-tap speed check is done — the game opens at the
@@ -707,7 +801,7 @@ function startFreeGame(){
   $('hScore').textContent='0';$('hLeft').textContent=TOTAL;
   msg('','go');
   $('spBpm').textContent=freeBPM;
-  $('spSub').textContent='10 taps in '+secs.toFixed(1)+'s'+(newBest?(prevBPM?' · NEW BEST (was '+prevBPM+')':''):' · your best: '+prevBPM+' BPM');
+  $('spSub').textContent=tx('taps')(secs.toFixed(1))+(newBest?(prevBPM?' · '+tx('newBest')(prevBPM):''):' · '+tx('yourBest')(prevBPM));
   var n=5;$('spCount').textContent=n;
   $('screen-speed').style.display='flex';
   function tick(){
@@ -807,13 +901,15 @@ function endDrill(){
     // The final scoreboard: hits out of 25.
     recordScoreToStandings(currentPlayerName,finalScore,avgRT,hitCount,missCount);
     $('endNum').textContent=hitCount+'/'+TOTAL_FREE;
-    $('endLabel').textContent='Hits · at your speed, '+freeBPM+' BPM · '+finalScore+' pts';
+    $('endLabel').textContent=tx('endFree')(freeBPM,finalScore);
+    suggestNext(freeBPM,hitCount,TOTAL_FREE);
     $('endHits').textContent=hitCount;
     $('endMisses').textContent=missCount;
     $('screen-end').style.display='flex';
     return;
   }
-  $('endLabel').textContent='Total Points';
+  $('endLabel').textContent=tx('endPts');
+  suggestNext(BPM,hitCount,TOTAL);
   var isNewPts=finalScore>best;
   var isNewMs=avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
   if(isNewPts){best=finalScore;saveBest()}
