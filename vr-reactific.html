@@ -308,7 +308,6 @@ function fetchStandingsFor(gameConfig){
   // Reaction Speed shows its original 100 BPM board here; Reactific's own board follows the speed tab.
   if(gameConfig.key==='reaction-speed')url+='&or=(speed.is.null,speed.eq.100)';
   if(gameConfig.key==='reactific')url+=speedFilter();
-  if(gameConfig.key==='shoot-it')url+='&speed=like.free-*';   // Shoot It. Own It.: its Free Flash board
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){
