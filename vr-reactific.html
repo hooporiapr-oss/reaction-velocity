@@ -89,6 +89,26 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .speed-btn.free{grid-column:1/-1;font-size:.95rem;text-transform:uppercase}
 .speed-btn.active{border-color:#00D9A5;background:rgba(0,217,165,.22);box-shadow:0 0 22px rgba(0,217,165,.45)}
 @media (max-height:760px){.speed-btn{height:42px}}
+/* Hits & Misses + tap by tap on the final scoreboard (as in Reaction Speed) */
+#screen-end{overflow-y:auto;justify-content:safe center}
+#screen-end>*{flex-shrink:0}
+.hitmiss-toggle{margin-top:18px;padding:10px 20px;border-radius:999px;border:1.5px solid rgba(0,217,165,.4);background:rgba(0,217,165,.08);color:#00D9A5;font-size:.78rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:inherit}
+.hitmiss-toggle .arrow{transition:transform .2s}
+.hitmiss-toggle.open .arrow{transform:rotate(180deg)}
+.hitmiss-detail{max-height:0;overflow:hidden;transition:max-height .3s ease;width:100%;max-width:360px;margin:0 auto}
+.hitmiss-detail.open{max-height:62vh;margin-top:14px}
+.hitmiss-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.hitmiss-cell{border-radius:12px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);padding:12px 6px;text-align:center}
+.hitmiss-cell.hits{border-color:rgba(0,217,165,.45);background:rgba(0,217,165,.07)}
+.hitmiss-cell.miss{border-color:rgba(255,30,60,.4);background:rgba(255,30,60,.06)}
+.hitmiss-val{font-size:1.6rem;font-weight:900}
+.hitmiss-cell.hits .hitmiss-val{color:#00D9A5}
+.hitmiss-cell.miss .hitmiss-val{color:#ff6b7f}
+.hitmiss-lbl{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:#9fb3c8;margin-top:2px}
+.tbt-lbl{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin:12px 0 0}
+#endTapLog{max-height:38vh;overflow-y:auto;justify-content:center}
+#endTapLog .tap-chip.hit{background:rgba(0,217,165,.18);border-color:rgba(0,217,165,.5);color:#fff}
+#endTapLog .tap-chip.wrong{background:rgba(255,214,10,.12);border:1px solid rgba(255,214,10,.45);color:#ffd60a}
 /* My progress: the speed of each Reactific game, game by game */
 .prog-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .prog-cell{text-align:center;padding:12px 6px;border-radius:12px;background:rgba(0,217,165,.08);border:1px solid rgba(0,217,165,.3)}
@@ -260,6 +280,16 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
   <div class="final-label" id="endLabel">Total Points</div>
+  <button class="hitmiss-toggle" id="hitMissToggle" type="button">📊 Hits & Misses <span class="arrow">▼</span></button>
+  <div class="hitmiss-detail" id="hitMissDetail">
+    <div class="hitmiss-grid">
+      <div class="hitmiss-cell hits"><div class="hitmiss-val" id="endHits">0</div><div class="hitmiss-lbl">Reds hit</div></div>
+      <div class="hitmiss-cell miss"><div class="hitmiss-val" id="endMissed">0</div><div class="hitmiss-lbl">Reds missed</div></div>
+      <div class="hitmiss-cell miss"><div class="hitmiss-val" id="endWrong">0</div><div class="hitmiss-lbl">Not red</div></div>
+    </div>
+    <div class="tbt-lbl">Tap by tap</div>
+    <div class="tap-log" id="endTapLog"></div>
+  </div>
   <div class="next-speed" id="nextSpeed"><div class="ns-txt" id="nsTxt"></div><button type="button" id="nsBtn"></button></div>
   <button class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
   <button class="box-open-btn" id="endProgBtn" type="button" style="max-width:280px">📈 MY PROGRESS</button>
@@ -490,7 +520,7 @@ $('closeBoxBtn').onclick=function(){
   $(standingsReturnScreen).style.display='flex';
 };
 $('nextPlayerBtn').addEventListener('click',function(){
-  currentPlayerName='';choseFree=false;$('nextSpeed').style.display='none';
+  currentPlayerName='';choseFree=false;$('nextSpeed').style.display='none';closeHitMiss();
   $('playerNameInputMain').value='';
   phase='idle';
   $('screen-end').style.display='none';
@@ -850,8 +880,23 @@ function gngRender(col){
   targetEl.classList.add('visible');
 }
 
+// TAP BY TAP — every red of the game in order (hit, with its BPM, or
+// missed) and every tap on a color that wasn't red, where it happened.
+var tapLog=[];
+function renderTapByTap(){
+  var hit=0,missed=0,wrong=0,n=0;
+  $('endTapLog').innerHTML=tapLog.map(function(e){
+    if(e.w){wrong++;return '<div class="tap-chip wrong"><span class="tap-bpm">✗</span><span class="tap-pts">not red</span></div>'}
+    n++;
+    if(e.ms){hit++;return '<div class="tap-chip hit"><span class="tap-bpm">#'+n+'</span><span class="tap-pts">'+bpmFromMs(e.ms)+' BPM</span></div>'}
+    missed++;return '<div class="tap-chip miss"><span class="tap-bpm">#'+n+'</span><span class="tap-pts">missed</span></div>';
+  }).join('')||'<div class="tap-log-empty">No reds this game.</div>';
+  $('endHits').textContent=hit;$('endMissed').textContent=missed;$('endWrong').textContent=wrong;
+}
+$('hitMissToggle').addEventListener('click',function(){$('hitMissToggle').classList.toggle('open');$('hitMissDetail').classList.toggle('open')});
+function closeHitMiss(){$('hitMissToggle').classList.remove('open');$('hitMissDetail').classList.remove('open')}
 function goNoGoStart(){
-  gngIsRed=false;redsSeen=0;
+  gngIsRed=false;redsSeen=0;tapLog=[];
   $('gng-score-num').textContent='0';   // no numbers on the target: the score shows only in the top bar
   var rt=$('hRedTotal');if(rt)rt.textContent=TOTAL_REDS;
   var rl=$('hRedLabel');if(rl)rl.textContent='Reds';
@@ -874,7 +919,7 @@ function gngCycle(){
   gngRender(col);
   if(gngIsRed){
     redOnsetAt=performance.now();
-    redsSeen++;
+    redsSeen++;tapLog.push({ms:0});
     $('hReds')&&($('hReds').textContent=redsSeen);
     if(redsSeen>=TOTAL_REDS){        // 25 reds have appeared — end after this one shows briefly
       timers.push(setTimeout(function(){if(phase==='running')endDrill()},FLASH_MS));
@@ -891,7 +936,7 @@ function startFreeGame(){
   freeStage='play';
   hideTarget();
   taps=0;$('hTaps').textContent='0';$('gng-score-num').textContent='0';
-  misses=0;totalRT=0;rtCount=0;redsSeen=0;gngIsRed=false;
+  misses=0;totalRT=0;rtCount=0;redsSeen=0;gngIsRed=false;tapLog=[];
   $('hReds')&&($('hReds').textContent='0');
   // the scoreboard with the player's BPM, then 5-4-3-2-1 on it, then the 25 reds
   msg('','go');
@@ -930,6 +975,7 @@ function handleTap(){
       // GO — correct hit on red. Any red tap clears a hidden negative back to 0 first.
       var rt=performance.now()-redOnsetAt;
       totalRT+=rt;rtCount++;
+      for(var li=tapLog.length-1;li>=0;li--){if(!tapLog[li].w){if(!tapLog[li].ms)tapLog[li].ms=Math.max(1,Math.round(rt));break}}
       if(taps<0)taps=0;
       taps+=100;
       $('hTaps').textContent=Math.max(0,taps);
@@ -947,7 +993,7 @@ function handleTap(){
       }
     }else{
       // NO-GO violation — tapped a non-red → penalty
-      misses++;
+      misses++;tapLog.push({w:1});
       penaltyFlash();
       if(BUST_ON){
         taps=taps-100;                // -300 ends the game (3 wrong taps at -100 each)
@@ -1074,6 +1120,7 @@ function endDrill(){
   var gs=$('gng-score-num');if(gs)gs.classList.remove('on');
   var finalScore=Math.max(0,taps);        // never save or show a negative
   var playedBPM=SPEED==='free'?freeBPM:SPEED, busted=taps<=-300;
+  renderTapByTap();closeHitMiss();
   if(playedBPM&&!(SPEED==='free'&&freeStage!=='play'))suggestNext(playedBPM,rtCount,misses,busted);else $('nextSpeed').style.display='none';
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var isNewPts=finalScore>best;
