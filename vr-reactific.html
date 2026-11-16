@@ -89,6 +89,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .speed-btn.free{grid-column:1/-1;font-size:.95rem;text-transform:uppercase}
 .speed-btn.active{border-color:#00D9A5;background:rgba(0,217,165,.22);box-shadow:0 0 22px rgba(0,217,165,.45)}
 @media (max-height:760px){.speed-btn{height:42px}}
+.next-speed{display:none;margin-top:18px;text-align:center}
+.next-speed .ns-txt{font-size:.95rem;font-weight:800;color:#fff;margin-bottom:10px}
+.next-speed button{padding:13px 26px;border-radius:999px;border:2px solid #ffd35a;background:rgba(255,211,90,.12);color:#ffd35a;font-family:inherit;font-size:.95rem;font-weight:900;letter-spacing:.06em;cursor:pointer}
 /* the BPM box: any speed, opens on the player's own Free Tap speed */
 .bpm-box{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;min-height:58px;padding:8px 6px;border:2px solid rgba(0,217,165,.35);background:rgba(0,217,165,.07);border-radius:14px;cursor:text}
 .bpm-box.active{border-color:#00D9A5;background:rgba(0,217,165,.22);box-shadow:0 0 22px rgba(0,217,165,.45)}
@@ -195,8 +198,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="tempo-hint" id="tempoHint">Moving target, colors flash to the Ritnome — tap ONLY on RED. 25 reds.</div>
   <div class="speed-label">Speed</div>
   <div class="speed-row" id="speedRow">
-    <button class="speed-btn free active" data-speed="free" type="button">👆 Free Tap<small>10-tap speed check · then the game at your own BPM</small></button>
-    <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">play Free Tap first to unlock</small></label>
+    <a class="speed-btn free" id="goRS" href="vr-reaction-speed.html" style="display:none;text-decoration:none;line-height:50px">👆 Free Tap in Reaction Speed first</a>
+    <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">your speed comes from Reaction Speed's Free Tap</small></label>
   </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
@@ -205,10 +208,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="game-switcher">
     <a class="switcher-btn game-active" href="vr-reaction-speed.html">Reaction<br>Speed</a>
     <span class="switcher-btn game-current">Reactific</span>
-    <a class="switcher-btn game-active" href="vr-shoot-it-own-it.html">Shoot It.<br>Own It.</a>
-    <a class="switcher-btn game-active" href="vr-make-it-count.html">Make It<br>Count.</a>
-    <a class="switcher-btn game-active" href="vr-chain-reaction.html">Chain<br>Reaction</a>
-    <a class="switcher-btn game-active" href="vr-flashpoint.html">Flashpoint</a>
   </div>
 </div>
 
@@ -243,9 +242,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
   <div class="final-label" id="endLabel">Total Points</div>
+  <div class="next-speed" id="nextSpeed"><div class="ns-txt" id="nsTxt"></div><button type="button" id="nsBtn"></button></div>
   <button class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
   <button class="next-player-btn" id="nextPlayerBtn">▶ NEXT PLAYER</button>
-  <a href="vr-shoot-it-own-it.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#00D9A5,#FF6B35);color:#062018;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
+  <a href="vr-reaction-speed.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#00D9A5,#FF6B35);color:#062018;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
   <a href="reaction-velocity.html" id="endHubBtn" style="display:block;margin-top:12px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:13px 24px;border-radius:100px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.06);color:#fff;font-weight:900;letter-spacing:1px;font-size:.95rem">← THE HUB</a>
 </div>
 
@@ -324,8 +324,8 @@ function fetchStandingsFor(gameConfig){
       if(porVel){
         // runs from before speeds existed were all at 100 BPM
         var sp=function(r){var v=r.speed;if(v==null||v==='')return 100;if(/^free/.test(v))return 'free';return parseInt(v,10)};
-        var seen={100:1};
-        (rows||[]).forEach(function(r){var v=sp(r);if(v!=='free'&&v>0)seen[v]=1});
+        var seen={100:1};freeSeen=false;
+        (rows||[]).forEach(function(r){var v=sp(r);if(v==='free')freeSeen=true;else if(v>0)seen[v]=1});
         speedsSeen=Object.keys(seen).map(Number);
         rows=(rows||[]).filter(function(r){return sp(r)===currentStandingsSpeed});
       }
@@ -404,7 +404,7 @@ function renderStandingsForGame(gameKey){
 }
 function renderStandings(){renderStandingsForGame(THIS_GAME_KEY)}
 var currentStandingsSpeed=100;
-var speedsSeen=[100];   // every speed played here gets a board tab
+var speedsSeen=[100], freeSeen=false;   // every speed played here gets a board tab; Free Tap runs from before keep theirs
 function renderSpeedTabs(){
   var row=$('standingsSpeedRow');
   if(currentStandingsGame!=='reactific'){row.style.display='none';row.innerHTML='';return}
@@ -412,7 +412,7 @@ function renderSpeedTabs(){
   if(typeof SPEED==='number'&&list.indexOf(SPEED)===-1)list.push(SPEED);
   if(currentStandingsSpeed!=='free'&&list.indexOf(currentStandingsSpeed)===-1)list.push(currentStandingsSpeed);
   list.sort(function(a,b){return a-b});
-  var SPEEDS=['free'].concat(list);
+  var SPEEDS=(freeSeen||currentStandingsSpeed==='free'?['free']:[]).concat(list);
   row.style.display='flex';
   row.innerHTML=SPEEDS.map(function(v){
     return '<button class="standings-tab'+(v===currentStandingsSpeed?' active':'')+'" data-speed="'+v+'">'+(v==='free'?'Free Tap':v+' BPM')+'</button>';
@@ -450,7 +450,7 @@ $('closeBoxBtn').onclick=function(){
   $(standingsReturnScreen).style.display='flex';
 };
 $('nextPlayerBtn').addEventListener('click',function(){
-  currentPlayerName='';choseFree=false;
+  currentPlayerName='';choseFree=false;$('nextSpeed').style.display='none';
   $('playerNameInputMain').value='';
   phase='idle';
   $('screen-end').style.display='none';
@@ -507,7 +507,11 @@ function handleStartClick(){
     return;
   }
   currentPlayerName=name.slice(0,20);
-  if(SPEED!=='free'){$('bpmInput').value=bpmFromBox();setSpeed(bpmFromBox())}   // a half-typed speed is settled before play
+  if($('bpmInput').disabled){   // no speed yet: Reaction Speed's Free Tap first
+    var g=$('goRS');g.style.display='block';g.style.boxShadow='0 0 26px rgba(0,217,165,.8)';setTimeout(function(){g.style.boxShadow=''},700);
+    return;
+  }
+  $('bpmInput').value=bpmFromBox();setSpeed(bpmFromBox());   // a half-typed speed is settled before play
   startDrill();
 }
 $('playerNameInputMain').addEventListener('keydown',function(e){
@@ -600,7 +604,7 @@ applyTempo('100');refreshIntro();
 //      is tapped, then moves; those 10 taps measure the player's BPM;
 //   2. the game — the usual go/no-go at that measured BPM, 25 reds.
 // Only the pace changes; the game screen is the same.
-var SPEED=100;
+var SPEED=100;   // set from the BPM box
 var CHECK_TAPS=10, freeStage='', freeBPM=0;
 // A Free Tap run is saved as 'free-<measured BPM>' on the Free Tap board.
 function speedKey(v){return v==='free'?'free-'+freeBPM:String(v)}
@@ -610,12 +614,13 @@ function setSpeed(v){
 }
 var HINT_FREE='Free Tap — first a speed check: 10 red targets with no beat, each waits for you. That measures your BPM. Then the game opens at your speed: tap ONLY on RED, 25 reds.';
 // ══════════════════════════════════════════════════════
-//  THE SPEED: Free Tap, or any BPM in the box (10 to 300) — as in
-//  Reaction Speed. The box stays locked until the player has done a
-//  Reactific Free Tap; it then opens on their best Free Tap speed here
-//  (kept on this device per name, and looked up on this school's
-//  Reactific Free Tap board so it follows them to any tablet). − / +
-//  move 5 BPM; that changes only this game, never the default.
+//  THE SPEED: any BPM in the box (10 to 300). No Free Tap here — the
+//  box opens on the player's best Free Tap speed from REACTION SPEED
+//  (the same default Reaction Speed uses: kept on this device per name,
+//  and looked up on this school's Reaction Speed Free Tap board so it
+//  follows them to any tablet). Until they have one, the box is locked
+//  and points them to Reaction Speed's Free Tap. − / + move 5 BPM; that
+//  changes only this game, never the default.
 // ══════════════════════════════════════════════════════
 var BPM_MIN=10, BPM_MAX=300;
 function bpmFromBox(){
@@ -623,26 +628,20 @@ function bpmFromBox(){
   if(isNaN(v))v=100;
   return Math.max(BPM_MIN,Math.min(BPM_MAX,v));
 }
-function pickFree(){
-  setSpeed('free');
-  document.querySelector('.speed-btn.free').classList.add('active');$('bpmBox').classList.remove('active');
-  $('tempoHint').textContent=HINT_FREE;
-}
 function pickBox(){
   if($('bpmInput').disabled)return;
   setSpeed(bpmFromBox());
-  document.querySelector('.speed-btn.free').classList.remove('active');$('bpmBox').classList.add('active');
+  $('bpmBox').classList.add('active');
   $('tempoHint').textContent=HINTS['100'];
 }
-document.querySelector('.speed-btn.free').onclick=function(){choseFree=true;pickFree()};
-function freeKey(n){return 'rf-free-bpm:'+String(n||'').trim().toLowerCase()}
+function freeKey(n){return 'rv-free-bpm:'+String(n||'').trim().toLowerCase()}   // Reaction Speed's Free Tap default
 function savedFreeBPM(n){try{var v=parseInt(localStorage.getItem(freeKey(n)),10);return isNaN(v)?0:v}catch(e){return 0}}
 var dbAsked={};
 function askBestFree(n){
   var k=String(n||'').trim().toLowerCase(); if(!k||dbAsked[k])return;
   dbAsked[k]=1;
   var school=sessionStorage.getItem('reaction-velocity-school')||'';
-  var url=SB_URL+'/rest/v1/vr_reactific_standings?select=speed&speed=like.free-*&hidden=is.false'+
+  var url=SB_URL+'/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*&hidden=is.false'+
     '&school_name=eq.'+encodeURIComponent(school)+'&player_name=ilike.'+encodeURIComponent(String(n).trim().replace(/[*%,()]/g,''));
   fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){return r.ok?r.json():[]})
@@ -653,7 +652,7 @@ function askBestFree(n){
     })
     .catch(function(){});
 }
-// Free Tap picked by hand stays picked; nothing on the start screen changes once a game is under way.
+// nothing on the start screen changes once a game is under way
 var choseFree=false;
 function refreshBox(fromDb){
   if(phase==='running'||$('screen-intro').style.display==='none')return;
@@ -663,15 +662,16 @@ function refreshBox(fromDb){
   $('bpmDown').disabled=$('bpmUp').disabled=!v;
   if(!v){
     inp.disabled=true;inp.value='';box.classList.add('locked');box.classList.remove('active');
-    $('bpmNote').textContent='play Free Tap first to unlock';
-    pickFree();
+    $('bpmNote').textContent=n.trim()?'no Free Tap yet — play it in Reaction Speed':'your speed comes from Reaction Speed\'s Free Tap';
+    $('goRS').style.display=n.trim()?'block':'none';
     return;
   }
+  $('goRS').style.display='none';
   var wasLocked=inp.disabled;
   inp.disabled=false;box.classList.remove('locked');
   if(wasLocked||!inp.value)inp.value=v;   // a speed the player already typed is kept
-  $('bpmNote').textContent='your Free Tap speed · − / + or type any speed';
-  if(!choseFree)pickBox();
+  $('bpmNote').textContent='your Reaction Speed Free Tap · − / + or type any speed';
+  pickBox();
 }
 var nameTimer=null;
 $('playerNameInputMain').addEventListener('input',function(){
@@ -946,11 +946,36 @@ function beatTick(){
 function startBeat(){beatTick();beatTimer=setInterval(beatTick,60000/BEAT_BPM)}
 function stopBeat(){if(beatTimer){clearInterval(beatTimer);beatTimer=null}var bp=$('beat-pulse');if(bp)bp.style.opacity='0'}
 
+// NEXT SPEED — after each game, a suggestion for the next one, from the
+// reds hit out of 25 and the wrong taps (as in Reaction Speed):
+//   22+ reds hit and at most 1 wrong tap  → 10 BPM faster
+//   under 15 reds hit, or out on 3 wrong taps → 10 BPM slower
+//   otherwise                              → same speed again
+// The button starts the next game at that speed; the player's default
+// (their best Free Tap) does not change.
+function suggestNext(bpm,hits,wrong,busted){
+  var next=bpm, txt;
+  if(busted||hits<15){next=bpm-10;txt=hits+'/'+TOTAL_REDS+' reds'+(busted?' · out on 3 wrong taps':'')+' — try '}
+  else if(hits>=22&&wrong<=1){next=bpm+10;txt=hits+'/'+TOTAL_REDS+' reds — ready for '}
+  else{txt=hits+'/'+TOTAL_REDS+' reds'+(wrong?' · '+wrong+' wrong tap'+(wrong>1?'s':''):'')+' — stay at '}
+  next=Math.max(BPM_MIN,Math.min(BPM_MAX,next));
+  $('nsTxt').textContent=txt+next+' BPM'+(next>bpm?'?':next<bpm?' next':' and go again');
+  $('nsBtn').textContent='▶ PLAY AT '+next+' BPM';
+  $('nsBtn').onclick=function(){
+    $('screen-end').style.display='none';$('nextSpeed').style.display='none';
+    choseFree=false;$('bpmInput').disabled=false;$('bpmBox').classList.remove('locked');$('bpmDown').disabled=$('bpmUp').disabled=false;
+    $('bpmInput').value=next;pickBox();
+    startDrill();
+  };
+  $('nextSpeed').style.display='block';
+}
 function endDrill(){
   if(phase==='done')return;
   phase='done';clrT();stopBeat();stopReaction();stopGoNoGo();hideTarget();$('screen-speed').style.display='none';
   var gs=$('gng-score-num');if(gs)gs.classList.remove('on');
   var finalScore=Math.max(0,taps);        // never save or show a negative
+  var playedBPM=SPEED==='free'?freeBPM:SPEED, busted=taps<=-300;
+  if(playedBPM&&!(SPEED==='free'&&freeStage!=='play'))suggestNext(playedBPM,rtCount,misses,busted);else $('nextSpeed').style.display='none';
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var isNewPts=finalScore>best;
   var isNewMs=avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
@@ -960,7 +985,6 @@ function endDrill(){
     // Free Tap: the game at the player's own measured speed, on the Free
     // Tap board. The personal best in points is left alone.
     recordScoreToStandings(currentPlayerName,finalScore,avgRT);
-    if(freeBPM>savedFreeBPM(currentPlayerName)){try{localStorage.setItem(freeKey(currentPlayerName),String(freeBPM))}catch(e){}}   // a faster Free Tap becomes the default
     $('endNum').textContent=finalScore;
     $('endLabel').textContent='Total Points · at your speed, '+freeBPM+' BPM';
     $('screen-end').style.display='flex';
