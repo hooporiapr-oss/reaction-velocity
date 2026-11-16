@@ -711,9 +711,7 @@ function gngRender(col){
 
 function goNoGoStart(){
   gngIsRed=false;redsSeen=0;
-  $('gng-score-num').textContent='0';
-  $('gng-score-num').classList.add('on');
-  $('gng-score-num').style.display='block';
+  $('gng-score-num').textContent='0';   // no numbers on the target: the score shows only in the top bar
   var rt=$('hRedTotal');if(rt)rt.textContent=TOTAL_REDS;
   var rl=$('hRedLabel');if(rl)rl.textContent='Reds';
   $('hReds')&&($('hReds').textContent='0');
