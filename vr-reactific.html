@@ -89,6 +89,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .speed-btn.free{grid-column:1/-1;font-size:.95rem;text-transform:uppercase}
 .speed-btn.active{border-color:#00D9A5;background:rgba(0,217,165,.22);box-shadow:0 0 22px rgba(0,217,165,.45)}
 @media (max-height:760px){.speed-btn{height:42px}}
+.size-sw{display:inline-flex;align-items:center;gap:8px;margin:0 auto 12px;padding:8px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);color:#fff;font-family:inherit;font-size:.8rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.size-sw.on{border-color:#ffd35a;color:#ffd35a;background:rgba(255,211,90,.1)}
 /* Hits & Misses + tap by tap on the final scoreboard (as in Reaction Speed) */
 #screen-end{overflow-y:auto;justify-content:safe center}
 #screen-end>*{flex-shrink:0}
@@ -229,6 +231,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
     <a class="speed-btn free" id="goRS" href="vr-reaction-speed.html" style="display:none;text-decoration:none;line-height:50px">👆 Free Tap in Reaction Speed first</a>
     <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">your speed comes from Reaction Speed's Free Tap</small></label>
   </div>
+  <button type="button" class="size-sw" id="sizeSw" aria-pressed="false">🎯 <span id="sizeTxt">Targets: normal</span></button>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
   <button class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
@@ -622,6 +625,7 @@ function applyIntroTranslations(){
   var t=INTRO_I18N[introLang];
   $('fsBtn').textContent=t.fullscreen;
   $('openBoxBtn').textContent=t.standingsBtn;
+  if(typeof showSizeSw==='function')showSizeSw();
   // The start button's text is otherwise driven by refreshIntro()
   // below, tied to game state rather than a fixed label — deferring
   // to it here keeps this toggle from fighting that existing logic.
@@ -868,9 +872,11 @@ function gngRender(col){
   }else{
     // moving target: coordination — random position each color change
     big=Math.max(90,Math.min(150,Math.min(innerWidth,innerHeight)*0.20));
+    var extra=0;   // Big targets: 40% larger, kept a little further from the edges (as in Reaction Speed)
+    if(bigT){extra=Math.round(big*0.2);big=Math.round(big*1.4)}
     var pad=big/2+20;
     targetX=pad+Math.random()*(innerWidth-pad*2);
-    targetY=150+Math.random()*(innerHeight-230);
+    targetY=150+extra+Math.random()*(innerHeight-230-extra*2);
   }
   targetEl.style.left=targetX+'px';targetEl.style.top=targetY+'px';
   targetEl.style.width=big+'px';targetEl.style.height=big+'px';
@@ -895,6 +901,21 @@ function renderTapByTap(){
 }
 $('hitMissToggle').addEventListener('click',function(){$('hitMissToggle').classList.toggle('open');$('hitMissDetail').classList.toggle('open')});
 function closeHitMiss(){$('hitMissToggle').classList.remove('open');$('hitMissDetail').classList.remove('open')}
+// TARGET SIZE — Normal or Big (40% larger), for younger players. The same
+// setting as Reaction Speed's on this device; until chosen, Big for age
+// groups up to 6. Only the target's size changes.
+var bigT=false;
+(function(){
+  var v='';try{v=localStorage.getItem('rv-size')||''}catch(e){}
+  if(v)bigT=v==='big';
+  else{var a=parseInt(String(myAge).replace(/^\D+/,''),10);bigT=!isNaN(a)&&a<=6}
+})();
+function showSizeSw(){
+  var b=$('sizeSw');b.classList.toggle('on',!!bigT);b.setAttribute('aria-pressed',bigT?'true':'false');
+  $('sizeTxt').textContent=introLang==='es'?(bigT?'Objetivos: grandes':'Objetivos: normales'):(bigT?'Targets: big':'Targets: normal');
+}
+$('sizeSw').addEventListener('click',function(){bigT=!bigT;try{localStorage.setItem('rv-size',bigT?'big':'normal')}catch(e){}showSizeSw()});
+showSizeSw();
 function goNoGoStart(){
   gngIsRed=false;redsSeen=0;tapLog=[];
   $('gng-score-num').textContent='0';   // no numbers on the target: the score shows only in the top bar
