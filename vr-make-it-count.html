@@ -462,6 +462,7 @@ function fetchStandingsFor(gameConfig){
   var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc&school_name=eq.'+encodeURIComponent(school)+'&hidden=is.false';   // hidden in the admin: kept on file, off the board
   // Reaction Speed and Reactific now have a board per speed; here they show their original 100 BPM boards.
   if(gameConfig.key==='reaction-speed'||gameConfig.key==='reactific')url+='&or=(speed.is.null,speed.eq.100)';
+  if(gameConfig.key==='shoot-it')url+='&speed=like.free-*';   // Shoot It. Own It.: its Free Flash board
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){

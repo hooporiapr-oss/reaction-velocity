@@ -173,6 +173,17 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 .switcher-btn.game-active{border:2px solid rgba(255,107,53,.5);background:rgba(255,107,53,.12);color:#ffb38a}
 .switcher-btn.game-current{border:2px solid rgba(255,107,53,.8);background:rgba(255,107,53,.28);color:#fff}
 .switcher-btn.game-soon{border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#4a5058;cursor:default}
+.speed-label{font-size:.68rem;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#ffd35a;margin:0 0 8px;text-align:center}
+.speed-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 auto 10px;width:100%;max-width:420px}
+.speed-btn{height:50px;border:2px solid rgba(255,107,53,.35);background:rgba(255,107,53,.07);border-radius:14px;color:#fff;font-size:1.05rem;font-weight:900;cursor:pointer;font-family:inherit}
+.speed-btn small{display:block;font-size:.55rem;color:#a7adba;letter-spacing:.08em;font-weight:700}
+.speed-btn.free{grid-column:1/-1;font-size:.95rem;text-transform:uppercase}
+.speed-btn.active{border-color:#FF6B35;background:rgba(255,107,53,.24);box-shadow:0 0 22px rgba(255,107,53,.45)}
+@media (max-height:760px){.speed-btn{height:42px}}
+.speed-hint{font-size:.78rem;color:#9fb3c8;max-width:420px;margin:0 auto 12px;line-height:1.45}
+.btn-sw{display:inline-flex;align-items:center;gap:8px;margin:0 auto 12px;padding:9px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);color:#cbd5e1;font:900 .8rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.btn-sw.on{border-color:#ffd35a;color:#ffd35a;background:rgba(255,211,90,.1)}
+.standings-fixed{font-size:.6rem;color:#ffd35a;letter-spacing:.06em;text-transform:uppercase;margin-left:6px}
 .final-num{font-size:6rem;font-weight:900;color:#FF6B35;line-height:1;text-shadow:0 0 60px rgba(255,107,53,.9)}
 .final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
 .final-bpm-big{font-size:1.8rem;font-weight:900;color:#ffd35a;margin-top:10px}
@@ -203,12 +214,12 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 </div>
 
 <div id="topClock">
-  <div class="clock-label">Time Left</div>
-  <div class="clock-val" id="hClock">1:00</div>
+  <div class="clock-label" id="hClockLbl">Arrows Left</div>
+  <div class="clock-val" id="hClock">25</div>
 </div>
 
 <div id="hud">
-  <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="hScore">0</div></div>
+  <div class="hud-box"><div class="hud-label">Hits</div><div class="hud-val" id="hScore">0</div></div>
   <div class="hud-box"><div class="hud-label">Last</div><div class="hud-val" id="hLastMs">--</div></div>
   <div class="hud-box"><div class="hud-label">Best</div><div class="hud-val" id="hBest">0</div></div>
 </div>
@@ -238,7 +249,17 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   </div>
   <div class="intro-content">
   <div class="vrr-logo">SHOOT IT. <span>OWN IT.</span></div>
-  <div class="rule-t"><b>An arrow flashes once, then it's gone.</b> Read the direction fast — but the four buttons reshuffle every round, so you have to find the right one all over again, every single time.</div>
+  <div class="rule-t" id="ruleT"><b>An arrow flashes once, then it's gone.</b> Tap the button with the same arrow. 25 arrows — how many can you hit?</div>
+  <div class="speed-label" id="speedLabel">Flash speed</div>
+  <div class="speed-row" id="speedRow">
+    <button type="button" class="speed-btn free active" data-speed="free">👁 Free Flash<small id="freeSmall">finds your speed</small></button>
+    <button type="button" class="speed-btn" data-speed="60">60<small>BPM</small></button>
+    <button type="button" class="speed-btn" data-speed="90">90<small>BPM</small></button>
+    <button type="button" class="speed-btn" data-speed="120">120<small>BPM</small></button>
+    <button type="button" class="speed-btn" data-speed="180">180<small>BPM</small></button>
+  </div>
+  <div class="speed-hint" id="speedHint"></div>
+  <button type="button" class="btn-sw" id="btnSw" aria-pressed="false"><span id="btnSwIco">🔀</span> <span id="btnSwTxt">Buttons: shuffle</span></button>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
   <button class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
@@ -260,6 +281,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   <div class="box-title">THE <span>STANDINGS</span></div>
   <div class="box-sub" id="boxSub">Shoot It. Own It. · Player vs. Player</div>
   <div class="standings-tab-row" id="standingsTabRow"></div>
+  <div class="standings-tab-row" id="boardSpeedRow" style="display:none"></div>
 
   <div style="width:100%;max-width:600px">
     <div class="box-section">
@@ -276,7 +298,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 <!-- END -->
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
-  <div class="final-label">Total Points</div>
+  <div class="final-label" id="endLabel">Hits</div>
   <button class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
   <button class="next-player-btn" id="nextPlayerBtn">▶ NEXT PLAYER</button>
   <a href="vr-make-it-count.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#00e5ff,#FF6B35);color:#0a0a12;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
@@ -284,7 +306,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 
 <script>
 var FLASH_BPM=180; // settled on through real testing — the one speed that works
-function getFlashMs(){return Math.round(60000/FLASH_BPM)}
+function getFlashMs(){return Math.round(60000/flashBPMNow)}
 var PACE_MS=600;
 // Reverted from the tightened caps — even 50 BPM (1200ms) was still
 // too fast for the real read-arrow, search-buttons, locate, tap
@@ -308,14 +330,24 @@ var INTRO_I18N={
     subtitle:'Flash Basketball VR · Flash & Recall',
     rules:'<b>60 seconds.</b> A target flashes once, at a new spot each time, carrying an arrow. Then it\'s gone — read it, remember it, and tap the matching Swish Shot within 2.5 seconds. Every make is scored on real speed — the faster you are, the more points you earn. A wrong shot or no response costs you 100 points. How many points can you rack up before the clock runs out?',
     start:'▶ START',
-    standingsBtn:'🏆 THE STANDINGS'
+    standingsBtn:'🏆 THE STANDINGS',
+    ruleT:'<b>An arrow flashes once, then it\'s gone.</b> Tap the button with the same arrow. 25 arrows — how many can you hit?',
+    speedLabel:'Flash speed', freeSmall:'finds your speed',
+    hintFree:'Free Flash: the arrow starts slow (60 BPM, one second). Every hit makes the next flash faster, every miss makes it slower — the game finds your flash speed.',
+    hintSpeed:function(b){return 'Each arrow flashes for '+(60/b).toFixed(2).replace(/0$/,'')+' s ('+b+' BPM). 2.5 seconds to answer.'},
+    btnShuffle:'Buttons: shuffle', btnFixed:'Buttons: fixed'
   },
   es:{
     fullscreen:'⛶ Pantalla Completa',
     subtitle:'Flash Basketball VR · Destello y Recuerda',
     rules:'<b>60 segundos.</b> Un objetivo destella una vez, en un lugar nuevo cada vez, mostrando una flecha. Luego desaparece — léela, recuérdala, y toca el Swish Shot correcto dentro de 2.5 segundos. Cada acierto se puntúa según tu velocidad real — mientras más rápido seas, más puntos ganas. Un tiro equivocado o ninguna respuesta te cuesta 100 puntos. ¿Cuántos puntos puedes acumular antes de que se acabe el tiempo?',
     start:'▶ EMPEZAR',
-    standingsBtn:'🏆 LA CLASIFICACIÓN'
+    standingsBtn:'🏆 LA CLASIFICACIÓN',
+    ruleT:'<b>Una flecha destella una vez y desaparece.</b> Toca el botón con la misma flecha. 25 flechas — ¿cuántas aciertas?',
+    speedLabel:'Velocidad del destello', freeSmall:'encuentra tu velocidad',
+    hintFree:'Destello Libre: la flecha empieza lenta (60 BPM, un segundo). Cada acierto hace el próximo destello más rápido, cada fallo más lento — el juego encuentra tu velocidad.',
+    hintSpeed:function(b){return 'Cada flecha destella '+(60/b).toFixed(2).replace(/0$/,'')+' s ('+b+' BPM). 2.5 segundos para contestar.'},
+    btnShuffle:'Botones: mezclados', btnFixed:'Botones: fijos'
   }
 };
 var introLang='en';
@@ -324,6 +356,8 @@ function applyIntroTranslations(){
   $('fsBtn').textContent=t.fullscreen;
   $('bigStart').textContent=t.start;
   $('openBoxBtn').textContent=t.standingsBtn;
+  $('ruleT').innerHTML=t.ruleT;$('speedLabel').textContent=t.speedLabel;$('freeSmall').textContent=t.freeSmall;
+  showSpeedHint();showBtnSw();
 }
 $('introLangEN').addEventListener('click',function(){
   introLang='en';
@@ -375,6 +409,44 @@ $('playerNameInputMain').addEventListener('keydown',function(e){
   }
 })();
 
+// ══════════════════════════════════════════════════════
+//  FLASH SPEED, FREE FLASH, 25 ARROWS, FIXED / SHUFFLE BUTTONS
+//  • Flash speed: how long each arrow shows — 60, 90, 120 or 180 BPM
+//    (1 s, 0.67 s, 0.5 s, 0.33 s). 180 is the game's original flash.
+//  • Free Flash: starts at 60 BPM; each hit makes the next flash 10 BPM
+//    faster, each miss 20 BPM slower (30–300). The player's flash speed
+//    is the average of the last 10 arrows' flash, saved as 'free-<BPM>'.
+//  • 25 arrows, scored as hits out of 25 (no clock, no minus points).
+//  • Buttons fixed (▲ top, ◀ left, ▶ right, ▼ bottom) or shuffled every
+//    arrow. Remembered on this device; until chosen, fixed for age
+//    groups up to 6. Each saved run records which it was.
+//  Runs saved before this (the 60-second game) stay on their own board.
+// ══════════════════════════════════════════════════════
+var TOTAL_ARROWS=25, SPEED='free', FREE_START=60, FREE_UP=10, FREE_DOWN=20, FREE_MIN=30, FREE_MAX=300;
+var flashBPMNow=FREE_START, freeTrail=[], freeBPM=0;
+var SPEEDS=[60,90,120,180];
+function speedKey(){return SPEED==='free'?'free-'+freeBPM:String(SPEED)}
+function showSpeedHint(){var t=INTRO_I18N[introLang];$('speedHint').textContent=SPEED==='free'?t.hintFree:t.hintSpeed(SPEED)}
+document.querySelectorAll('.speed-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    SPEED=btn.dataset.speed==='free'?'free':parseInt(btn.dataset.speed,10);
+    document.querySelectorAll('.speed-btn').forEach(function(b){b.classList.toggle('active',b===btn)});
+    showSpeedHint();loadBest();
+  });
+});
+var fixedBtns=false;
+(function(){
+  var v='';try{v=localStorage.getItem('rv-shoot-buttons')||''}catch(e){}
+  if(v)fixedBtns=v==='fixed';
+  else{var a=parseInt(String(sessionStorage.getItem('reaction-velocity-category')||'').replace(/^\D+/,''),10);fixedBtns=!isNaN(a)&&a<=6}
+})();
+function showBtnSw(){
+  var b=$('btnSw'),t=INTRO_I18N[introLang];b.classList.toggle('on',fixedBtns);b.setAttribute('aria-pressed',fixedBtns?'true':'false');
+  $('btnSwTxt').textContent=fixedBtns?t.btnFixed:t.btnShuffle;$('btnSwIco').textContent=fixedBtns?'🔒':'🔀';
+}
+$('btnSw').addEventListener('click',function(){fixedBtns=!fixedBtns;try{localStorage.setItem('rv-shoot-buttons',fixedBtns?'fixed':'shuffle')}catch(e){}showBtnSw()});
+showSpeedHint();showBtnSw();
+
 var phase='idle';
 var idx=0,score=0,best=0,correctCount=0,totalRT=0,rtCount=0,bestAvgMs=0,misses=0;
 var shotLog=[]; // the full, ordered history of every tap this game —
@@ -387,11 +459,11 @@ var stimulus=$('stimulus'),stage=$('stage');
 
 function loadBest(){
   best=0;
-  try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0}catch(e){}
+  try{best=parseInt(localStorage.getItem(BEST_KEY+'-hits-'+SPEED)||'0',10)||0}catch(e){}
   try{bestAvgMs=parseInt(localStorage.getItem(BEST_MS_KEY)||'0',10)||0}catch(e){bestAvgMs=0}
   $('hBest').textContent=best;
 }
-function saveBest(){try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
+function saveBest(){try{localStorage.setItem(BEST_KEY+'-hits-'+SPEED,String(best))}catch(e){}}
 function saveBestMs(){try{localStorage.setItem(BEST_MS_KEY,String(bestAvgMs))}catch(e){}}
 
 // THE STANDINGS — a shared board combining every headset in the
@@ -406,10 +478,11 @@ var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
 var SB_TABLE='vr_shoot_it_own_it_standings';
 
 function recordScoreToStandings(name,finalScore,made,attempts,avgMs,shots){
+  // needs shoot-it-velocidades.sql (columns speed and buttons)
   return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{
     method:'POST',
     headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({player_name:name,score:finalScore,made:made,attempts:attempts,avg_ms:avgMs,shots:shots||[],school_name:sessionStorage.getItem('reaction-velocity-school')||null})
+    body:JSON.stringify({player_name:name,score:finalScore,made:made,attempts:attempts,avg_ms:avgMs,shots:shots||[],speed:speedKey(),buttons:fixedBtns?'fixed':'shuffle',school_name:sessionStorage.getItem('reaction-velocity-school')||null})
   }).catch(function(){}); // offline is fine — this game's own end screen already shows the score either way
 }
 
@@ -442,6 +515,13 @@ function renderTapLog(container,shots,finalScore){
     container.innerHTML='<div class="tap-log-empty">No tap-by-tap detail saved for this game.</div>';
     return;
   }
+  if(shots[0]&&shots[0].pts===undefined){   // 25-arrow runs: hit or miss, the answer's speed and the flash speed
+    container.innerHTML=shots.map(function(s,i){
+      var top=s.hit?s.bpm+' BPM':(s.noResponse?'NO RESP':'MISS');
+      return '<div class="tap-chip '+(s.hit?'hit':'miss')+'"><span class="tap-bpm">#'+(i+1)+' '+top+'</span><span class="tap-pts">flash '+s.flash+'</span></div>';
+    }).join('')+'<div class="tap-log-total">Hits: <b>'+finalScore+'/'+shots.length+'</b></div>';
+    return;
+  }
   var chips=shots.map(function(s){
     if(s.hit){
       return '<div class="tap-chip hit"><span class="tap-bpm">'+s.bpm+' BPM</span><span class="tap-pts">+'+s.pts+'</span></div>';
@@ -454,6 +534,8 @@ function renderTapLog(container,shots,finalScore){
 
 function fetchStandingsFor(gameConfig){
   var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms';
+  var mine=gameConfig.key==='shoot-it';
+  if(mine)cols+=',speed,buttons';
   // Scoped to the current session's own school — two different
   // access codes are two genuinely separate boards. A player never
   // sees, or competes against, scores from a school they didn't
@@ -462,22 +544,34 @@ function fetchStandingsFor(gameConfig){
   var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc&school_name=eq.'+encodeURIComponent(school)+'&hidden=is.false';   // hidden in the admin: kept on file, off the board
   // Reaction Speed and Reactific now have a board per speed; here they show their original 100 BPM boards.
   if(gameConfig.key==='reaction-speed'||gameConfig.key==='reactific')url+='&or=(speed.is.null,speed.eq.100)';
+  if(mine)url+=boardSpeed==='old'?'&speed=is.null':boardSpeed==='free'?'&speed=like.free-*':'&speed=eq.'+boardSpeed;
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){
       var best={};
+      // Free Flash ranks by flash speed (then hits); a set speed by hits (then answer speed); the old board by points
+      function rank(r){return mine&&boardSpeed==='free'?(parseInt(String(r.speed).split('-')[1],10)||0)*1000+(r.score||0):mine&&boardSpeed!=='old'?(r.score||0)*100000-(r.avg_ms||99999):r.score}
       (rows||[]).forEach(function(r){
-        var existing=best[r.player_name];
-        if(!existing||r.score>existing.pts){
+        var existing=best[r.player_name], k=rank(r);
+        if(!existing||k>existing.k){
           best[r.player_name]=gameConfig.rich
-            ?{name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[]}
-            :{name:r.player_name,pts:r.score,ms:r.avg_ms};
+            ?{name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[],k:k,speed:r.speed,fixed:r.buttons==='fixed'}
+            :{name:r.player_name,pts:r.score,ms:r.avg_ms,k:k};
         }
       });
-      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){return b.pts-a.pts});
+      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){return b.k-a.k});
     });
 }
 
+var boardSpeed='free';
+function renderBoardSpeedTabs(){
+  var row=$('boardSpeedRow');
+  if(currentStandingsGame!==THIS_GAME_KEY){row.style.display='none';return}
+  row.style.display='flex';
+  var opts=[['free','Free Flash'],['60','60'],['90','90'],['120','120'],['180','180'],['old','60 sec (before)']];
+  row.innerHTML=opts.map(function(o){return '<button class="standings-tab'+(String(boardSpeed)===o[0]?' active':'')+'" data-s="'+o[0]+'">'+o[1]+'</button>'}).join('');
+  row.querySelectorAll('.standings-tab').forEach(function(b){b.addEventListener('click',function(){boardSpeed=b.dataset.s;renderStandingsForGame(THIS_GAME_KEY)})});
+}
 function renderStandingsTabs(){
   var row=$('standingsTabRow');
   row.innerHTML=STANDINGS_GAMES.map(function(g){
@@ -491,7 +585,7 @@ function renderStandingsTabs(){
 function renderStandingsForGame(gameKey){
   currentStandingsGame=gameKey;
   var gameConfig=STANDINGS_GAMES.filter(function(g){return g.key===gameKey})[0];
-  renderStandingsTabs();
+  renderStandingsTabs();renderBoardSpeedTabs();
   $('boxSub').textContent=gameConfig.label+' · Player vs. Player';
 
   var listEl=$('standingsList');
@@ -511,9 +605,12 @@ function renderStandingsForGame(gameKey){
       var safeName=p.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       return '<div class="standings-row '+rankClass+'" data-name="'+safeName+'">'
         +'<span class="standings-rank">'+(i+1)+'</span>'
-        +'<span class="standings-name">'+safeName+'</span>'
-        +'<span class="standings-bpm">'+(p.ms>0?bpmFromMs(p.ms)+' BPM':'')+'</span>'
-        +'<span class="standings-pts">'+p.pts+'</span>'
+        +'<span class="standings-name">'+safeName+(p.fixed?' <span class="standings-fixed">fixed</span>':'')+'</span>'
+        +(gameKey===THIS_GAME_KEY&&boardSpeed==='free'
+          ?'<span class="standings-bpm">'+(p.made!=null?p.made+'/'+(p.attempts||25):'')+'</span><span class="standings-pts">'+(String(p.speed).split('-')[1]||'')+' BPM</span>'
+          :gameKey===THIS_GAME_KEY&&boardSpeed!=='old'
+          ?'<span class="standings-bpm">'+(p.ms>0?bpmFromMs(p.ms)+' BPM':'')+'</span><span class="standings-pts">'+p.pts+'/'+(p.attempts||25)+'</span>'
+          :'<span class="standings-bpm">'+(p.ms>0?bpmFromMs(p.ms)+' BPM':'')+'</span><span class="standings-pts">'+p.pts+'</span>')
         +'</div>';
     }).join('');
     if(gameConfig.rich){
@@ -544,6 +641,7 @@ function renderStandings(){renderStandingsForGame(THIS_GAME_KEY)}
 // whichever one it was opened from, not always the same fixed screen.
 var standingsReturnScreen='screen-intro';
 function openStandings(fromScreen){
+  boardSpeed=String(SPEED);
   standingsReturnScreen=fromScreen;
   renderStandings();
   $(fromScreen).style.display='none';
@@ -594,19 +692,9 @@ function startDrill(){
 var contestTimerInterval=null,contestEndAt=0;
 function runDrill(){
   phase='running';idx=0;score=0;correctCount=0;totalRT=0;rtCount=0;misses=0;shotLog=[];
-  $('hScore').textContent='0';$('hLastMs').textContent='--';
+  flashBPMNow=SPEED==='free'?FREE_START:SPEED;freeTrail=[];freeBPM=0;
+  $('hScore').textContent='0';$('hLastMs').textContent='--';$('hClock').textContent=TOTAL_ARROWS;$('hClock').className='clock-val';
   msg('GET READY...','go');
-
-  contestEndAt=performance.now()+CONTEST_MS;
-  updateContestClock();
-  clearInterval(contestTimerInterval);
-  contestTimerInterval=setInterval(function(){
-    updateContestClock();
-    if(performance.now()>=contestEndAt){
-      clearInterval(contestTimerInterval);
-      endDrill();
-    }
-  },100);
 
   timers.push(setTimeout(function(){msg('','go');nextTrial()},900));
 }
@@ -634,6 +722,8 @@ var noResponseTimer=null;
 
 function nextTrial(){
   if(phase!=='running')return;
+  if(idx>=TOTAL_ARROWS){endDrill();return}
+  freeTrail.push(flashBPMNow);
   currentSide=DIRS[Math.floor(Math.random()*DIRS.length)];
   stimulus.textContent=ARROWS[currentSide];
   var pos=randomStagePos();
@@ -670,6 +760,8 @@ function stopNoResponseTimer(){if(noResponseTimer){clearTimeout(noResponseTimer)
 var SLOT_IDS=['slot0','slot1','slot2','slot3'];
 function shuffleButtonLayout(){
   var shuffled=DIRS.slice();
+  if(fixedBtns)shuffled=['up','left','right','down'];   // fixed: each arrow where it points
+  else
   for(var i=shuffled.length-1;i>0;i--){
     var j=Math.floor(Math.random()*(i+1));
     var tmp=shuffled[i];shuffled[i]=shuffled[j];shuffled[j]=tmp;
@@ -691,14 +783,18 @@ function handleNoResponse(){
   misses++;
   // A miss genuinely costs — same real penalty as Reaction Speed now
   // applies, so every game in this family treats a miss consistently.
-  score-=100;
-  shotLog.push({hit:false,bpm:0,pts:-100,noResponse:true});
+  shotLog.push({hit:false,bpm:0,noResponse:true,flash:flashBPMNow});
   flash('rgba(255,20,147,.28)');
-  msg('✗ NO RESPONSE · -100','wrong');
-  $('hScore').textContent=score;
+  msg('✗ NO RESPONSE','wrong');
+  afterArrow(false);
   advanceOrEnd();
 }
 
+function afterArrow(hit){
+  if(SPEED==='free')flashBPMNow=hit?Math.min(FREE_MAX,flashBPMNow+FREE_UP):Math.max(FREE_MIN,flashBPMNow-FREE_DOWN);
+  score=correctCount;$('hScore').textContent=score;
+  var left=Math.max(0,TOTAL_ARROWS-idx);$('hClock').textContent=left;$('hClock').className='clock-val'+(left<=5?' urgent':'');
+}
 function advanceOrEnd(){
   timers.push(setTimeout(function(){
     if(phase==='running')msg('','go');
@@ -729,24 +825,20 @@ function handleChoice(side){
     // down to exactly 1 point at 30 BPM (2000ms) — the floor now sits
     // at a genuinely slow pace, not one that was cutting off anyone
     // slower than 50 BPM to a flat 1 point.
-    var tapPts=Math.max(1,Math.round(300-rt/6.689));
-    score+=tapPts;
-    shotLog.push({hit:true,bpm:bpmFromMs(rt),pts:tapPts});
+    shotLog.push({hit:true,bpm:bpmFromMs(rt),flash:flashBPMNow});
     ripple(rx,ry);flash('rgba(124,58,237,.14)');
     $('hLastMs').textContent=bpmFromMs(rt);
-    msg(bpmFromMs(rt)+' BPM · +'+tapPts+' PTS','correct');
+    msg('✓ '+bpmFromMs(rt)+' BPM','correct');
   }else{
     misses++;
     // Same real penalty as a no-response — a wrong tap is just as
     // much a genuine miss as never tapping at all.
-    score-=100;
-    shotLog.push({hit:false,bpm:bpmFromMs(rt),pts:-100,noResponse:false});
+    shotLog.push({hit:false,bpm:bpmFromMs(rt),noResponse:false,flash:flashBPMNow});
     flash('rgba(255,20,147,.28)');
     $('hLastMs').textContent='MISS';
-    msg('✗ MISS! -100','wrong');
+    msg('✗ MISS','wrong');
   }
-
-  $('hScore').textContent=score;
+  afterArrow(isCorrect);
 
   advanceOrEnd();
 }
@@ -773,11 +865,11 @@ function endDrill(){
     awaitingResponse=false;
     idx++;
     misses++;
-    score-=100;
-    shotLog.push({hit:false,bpm:0,pts:-100,noResponse:true});
+    shotLog.push({hit:false,bpm:0,noResponse:true,flash:flashBPMNow});
   }
   phase='done';clrT();clearInterval(contestTimerInterval);stopNoResponseTimer();stimulus.classList.remove('visible');
-  var finalScore=score;
+  var finalScore=correctCount;
+  if(SPEED==='free'){var last=freeTrail.slice(-10);freeBPM=last.length?Math.round(last.reduce(function(a,b){return a+b},0)/last.length):FREE_START}
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
   var isNewPts=finalScore>best;
@@ -798,7 +890,8 @@ function endDrill(){
   setTimeout(function(){f.style.opacity='0'},250);
   setTimeout(function(){document.body.classList.remove('buzzer-shake');f.classList.remove('buzzer')},1000);
 
-  $('endNum').textContent=finalScore;
+  $('endNum').textContent=finalScore+'/'+idx;
+  $('endLabel').textContent=SPEED==='free'?'Hits · your flash speed: '+freeBPM+' BPM':'Hits · flash at '+SPEED+' BPM';
 
   recordScoreToStandings(currentPlayerName,finalScore,correctCount,idx,avgRT,shotLog);
 
