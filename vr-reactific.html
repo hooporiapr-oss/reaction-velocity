@@ -280,12 +280,8 @@ function recordScoreToStandings(name,finalScore,avgMs){
 // ══════════════════════════════════════════════════════
 var STANDINGS_GAMES=[
   {key:'reaction-speed',label:'Reaction Speed',table:'vr_reaction_speed_standings',rich:false},
-  {key:'reactific',label:'Reactific',table:'vr_reactific_standings',rich:false},
-  {key:'shoot-it',label:'Shoot It.',table:'vr_shoot_it_own_it_standings',rich:true},
-  {key:'make-it-count',label:'Make It Count.',table:'vr_make_it_count_standings',rich:true},
-  {key:'chain-reaction',label:'Chain Reaction',table:'vr_chain_reaction_standings',rich:false},
-  {key:'flashpoint',label:'Flashpoint',table:'vr_flashpoint_standings',rich:false}
-];
+  {key:'reactific',label:'Reactific',table:'vr_reactific_standings',rich:false}
+];   // only these two are on the hub; the other games' boards stay on file
 var THIS_GAME_KEY='reactific';
 var currentStandingsGame=THIS_GAME_KEY;
 
