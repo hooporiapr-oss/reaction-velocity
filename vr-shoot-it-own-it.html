@@ -195,6 +195,12 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 .next-player-btn{margin-top:28px;height:64px;padding:0 40px;border:none;border-radius:16px;background:linear-gradient(120deg,#FF6B35,#ff8a5c);color:#fff;font-size:1.15rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 30px rgba(255,107,53,.6)}
 .session-line{margin-top:22px;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:#7fa8c0}
 
+/* Free Flash: the player's BPM after the speed check, then 5-4-3-2-1 on it */
+#screen-speed{position:fixed;inset:0;z-index:57;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#140800 0%,#000 70%);text-align:center;padding:20px}
+#screen-speed .sp-top{font-size:.8rem;letter-spacing:.24em;text-transform:uppercase;color:#9fb3c8;margin-bottom:6px}
+#screen-speed .sp-sub{font-size:.85rem;color:#cbd5e1;margin-top:8px}
+#screen-speed .sp-go{margin-top:30px;font-size:.75rem;letter-spacing:.22em;text-transform:uppercase;color:#9fb3c8}
+#spCount{font-size:5.5rem;font-weight:900;color:#fff;line-height:1;text-shadow:0 0 40px rgba(255,107,53,.8);margin-top:6px}
 #countdown{position:fixed;inset:0;z-index:56;display:none;align-items:center;justify-content:center;background:#000}
 #bigCount{font-size:8rem;font-weight:900;color:#7c3aed;text-shadow:0 0 60px rgba(124,58,237,.9)}
 @media(max-width:420px){.vrr-logo{font-size:1.5rem}.big-btn{height:60px;font-size:1.1rem}
@@ -295,6 +301,16 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 <!-- COUNTDOWN -->
 <div id="countdown"><div id="bigCount">3</div></div>
 
+<!-- FREE FLASH: YOUR SPEED -->
+<div id="screen-speed" role="status" aria-live="polite">
+  <div class="sp-top">Your speed</div>
+  <div class="final-num" id="spBpm">0</div>
+  <div class="final-label">BPM</div>
+  <div class="sp-sub" id="spSub"></div>
+  <div class="sp-go">25 arrows at your speed · starting in</div>
+  <div id="spCount">5</div>
+</div>
+
 <!-- END -->
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
@@ -333,7 +349,7 @@ var INTRO_I18N={
     standingsBtn:'🏆 THE STANDINGS',
     ruleT:'<b>An arrow flashes once, then it\'s gone.</b> Tap the button with the same arrow. 25 arrows — how many can you hit?',
     speedLabel:'Flash speed', freeSmall:'finds your speed',
-    hintFree:'Free Flash: the arrow starts slow (60 BPM, one second). Every hit makes the next flash faster, every miss makes it slower — the game finds your flash speed.',
+    hintFree:'Free Flash — first a speed check: 10 arrows that stay until you answer. Your speed on 10 right answers sets your BPM. Then 25 arrows flash at your speed.',
     hintSpeed:function(b){return 'Each arrow flashes for '+(60/b).toFixed(2).replace(/0$/,'')+' s ('+b+' BPM). 2.5 seconds to answer.'},
     btnShuffle:'Buttons: shuffle', btnFixed:'Buttons: fixed'
   },
@@ -345,7 +361,7 @@ var INTRO_I18N={
     standingsBtn:'🏆 LA CLASIFICACIÓN',
     ruleT:'<b>Una flecha destella una vez y desaparece.</b> Toca el botón con la misma flecha. 25 flechas — ¿cuántas aciertas?',
     speedLabel:'Velocidad del destello', freeSmall:'encuentra tu velocidad',
-    hintFree:'Destello Libre: la flecha empieza lenta (60 BPM, un segundo). Cada acierto hace el próximo destello más rápido, cada fallo más lento — el juego encuentra tu velocidad.',
+    hintFree:'Destello Libre — primero una prueba de velocidad: 10 flechas que esperan hasta que contestes. Tu velocidad en 10 respuestas correctas fija tu BPM. Luego 25 flechas destellan a tu velocidad.',
     hintSpeed:function(b){return 'Cada flecha destella '+(60/b).toFixed(2).replace(/0$/,'')+' s ('+b+' BPM). 2.5 segundos para contestar.'},
     btnShuffle:'Botones: mezclados', btnFixed:'Botones: fijos'
   }
@@ -413,17 +429,18 @@ $('playerNameInputMain').addEventListener('keydown',function(e){
 //  FLASH SPEED, FREE FLASH, 25 ARROWS, FIXED / SHUFFLE BUTTONS
 //  • Flash speed: how long each arrow shows — 60, 90, 120 or 180 BPM
 //    (1 s, 0.67 s, 0.5 s, 0.33 s). 180 is the game's original flash.
-//  • Free Flash: starts at 60 BPM; each hit makes the next flash 10 BPM
-//    faster, each miss 20 BPM slower (30–300). The player's flash speed
-//    is the average of the last 10 arrows' flash, saved as 'free-<BPM>'.
+//  • Free Flash, like Free Tap: a speed check of 10 arrows that stay
+//    until answered; the average time of 10 correct answers sets the BPM
+//    (20–200). Then a scoreboard with that BPM, 5-4-3-2-1, and 25 arrows
+//    flashing at it. Saved as 'free-<BPM>'.
 //  • 25 arrows, scored as hits out of 25 (no clock, no minus points).
 //  • Buttons fixed (▲ top, ◀ left, ▶ right, ▼ bottom) or shuffled every
 //    arrow. Remembered on this device; until chosen, fixed for age
 //    groups up to 6. Each saved run records which it was.
 //  Runs saved before this (the 60-second game) stay on their own board.
 // ══════════════════════════════════════════════════════
-var TOTAL_ARROWS=25, SPEED='free', FREE_START=60, FREE_UP=10, FREE_DOWN=20, FREE_MIN=30, FREE_MAX=300;
-var flashBPMNow=FREE_START, freeTrail=[], freeBPM=0;
+var TOTAL_ARROWS=25, CHECK_ARROWS=10, SPEED='free';
+var flashBPMNow=180, freeStage='', checkTimes=[], freeBPM=0;
 var SPEEDS=[60,90,120,180];
 function speedKey(){return SPEED==='free'?'free-'+freeBPM:String(SPEED)}
 function showSpeedHint(){var t=INTRO_I18N[introLang];$('speedHint').textContent=SPEED==='free'?t.hintFree:t.hintSpeed(SPEED)}
@@ -692,9 +709,10 @@ function startDrill(){
 var contestTimerInterval=null,contestEndAt=0;
 function runDrill(){
   phase='running';idx=0;score=0;correctCount=0;totalRT=0;rtCount=0;misses=0;shotLog=[];
-  flashBPMNow=SPEED==='free'?FREE_START:SPEED;freeTrail=[];freeBPM=0;
-  $('hScore').textContent='0';$('hLastMs').textContent='--';$('hClock').textContent=TOTAL_ARROWS;$('hClock').className='clock-val';
-  msg('GET READY...','go');
+  freeStage=SPEED==='free'?'check':'';checkTimes=[];freeBPM=0;flashBPMNow=SPEED==='free'?180:SPEED;
+  $('hScore').textContent='0';$('hLastMs').textContent='--';$('hClock').className='clock-val';
+  $('hClockLbl').textContent=freeStage==='check'?'Speed Check':'Arrows Left';$('hClock').textContent=freeStage==='check'?CHECK_ARROWS:TOTAL_ARROWS;
+  msg(freeStage==='check'?'SPEED CHECK · 10 ARROWS':'GET READY...','go');
 
   timers.push(setTimeout(function(){msg('','go');nextTrial()},900));
 }
@@ -722,8 +740,8 @@ var noResponseTimer=null;
 
 function nextTrial(){
   if(phase!=='running')return;
+  if(freeStage==='check'&&idx>=CHECK_ARROWS){startFreeGame();return}
   if(idx>=TOTAL_ARROWS){endDrill();return}
-  freeTrail.push(flashBPMNow);
   currentSide=DIRS[Math.floor(Math.random()*DIRS.length)];
   stimulus.textContent=ARROWS[currentSide];
   var pos=randomStagePos();
@@ -739,6 +757,7 @@ function nextTrial(){
   // Tapping is valid the whole time, both during the brief flash and
   // through the blank screen after — this is deliberately not "you had
   // to catch it while visible," it's "you saw it, now respond."
+  if(freeStage==='check')return;   // speed check: the arrow stays until it is answered, no time limit
   timers.push(setTimeout(function(){
     stimulus.classList.remove('visible');
   },getFlashMs()));
@@ -790,8 +809,30 @@ function handleNoResponse(){
   advanceOrEnd();
 }
 
+// Free Flash: the 10-arrow speed check is done — a scoreboard with the
+// player's BPM, 5-4-3-2-1 on it, then 25 arrows flashing at that speed.
+function startFreeGame(){
+  var avg=checkTimes.reduce(function(a,b){return a+b},0)/Math.max(1,checkTimes.length);
+  freeBPM=Math.max(20,Math.min(200,Math.round(60000/Math.max(1,avg))));
+  flashBPMNow=freeBPM;freeStage='play';
+  idx=0;score=0;correctCount=0;totalRT=0;rtCount=0;misses=0;shotLog=[];   // the speed check is not part of the game
+  $('hScore').textContent='0';$('hLastMs').textContent='--';$('hClockLbl').textContent='Arrows Left';$('hClock').textContent=TOTAL_ARROWS;$('hClock').className='clock-val';
+  msg('','go');
+  $('spBpm').textContent=freeBPM;
+  $('spSub').textContent='10 right answers · average '+(avg/1000).toFixed(2)+' s';
+  var n=5;$('spCount').textContent=n;
+  $('screen-speed').style.display='flex';
+  function tick(){
+    if(phase!=='running')return;
+    n--;
+    if(n>0){$('spCount').textContent=n;timers.push(setTimeout(tick,1000));return}
+    $('screen-speed').style.display='none';
+    nextTrial();
+  }
+  timers.push(setTimeout(tick,1000));
+}
 function afterArrow(hit){
-  if(SPEED==='free')flashBPMNow=hit?Math.min(FREE_MAX,flashBPMNow+FREE_UP):Math.max(FREE_MIN,flashBPMNow-FREE_DOWN);
+  if(freeStage==='check'){$('hClock').textContent=Math.max(0,CHECK_ARROWS-idx);return}
   score=correctCount;$('hScore').textContent=score;
   var left=Math.max(0,TOTAL_ARROWS-idx);$('hClock').textContent=left;$('hClock').className='clock-val'+(left<=5?' urgent':'');
 }
@@ -817,6 +858,11 @@ function handleChoice(side){
   stimulus.classList.remove('visible');
 
   idx++;
+  if(freeStage==='check'){          // speed check: only correct answers count — 10 of them set the BPM; nothing is scored
+    if(isCorrect){checkTimes.push(rt);ripple(rx,ry);flash('rgba(124,58,237,.14)');msg('✓','correct')}
+    else{idx--;flash('rgba(255,20,147,.28)');msg('✗ TRY AGAIN','wrong')}   // a wrong answer: not counted, another arrow comes
+    afterArrow(isCorrect);advanceOrEnd();return;
+  }
   totalRT+=rt;rtCount++;
 
   if(isCorrect){
@@ -867,9 +913,9 @@ function endDrill(){
     misses++;
     shotLog.push({hit:false,bpm:0,noResponse:true,flash:flashBPMNow});
   }
-  phase='done';clrT();clearInterval(contestTimerInterval);stopNoResponseTimer();stimulus.classList.remove('visible');
+  phase='done';clrT();clearInterval(contestTimerInterval);$('screen-speed').style.display='none';stopNoResponseTimer();stimulus.classList.remove('visible');
   var finalScore=correctCount;
-  if(SPEED==='free'){var last=freeTrail.slice(-10);freeBPM=last.length?Math.round(last.reduce(function(a,b){return a+b},0)/last.length):FREE_START}
+
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
   var isNewPts=finalScore>best;
