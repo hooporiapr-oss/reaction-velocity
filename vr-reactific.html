@@ -218,6 +218,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="box-sub" id="boxSub">Reactific · Player vs. Player</div>
   <div class="standings-tab-row" id="standingsTabRow"></div>
   <div class="standings-tab-row" id="standingsSpeedRow"></div>
+  <div class="standings-tab-row" id="standingsAgeRow" style="display:none"></div>
   <div class="box-section">
     <div class="box-section-label">Standings — Best Score Per Player</div>
     <div id="standingsList"></div>
@@ -305,8 +306,28 @@ function renderTapLog(container,shots,finalScore){
   container.innerHTML=chips+'<div class="tap-log-total">Final Total: <b>'+finalScore+' PTS</b></div>';
 }
 
+// AGE GROUPS — runs carry the age group of the code used at sign-in.
+// When a school has more than one, the board gets a tab per group and
+// opens on the player's own; "All" shows the whole school (as in Reaction Speed).
+var myAge=sessionStorage.getItem('reaction-velocity-category')||'';
+var currentAge=myAge, agesSeen=[];
+function ageSort(a,b){var x=parseInt(a,10),y=parseInt(b,10);if(!isNaN(x)&&!isNaN(y)&&x!==y)return x-y;return a.localeCompare(b)}
+function renderAgeTabs(){
+  var row=$('standingsAgeRow'), list=agesSeen.slice();
+  if(currentAge&&list.indexOf(currentAge)===-1)list.push(currentAge);
+  list.sort(ageSort);
+  if(!list.length){row.style.display='none';row.innerHTML='';return}
+  row.style.display='flex';
+  row.innerHTML=[''].concat(list).map(function(a){
+    var safe=a.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return '<button class="standings-tab'+(a===currentAge?' active':'')+'" data-age="'+safe+'">'+(a?safe:(introLang==='es'?'Todos':'All'))+'</button>';
+  }).join('');
+  row.querySelectorAll('.standings-tab').forEach(function(btn){
+    btn.addEventListener('click',function(){currentAge=btn.dataset.age;renderStandingsForGame(currentStandingsGame)});
+  });
+}
 function fetchStandingsFor(gameConfig){
-  var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms';
+  var cols=(gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms')+',category';
   // Scoped to the current session's own school — two different
   // access codes are two genuinely separate boards. A player never
   // sees, or competes against, scores from a school they didn't
@@ -321,6 +342,10 @@ function fetchStandingsFor(gameConfig){
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){
+      var ages={};
+      (rows||[]).forEach(function(r){var a=(r.category||'').trim();if(a)ages[a]=1});
+      agesSeen=Object.keys(ages);
+      if(currentAge)rows=(rows||[]).filter(function(r){return (r.category||'').trim()===currentAge});
       if(porVel){
         // runs from before speeds existed were all at 100 BPM
         var sp=function(r){var v=r.speed;if(v==null||v==='')return 100;if(/^free/.test(v))return 'free';return parseInt(v,10)};
@@ -368,6 +393,7 @@ function renderStandingsForGame(gameKey){
   fetchStandingsFor(gameConfig).then(function(ranked){
     if(currentStandingsGame!==gameKey)return; // a newer tab click already moved on
     renderSpeedTabs();   // now with every speed played
+    renderAgeTabs();
     if(!ranked.length){
       listEl.innerHTML='<div class="box-empty">No players yet — be the first name on the board.</div>';
       return;
