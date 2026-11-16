@@ -173,6 +173,9 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 .switcher-btn.game-active{border:2px solid rgba(255,107,53,.5);background:rgba(255,107,53,.12);color:#ffb38a}
 .switcher-btn.game-current{border:2px solid rgba(255,107,53,.8);background:rgba(255,107,53,.28);color:#fff}
 .switcher-btn.game-soon{border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#4a5058;cursor:default}
+.btn-sw{display:inline-flex;align-items:center;gap:8px;margin:0 auto 14px;padding:9px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);color:#cbd5e1;font:900 .8rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.btn-sw.on{border-color:#ffd35a;color:#ffd35a;background:rgba(255,211,90,.1)}
+.standings-fixed{font-size:.6rem;color:#ffd35a;letter-spacing:.06em;text-transform:uppercase;margin-left:6px}
 .final-num{font-size:6rem;font-weight:900;color:#FF6B35;line-height:1;text-shadow:0 0 60px rgba(255,107,53,.9)}
 .final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
 .final-bpm-big{font-size:1.8rem;font-weight:900;color:#ffd35a;margin-top:10px}
@@ -239,6 +242,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   <div class="intro-content">
   <div class="vrr-logo">MAKE IT <span>COUNT.</span></div>
   <div class="rule-t"><b>The target never disappears.</b> It stays on screen the whole time, drifting as it waits — but position isn't the signal. Read the arrow riding along with it, not where it's going.</div>
+  <button type="button" class="btn-sw" id="btnSw" aria-pressed="false"><span id="btnSwIco">🔀</span> <span id="btnSwTxt">Buttons: shuffle</span></button>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
   <button class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
@@ -308,6 +312,7 @@ var INTRO_I18N={
     subtitle:'Flash Basketball VR · To The Beat',
     rules:'<b>60 seconds.</b> The target never sits still — it drifts continuously across the court, carrying an arrow the whole time. Position never means anything. Read the arrow, not where it happens to be, and tap the matching Swish Shot within 2.5 seconds. Every make is scored on real speed — the faster you are, the more points you earn. A wrong shot or no response costs you 100 points. How many points can you rack up before the clock runs out?',
     start:'▶ START',
+    btnShuffle:'Buttons: shuffle', btnFixed:'Buttons: fixed',
     standingsBtn:'🏆 THE STANDINGS'
   },
   es:{
@@ -315,6 +320,7 @@ var INTRO_I18N={
     subtitle:'Flash Basketball VR · Al Ritmo',
     rules:'<b>60 segundos.</b> El objetivo nunca se queda quieto — se desliza continuamente por la cancha, mostrando una flecha todo el tiempo. La posición nunca importa. Lee la flecha, no dónde está, y toca el Swish Shot correcto dentro de 2.5 segundos. Cada acierto se puntúa según tu velocidad real — mientras más rápido seas, más puntos ganas. Un tiro equivocado o ninguna respuesta te cuesta 100 puntos. ¿Cuántos puntos puedes acumular antes de que se acabe el tiempo?',
     start:'▶ EMPEZAR',
+    btnShuffle:'Botones: mezclados', btnFixed:'Botones: fijos',
     standingsBtn:'🏆 LA CLASIFICACIÓN'
   }
 };
@@ -324,6 +330,7 @@ function applyIntroTranslations(){
   $('fsBtn').textContent=t.fullscreen;
   $('bigStart').textContent=t.start;
   $('openBoxBtn').textContent=t.standingsBtn;
+  showBtnSw();
 }
 $('introLangEN').addEventListener('click',function(){
   introLang='en';
@@ -375,6 +382,24 @@ $('playerNameInputMain').addEventListener('keydown',function(e){
   }
 })();
 
+// BUTTONS: SHUFFLE OR FIXED (same as Shoot It. Own It.) — shuffle moves
+// the arrows to new buttons every round (the original game); fixed keeps
+// ▲ top, ◀ left, ▶ right, ▼ bottom. Remembered on this device for this
+// game; until chosen, fixed for age groups up to 6. Each saved run
+// records which it was.
+var fixedBtns=false;
+(function(){
+  var v='';try{v=localStorage.getItem('rv-mic-buttons')||''}catch(e){}
+  if(v)fixedBtns=v==='fixed';
+  else{var a=parseInt(String(sessionStorage.getItem('reaction-velocity-category')||'').replace(/^\D+/,''),10);fixedBtns=!isNaN(a)&&a<=6}
+})();
+function showBtnSw(){
+  var b=$('btnSw'),t=INTRO_I18N[introLang];b.classList.toggle('on',fixedBtns);b.setAttribute('aria-pressed',fixedBtns?'true':'false');
+  $('btnSwTxt').textContent=fixedBtns?t.btnFixed:t.btnShuffle;$('btnSwIco').textContent=fixedBtns?'🔒':'🔀';
+}
+$('btnSw').addEventListener('click',function(){fixedBtns=!fixedBtns;try{localStorage.setItem('rv-mic-buttons',fixedBtns?'fixed':'shuffle')}catch(e){}showBtnSw()});
+showBtnSw();
+
 var phase='idle';
 var idx=0,score=0,best=0,correctCount=0,totalRT=0,rtCount=0,bestAvgMs=0,misses=0;
 var shotLog=[]; // the full, ordered history of every tap this game —
@@ -409,7 +434,7 @@ function recordScoreToStandings(name,finalScore,made,attempts,avgMs,shots){
   return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{
     method:'POST',
     headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({player_name:name,score:finalScore,made:made,attempts:attempts,avg_ms:avgMs,shots:shots||[],school_name:sessionStorage.getItem('reaction-velocity-school')||null})
+    body:JSON.stringify({player_name:name,score:finalScore,made:made,attempts:attempts,avg_ms:avgMs,shots:shots||[],buttons:fixedBtns?'fixed':'shuffle',school_name:sessionStorage.getItem('reaction-velocity-school')||null})
   }).catch(function(){}); // offline is fine — this game's own end screen already shows the score either way
 }
 
@@ -454,6 +479,7 @@ function renderTapLog(container,shots,finalScore){
 
 function fetchStandingsFor(gameConfig){
   var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms';
+  if(gameConfig.key==='make-it-count')cols+=',buttons';   // needs make-it-count-botones.sql
   // Scoped to the current session's own school — two different
   // access codes are two genuinely separate boards. A player never
   // sees, or competes against, scores from a school they didn't
@@ -470,7 +496,7 @@ function fetchStandingsFor(gameConfig){
         var existing=best[r.player_name];
         if(!existing||r.score>existing.pts){
           best[r.player_name]=gameConfig.rich
-            ?{name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[]}
+            ?{name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[],fixed:r.buttons==='fixed'}
             :{name:r.player_name,pts:r.score,ms:r.avg_ms};
         }
       });
@@ -511,7 +537,7 @@ function renderStandingsForGame(gameKey){
       var safeName=p.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       return '<div class="standings-row '+rankClass+'" data-name="'+safeName+'">'
         +'<span class="standings-rank">'+(i+1)+'</span>'
-        +'<span class="standings-name">'+safeName+'</span>'
+        +'<span class="standings-name">'+safeName+(p.fixed?' <span class="standings-fixed">fixed</span>':'')+'</span>'
         +'<span class="standings-bpm">'+(p.ms>0?bpmFromMs(p.ms)+' BPM':'')+'</span>'
         +'<span class="standings-pts">'+p.pts+'</span>'
         +'</div>';
@@ -676,6 +702,8 @@ function stopNoResponseTimer(){if(noResponseTimer){clearTimeout(noResponseTimer)
 var SLOT_IDS=['slot0','slot1','slot2','slot3'];
 function shuffleButtonLayout(){
   var shuffled=DIRS.slice();
+  if(fixedBtns)shuffled=['up','left','right','down'];   // fixed: each arrow where it points
+  else
   for(var i=shuffled.length-1;i>0;i--){
     var j=Math.floor(Math.random()*(i+1));
     var tmp=shuffled[i];shuffled[i]=shuffled[j];shuffled[j]=tmp;
