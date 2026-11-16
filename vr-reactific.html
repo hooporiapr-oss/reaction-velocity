@@ -89,6 +89,19 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .speed-btn.free{grid-column:1/-1;font-size:.95rem;text-transform:uppercase}
 .speed-btn.active{border-color:#00D9A5;background:rgba(0,217,165,.22);box-shadow:0 0 22px rgba(0,217,165,.45)}
 @media (max-height:760px){.speed-btn{height:42px}}
+/* the BPM box: any speed, opens on the player's own Free Tap speed */
+.bpm-box{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;min-height:58px;padding:8px 6px;border:2px solid rgba(0,217,165,.35);background:rgba(0,217,165,.07);border-radius:14px;cursor:text}
+.bpm-box.active{border-color:#00D9A5;background:rgba(0,217,165,.22);box-shadow:0 0 22px rgba(0,217,165,.45)}
+.bpm-box input{width:96px;height:42px;padding:0;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35);color:#fff;font-family:inherit;font-size:1.6rem;font-weight:900;text-align:center;-moz-appearance:textfield}
+.bpm-box input::-webkit-outer-spin-button,.bpm-box input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.bpm-box input:focus{outline:none;border-color:#00D9A5}
+.bpm-box span{font-size:1.05rem;font-weight:900;letter-spacing:.08em;color:#fff}
+.bpm-box.locked{opacity:.45;cursor:not-allowed}
+.bpm-box.locked input{cursor:not-allowed}
+.bpm-box small{flex-basis:100%;text-align:center;font-size:.6rem;color:#a7adba;letter-spacing:.08em;font-weight:700;text-transform:uppercase}
+.bpm-step{width:44px;height:42px;padding:0;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35) !important;color:#fff;font-family:inherit;font-size:1.6rem;font-weight:900;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
+.bpm-step:active{background:rgba(0,217,165,.35) !important}
+.bpm-step:disabled{cursor:not-allowed}
 .tempo-hint{font-size:.8rem;color:#9fb3c8;line-height:1.4;margin-bottom:20px;max-width:420px;min-height:2.4em;display:flex;align-items:center;justify-content:center;text-align:center}
 .best-line b{color:#00D9A5}
 
@@ -182,13 +195,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="tempo-hint" id="tempoHint">Moving target, colors flash to the Ritnome — tap ONLY on RED. 25 reds.</div>
   <div class="speed-label">Speed</div>
   <div class="speed-row" id="speedRow">
-    <button class="speed-btn free" data-speed="free" type="button">👆 Free Tap<small>10-tap speed check · then the game at your own BPM</small></button>
-    <button class="speed-btn" data-speed="20" type="button">20<small>BPM</small></button>
-    <button class="speed-btn" data-speed="40" type="button">40<small>BPM</small></button>
-    <button class="speed-btn" data-speed="60" type="button">60<small>BPM</small></button>
-    <button class="speed-btn" data-speed="80" type="button">80<small>BPM</small></button>
-    <button class="speed-btn active" data-speed="100" type="button">100<small>BPM</small></button>
-    <button class="speed-btn" data-speed="120" type="button">120<small>BPM</small></button>
+    <button class="speed-btn free active" data-speed="free" type="button">👆 Free Tap<small>10-tap speed check · then the game at your own BPM</small></button>
+    <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">play Free Tap first to unlock</small></label>
   </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
@@ -308,10 +316,19 @@ function fetchStandingsFor(gameConfig){
   // Reaction Speed now has a board per speed; here it shows its original 100 BPM board.
   // Reaction Speed shows its original 100 BPM board here; Reactific's own board follows the speed tab.
   if(gameConfig.key==='reaction-speed')url+='&or=(speed.is.null,speed.eq.100)';
-  if(gameConfig.key==='reactific')url+=speedFilter();
+  var porVel=gameConfig.key==='reactific';
+  if(porVel)url=url.replace('?select='+cols,'?select='+cols+',speed');
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){
+      if(porVel){
+        // runs from before speeds existed were all at 100 BPM
+        var sp=function(r){var v=r.speed;if(v==null||v==='')return 100;if(/^free/.test(v))return 'free';return parseInt(v,10)};
+        var seen={100:1};
+        (rows||[]).forEach(function(r){var v=sp(r);if(v!=='free'&&v>0)seen[v]=1});
+        speedsSeen=Object.keys(seen).map(Number);
+        rows=(rows||[]).filter(function(r){return sp(r)===currentStandingsSpeed});
+      }
       var best={};
       (rows||[]).forEach(function(r){
         var existing=best[r.player_name];
@@ -350,6 +367,7 @@ function renderStandingsForGame(gameKey){
 
   fetchStandingsFor(gameConfig).then(function(ranked){
     if(currentStandingsGame!==gameKey)return; // a newer tab click already moved on
+    renderSpeedTabs();   // now with every speed played
     if(!ranked.length){
       listEl.innerHTML='<div class="box-empty">No players yet — be the first name on the board.</div>';
       return;
@@ -386,10 +404,15 @@ function renderStandingsForGame(gameKey){
 }
 function renderStandings(){renderStandingsForGame(THIS_GAME_KEY)}
 var currentStandingsSpeed=100;
-var SPEEDS=['free',20,40,60,80,100,120];
+var speedsSeen=[100];   // every speed played here gets a board tab
 function renderSpeedTabs(){
   var row=$('standingsSpeedRow');
   if(currentStandingsGame!=='reactific'){row.style.display='none';row.innerHTML='';return}
+  var list=speedsSeen.slice();
+  if(typeof SPEED==='number'&&list.indexOf(SPEED)===-1)list.push(SPEED);
+  if(currentStandingsSpeed!=='free'&&list.indexOf(currentStandingsSpeed)===-1)list.push(currentStandingsSpeed);
+  list.sort(function(a,b){return a-b});
+  var SPEEDS=['free'].concat(list);
   row.style.display='flex';
   row.innerHTML=SPEEDS.map(function(v){
     return '<button class="standings-tab'+(v===currentStandingsSpeed?' active':'')+'" data-speed="'+v+'">'+(v==='free'?'Free Tap':v+' BPM')+'</button>';
@@ -427,12 +450,13 @@ $('closeBoxBtn').onclick=function(){
   $(standingsReturnScreen).style.display='flex';
 };
 $('nextPlayerBtn').addEventListener('click',function(){
-  currentPlayerName='';
+  currentPlayerName='';choseFree=false;
   $('playerNameInputMain').value='';
   phase='idle';
   $('screen-end').style.display='none';
   $('screen-intro').style.display='flex';
   $('playerNameInputMain').focus();
+  refreshBox();
 });
 // Two game modes at 80/100, go/no-go also at 120.
 // GO/NO-GO — colors cycle, tap ONLY on red. Both tiers move (coordination +
@@ -483,6 +507,7 @@ function handleStartClick(){
     return;
   }
   currentPlayerName=name.slice(0,20);
+  if(SPEED!=='free'){$('bpmInput').value=bpmFromBox();setSpeed(bpmFromBox())}   // a half-typed speed is settled before play
   startDrill();
 }
 $('playerNameInputMain').addEventListener('keydown',function(e){
@@ -584,13 +609,88 @@ function setSpeed(v){
   if(v!=='free'){BEAT_BPM=v;FLASH_MS=Math.round(60000/v)}
 }
 var HINT_FREE='Free Tap — first a speed check: 10 red targets with no beat, each waits for you. That measures your BPM. Then the game opens at your speed: tap ONLY on RED, 25 reds.';
-document.querySelectorAll('.speed-btn').forEach(function(btn){
-  btn.onclick=function(){
-    setSpeed(btn.dataset.speed==='free'?'free':parseInt(btn.dataset.speed,10));
-    document.querySelectorAll('.speed-btn').forEach(function(b){b.classList.toggle('active',b===btn)});
-    $('tempoHint').textContent=SPEED==='free'?HINT_FREE:HINTS['100'];
-  };
+// ══════════════════════════════════════════════════════
+//  THE SPEED: Free Tap, or any BPM in the box (10 to 300) — as in
+//  Reaction Speed. The box stays locked until the player has done a
+//  Reactific Free Tap; it then opens on their best Free Tap speed here
+//  (kept on this device per name, and looked up on this school's
+//  Reactific Free Tap board so it follows them to any tablet). − / +
+//  move 5 BPM; that changes only this game, never the default.
+// ══════════════════════════════════════════════════════
+var BPM_MIN=10, BPM_MAX=300;
+function bpmFromBox(){
+  var v=parseInt($('bpmInput').value,10);
+  if(isNaN(v))v=100;
+  return Math.max(BPM_MIN,Math.min(BPM_MAX,v));
+}
+function pickFree(){
+  setSpeed('free');
+  document.querySelector('.speed-btn.free').classList.add('active');$('bpmBox').classList.remove('active');
+  $('tempoHint').textContent=HINT_FREE;
+}
+function pickBox(){
+  if($('bpmInput').disabled)return;
+  setSpeed(bpmFromBox());
+  document.querySelector('.speed-btn.free').classList.remove('active');$('bpmBox').classList.add('active');
+  $('tempoHint').textContent=HINTS['100'];
+}
+document.querySelector('.speed-btn.free').onclick=function(){choseFree=true;pickFree()};
+function freeKey(n){return 'rf-free-bpm:'+String(n||'').trim().toLowerCase()}
+function savedFreeBPM(n){try{var v=parseInt(localStorage.getItem(freeKey(n)),10);return isNaN(v)?0:v}catch(e){return 0}}
+var dbAsked={};
+function askBestFree(n){
+  var k=String(n||'').trim().toLowerCase(); if(!k||dbAsked[k])return;
+  dbAsked[k]=1;
+  var school=sessionStorage.getItem('reaction-velocity-school')||'';
+  var url=SB_URL+'/rest/v1/vr_reactific_standings?select=speed&speed=like.free-*&hidden=is.false'+
+    '&school_name=eq.'+encodeURIComponent(school)+'&player_name=ilike.'+encodeURIComponent(String(n).trim().replace(/[*%,()]/g,''));
+  fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    .then(function(r){return r.ok?r.json():[]})
+    .then(function(rows){
+      var top=0;(rows||[]).forEach(function(r){var v=parseInt(String(r.speed).split('-')[1],10);if(v>top)top=v});
+      if(top>savedFreeBPM(n)){try{localStorage.setItem(freeKey(n),String(top))}catch(e){}}
+      if(String($('playerNameInputMain').value).trim().toLowerCase()===k&&$('screen-intro').style.display!=='none')refreshBox(true);
+    })
+    .catch(function(){});
+}
+// Free Tap picked by hand stays picked; nothing on the start screen changes once a game is under way.
+var choseFree=false;
+function refreshBox(fromDb){
+  if(phase==='running'||$('screen-intro').style.display==='none')return;
+  var n=$('playerNameInputMain').value, v=n.trim()?savedFreeBPM(n):0;
+  if(!fromDb&&n.trim())askBestFree(n);
+  var box=$('bpmBox'), inp=$('bpmInput');
+  $('bpmDown').disabled=$('bpmUp').disabled=!v;
+  if(!v){
+    inp.disabled=true;inp.value='';box.classList.add('locked');box.classList.remove('active');
+    $('bpmNote').textContent='play Free Tap first to unlock';
+    pickFree();
+    return;
+  }
+  var wasLocked=inp.disabled;
+  inp.disabled=false;box.classList.remove('locked');
+  if(wasLocked||!inp.value)inp.value=v;   // a speed the player already typed is kept
+  $('bpmNote').textContent='your Free Tap speed · − / + or type any speed';
+  if(!choseFree)pickBox();
+}
+var nameTimer=null;
+$('playerNameInputMain').addEventListener('input',function(){
+  choseFree=false;$('bpmInput').value='';$('bpmInput').disabled=true;   // a new name starts from that player's own default
+  refreshBox(true);
+  clearTimeout(nameTimer);nameTimer=setTimeout(function(){refreshBox()},500);
 });
+function stepBPM(d){
+  if($('bpmInput').disabled)return;
+  var v=bpmFromBox()+d; v=Math.max(BPM_MIN,Math.min(BPM_MAX,v));
+  choseFree=false;$('bpmInput').value=v; pickBox();
+}
+$('bpmDown').addEventListener('click',function(e){e.preventDefault();stepBPM(-5)});
+$('bpmUp').addEventListener('click',function(e){e.preventDefault();stepBPM(5)});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(refreshBox,0)});   // after the player's name is filled in (jugador.js)
+$('bpmInput').addEventListener('focus',function(){choseFree=false;pickBox()});
+$('bpmInput').addEventListener('input',pickBox);
+$('bpmInput').addEventListener('change',function(){$('bpmInput').value=bpmFromBox();pickBox()});
+$('bpmInput').addEventListener('keydown',function(e){if(e.key==='Enter'){$('bpmInput').value=bpmFromBox();pickBox();$('bpmInput').blur()}});
 var freeStart=0,freeHits=0;
 
 // fullscreen toggle (matches the other games) — great for Promethean / big-screen play
@@ -860,6 +960,7 @@ function endDrill(){
     // Free Tap: the game at the player's own measured speed, on the Free
     // Tap board. The personal best in points is left alone.
     recordScoreToStandings(currentPlayerName,finalScore,avgRT);
+    if(freeBPM>savedFreeBPM(currentPlayerName)){try{localStorage.setItem(freeKey(currentPlayerName),String(freeBPM))}catch(e){}}   // a faster Free Tap becomes the default
     $('endNum').textContent=finalScore;
     $('endLabel').textContent='Total Points · at your speed, '+freeBPM+' BPM';
     $('screen-end').style.display='flex';
