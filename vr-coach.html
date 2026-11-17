@@ -10,6 +10,8 @@
      Reaction Speed (Free Tap BPM), Reactific (speed), The Fortress (longest chain),
      a trend arrow (latest run against the one before) and the last day played.
      Tap a player for their progress in all three games.
+     Phone games (Reaction Mobile: Home Base, Swipe It) get their own two
+     columns once the school has phone runs — phone BPM is never mixed in.
      The code is kept in memory only: reload, Lock or ← THE HUB closes the view. -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -57,6 +59,15 @@ body{min-height:100vh;padding:20px 16px 40px;display:flex;flex-direction:column;
 .cell i{font-style:normal;font-size:.58rem;color:#a7adba;letter-spacing:.08em;text-transform:uppercase}
 .chg{font-size:.78rem;color:#c8ccd4;text-align:center;margin-bottom:6px}
 svg.chart{width:100%;height:auto;display:block}
+/* phone games: two more columns, only once the school has phone runs */
+.mcol{display:none}
+#view.m .mcol{display:block}
+#view.m .head,#view.m .row{grid-template-columns:minmax(0,1.4fr) repeat(5,minmax(0,1fr)) 50px}
+@media(max-width:520px){
+  #view.m .head,#view.m .row{grid-template-columns:minmax(0,1.2fr) repeat(5,minmax(0,1fr));gap:3px}
+  #view.m .v{font-size:.72rem}
+  #view.m .head{font-size:.5rem}
+}
 @media(max-width:520px){
   .head,.row{grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));}
   .head span:last-child,.row .last{display:none}
@@ -81,7 +92,7 @@ svg.chart{width:100%;height:auto;display:block}
 
 <div id="view" hidden>
   <div class="tabs" id="ages"></div>
-  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Fortress</span><span>Last</span></div>
+  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Fortress</span><span class="mcol">📱 Home Base</span><span class="mcol">📱 Swipe It</span><span>Last</span></div>
   <div id="list"></div>
   <div class="count" id="count"></div>
 </div>
@@ -106,7 +117,7 @@ function ageSort(a,b){var x=parseInt(a,10),y=parseInt(b,10);if(!isNaN(x)&&!isNaN
 $('hubBtn').href=HUB;
 
 // ── The coach code: held in memory only ──
-var school='', coachCat='', currentAge='', players={}, loaded=false;
+var school='', coachCat='', currentAge='', players={}, loaded=false, hasMobile=false;
 function deviceId(){var id=null;try{id=localStorage.getItem('gostar-device-id')}catch(e){}
   if(!id){id='d-'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);try{localStorage.setItem('gostar-device-id',id)}catch(e){}}return id}
 function rpc(name,body){return fetch(SB_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify(body)})}
@@ -167,12 +178,13 @@ function loadAll(){
   Promise.all([
     readAll('vr_reaction_speed_standings',sc+'&speed=like.free-*',['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
     readAll('vr_reactific_standings',sc,['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
-    readAll('dynamic_memory_quarter_standings',sc+'&game_key=eq.fortress',['select=player_name,level_achieved,time_seconds,speed,category,logged_at,admin_id'+o,'select=player_name,level_achieved,time_seconds,category','select=player_name,level_achieved,time_seconds'])
+    readAll('dynamic_memory_quarter_standings',sc+'&game_key=eq.fortress',['select=player_name,level_achieved,time_seconds,speed,category,logged_at,admin_id'+o,'select=player_name,level_achieved,time_seconds,category','select=player_name,level_achieved,time_seconds']),
+    readAll('vr_mobile_standings',sc,['select=player_name,game_key,bpm,category,logged_at,admin_id'+o])
   ]).then(function(res){
     players={};
     function add(game,r,v){
       var k=String(r.player_name||'').trim().toLowerCase(); if(!k||!(v>0))return;
-      var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],last:''});
+      var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],hb:[],sw:[],last:''});
       var c=(r.category||'').trim(); if(c)p.cats[c]=1;
       p[game].push({v:v,at:r.logged_at||'',spd:r.speed});
       if(r.logged_at&&r.logged_at>p.last){p.last=r.logged_at;p.name=String(r.player_name).trim()}
@@ -180,6 +192,8 @@ function loadAll(){
     res[0].forEach(function(r){add('rs',r,rsBpm(r))});
     res[1].forEach(function(r){add('rf',r,rfBpm(r))});
     res[2].forEach(function(r){var lv=parseInt(r.level_achieved,10);add('ft',r,lv)});
+    res[3].forEach(function(r){var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g,r,+r.bpm||0)});
+    hasMobile=res[3].length>0; $('view').classList.toggle('m',hasMobile);
     loaded=true; render();
   }).catch(function(){$('list').innerHTML='<div class="empty">Could not load the boards.</div>'});
 }
@@ -202,7 +216,7 @@ function render(){
   $('ages').querySelectorAll('.tab').forEach(function(b){b.onclick=function(){currentAge=b.dataset.a;render()}});
   var keys=Object.keys(players).filter(function(k){return inAge(players[k])}).sort(function(a,b){return players[a].name.localeCompare(players[b].name,undefined,{sensitivity:'base'})});
   $('list').innerHTML=keys.length?keys.map(function(k){var p=players[k];
-    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellBpm(p.rs)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellFt(p.ft)+'</span><span class="last">'+day(p.last)+'</span></button>';
+    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellBpm(p.rs)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellFt(p.ft)+'</span><span class="v mcol">'+cellBpm(p.hb)+'</span><span class="v mcol">'+cellBpm(p.sw)+'</span><span class="last">'+day(p.last)+'</span></button>';
   }).join(''):'<div class="empty">No players yet'+(currentAge?' in '+esc(currentAge):'')+(school?' at '+esc(school):'')+'.</div>';
   $('count').textContent=keys.length?keys.length+' player'+(keys.length>1?'s':'')+' · listed A–Z, not ranked':'';
   $('list').querySelectorAll('.row').forEach(function(b){b.onclick=function(){showPlayer(b.dataset.k)}});
@@ -243,7 +257,9 @@ function showPlayer(k){
   $('pbody').innerHTML=
     block('⚡ Reaction Speed · Free Tap','#00e5ff',p.rs,'BPM','Fastest','No Free Tap yet.')+
     block('🔴 Reactific · speed','#00D9A5',p.rf,'BPM','Fastest','No Reactific games yet.')+
-    block('🏰 The Fortress · chain','#a855f7',p.ft,'level','Longest','No Fortress games yet.');
+    block('🏰 The Fortress · chain','#a855f7',p.ft,'level','Longest','No Fortress games yet.')+
+    (hasMobile?block('📱 Home Base · phone','#ff8a5c',p.hb,'BPM','Fastest','No Home Base yet.')+
+               block('📱 Swipe It · phone','#ffd35a',p.sw,'BPM','Fastest','No Swipe It yet.'):'');
 }
 $('backList').onclick=function(){$('player').hidden=true;$('view').hidden=false};
 </script>

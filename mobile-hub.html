@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Reaction Mobile</title>
+<!-- REACTION MOBILE hub (phones only): Home Base and Swipe It.
+     Opens only after a Reaction Mobile code at mobile.html. -->
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}
+html,body{min-height:100%;background:#000;color:#fff;font-family:Arial,sans-serif}
+body{display:flex;flex-direction:column;align-items:center;padding:28px 16px calc(80px + env(safe-area-inset-bottom))}
+.t{font-size:2.1rem;font-weight:900;font-style:italic;letter-spacing:.04em;text-transform:uppercase;text-align:center;text-shadow:0 0 30px rgba(0,229,255,.5)}
+.t span{color:#00e5ff}
+.sub{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin:6px 0 24px;text-align:center}
+.card{display:block;width:100%;max-width:400px;padding:20px;border-radius:18px;margin-bottom:14px;text-decoration:none;color:#fff;
+  border:2px solid rgba(0,229,255,.4);background:linear-gradient(135deg,rgba(0,229,255,.12),rgba(0,145,255,.05))}
+.card:active{transform:scale(.98)}
+.card .n{font-size:1.35rem;font-weight:900;letter-spacing:.04em}
+.card .d{font-size:.9rem;color:#c8ccd4;margin-top:6px;line-height:1.35}
+.out{margin-top:16px;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:none;color:#9aa3b2;font:900 .7rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+footer{margin-top:24px;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:#4a5058}
+</style>
+<script>window.JUGADOR={modo:'hub',hub:'mobile-hub.html',escuela:'rm-school',categoria:'rm-category'};</script>
+<script src="jugador.js"></script>
+<script>window.MOVIL={game:''};</script>
+<script src="movil.js"></script>
+</head>
+<body>
+  <div class="t">REACTION <span>MOBILE</span></div>
+  <div class="sub" id="who">For phones</div>
+  <a class="card" href="vr-home-base.html">
+    <div class="n">🎯 Home Base</div>
+    <div class="d">Hold HOME. When the target lights up, lift off and tap it.</div>
+  </a>
+  <a class="card" href="vr-swipe-it.html">
+    <div class="n">👆 Swipe It</div>
+    <div class="d">An arrow appears — swipe that way, fast.</div>
+  </a>
+  <button class="out" id="outBtn" type="button">Sign out</button>
+  <footer>Gostar Digital LLC</footer>
+<script>
+(function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)document.getElementById('who').textContent=w})();
+document.getElementById('outBtn').onclick=function(){
+  try{['rm-gate-pass','rm-school','rm-category','gym-player-ok'].forEach(function(k){sessionStorage.removeItem(k)})}catch(e){}
+  location.href='mobile.html';
+};
+</script>
+</body>
+</html>

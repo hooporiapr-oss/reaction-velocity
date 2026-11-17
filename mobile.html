@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Reaction Mobile · Access</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{
+    height:100%;overflow:hidden;
+    font-family:Arial,Helvetica,sans-serif;color:#fff;
+    background:#000;
+    user-select:none;-webkit-user-select:none;
+    touch-action:manipulation;
+  }
+
+  #stage{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    padding:24px;
+    background:#000;
+  }
+
+  #panel{width:100%;max-width:400px;text-align:center}
+  .sub{font-size:.85rem;color:#9fb3c8;letter-spacing:.02em;margin-bottom:44px}
+
+  .code-panel{width:100%}
+  .code-label{font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#8892a0;margin-bottom:10px}
+  .code-input{
+    width:100%;padding:16px;border-radius:12px;border:2px solid rgba(255,107,53,.4);
+    background:rgba(255,255,255,.05);color:#fff;font-size:1.4rem;font-weight:900;
+    letter-spacing:.25em;text-transform:uppercase;text-align:center;font-family:'Courier New',monospace;
+  }
+  .code-input:focus{outline:none;border-color:#FF6B35;box-shadow:0 0 24px rgba(255,107,53,.35)}
+  .code-input.shake{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+
+  .enter-btn{
+    width:100%;margin-top:16px;padding:15px;border:none;border-radius:12px;
+    background:linear-gradient(135deg,#FF6B35,#ff8a5c);color:#fff;
+    font-size:1rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+    box-shadow:0 0 30px rgba(255,107,53,.5);
+  }
+  .enter-btn:active{transform:scale(.98)}
+
+  .err{margin-top:14px;color:#ff8888;font-size:.85rem;font-weight:700;min-height:18px}
+
+  .brandmark{margin-top:50px;font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#4a5058}
+  .brandmark b{color:#8892a0;font-style:italic}
+
+  .gate-title{font-size:1.8rem;font-weight:900;font-style:italic;letter-spacing:.02em;text-transform:uppercase;margin-bottom:10px;text-shadow:0 0 30px rgba(255,107,53,.6)}
+  .gate-title span{color:#FF6B35}
+  @media(max-width:480px){ .gate-title{font-size:1.35rem} }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="panel">
+    <div class="gate-title">REACTION <span>MOBILE</span></div>
+    <div class="sub" id="gate-sub">📱 For phones · Enter your Reaction Mobile code</div>
+
+    <div class="code-panel" id="code-panel">
+      <div class="code-label">Access Code</div>
+      <input class="code-input" id="gate-code" maxlength="40" placeholder="• • • •" autocomplete="off" onkeydown="if(event.key==='Enter')tryEnter()">
+      <button class="enter-btn" onclick="tryEnter()">Enter Reaction Mobile →</button>
+      <div class="err" id="gate-err"></div>
+    </div>
+
+    <div class="brandmark">Powered by <b>Gostar Digital</b></div>
+  </div>
+</div>
+
+<script>
+var $=function(id){return document.getElementById(id)};
+
+// ══════════════════════════════════════════════════════
+//  REACTION MOBILE — the phone sign-in. Only a Reaction Mobile code
+//  (License Admin → 📱 Reaction Mobile, product 'reaction-mobile')
+//  opens it; its own session keys (rm-*), so it never opens the
+//  tablet games and a tablet code never opens these.
+// ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+//  LICENSE SYSTEM — this is its own separate repo, so it uses
+//  its own distinct session key ('reaction-velocity-gate-pass') and
+//  its own distinct product scope ('reaction-velocity') in the SAME
+//  Supabase licenses table every other product already uses. A code
+//  issued for any other product on this platform will NOT unlock
+//  this gate, and vice versa, even though all of them live in the
+//  same table. To issue / expire / revoke Reaction Velocity licenses,
+//  admin.html needs a matching product tab for 'reaction-velocity'.
+// ══════════════════════════════════════════════════════
+var SUPABASE_URL = 'https://sdaphocueugzfvjovuxd.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
+var PRODUCT = 'reaction-mobile';
+// ══════════════════════════════════════════════════════
+
+// The code is checked by the database's check_access function — the
+// same check the Cognitivo Gym uses. The licenses table itself can no
+// longer be read from a page, which is why the old direct lookup said
+// "Invalid code" to every code. check_access answers only yes or no
+// (plus the school name), judges expiry on the database's own clock,
+// and counts devices for codes that have a device limit.
+function deviceId(){
+  var id = null;
+  try { id = localStorage.getItem('gostar-device-id'); } catch(e){}
+  if (!id){
+    id = 'd-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    try { localStorage.setItem('gostar-device-id', id); } catch(e){}
+  }
+  return id;
+}
+
+var checking = false;
+function tryEnter(){
+  if (checking) return;
+  var input = $('gate-code').value.trim();
+  if (!input){ return; }
+  checking = true;
+  $('gate-err').style.color = '';
+  $('gate-err').textContent = 'Checking…';
+
+  fetch(SUPABASE_URL + '/rest/v1/rpc/check_access', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_code: input, p_product: PRODUCT, p_device: deviceId() })
+  })
+  .then(function(r){
+    if (!r.ok) throw new Error('lookup failed');
+    return r.json();
+  })
+  .then(function(lic){
+    checking = false;
+    if (!lic || !lic.ok){
+      if (lic && lic.reason === 'devices'){
+        return reject('This code is already in use on ' + (lic.max_devices || 5) +
+                      ' devices. Ask your administrator to reset it.');
+      }
+      if (lic && lic.reason === 'expired'){ return reject('This license has expired'); }
+      if (lic && lic.reason === 'revoked'){ return reject('This code is no longer active.'); }
+      return reject('Invalid code — check with your administrator');
+    }
+    sessionStorage.setItem('rm-gate-pass','1');
+    sessionStorage.setItem('rm-school', lic.school_name || '');
+    sessionStorage.removeItem('gym-player-ok');     // a new sign-in asks "who's playing?" again (jugador.js)
+    // The code's age group (set in License Admin) goes with every saved run.
+    // No category, or no answer, simply means none — never a block.
+    return fetch(SUPABASE_URL + '/rest/v1/rpc/license_category', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_code: input, p_product: PRODUCT })
+    })
+    .then(function(r){ return r.ok ? r.json() : null })
+    .catch(function(){ return null })
+    .then(function(cat){
+      sessionStorage.setItem('rm-category', (typeof cat === 'string' ? cat : '') || '');
+      // TARGETS — a code can be set to plain circles (License Admin → Targets),
+      // the school look: no basketball seams, no Fortress court. No answer = basketballs.
+      return fetch(SUPABASE_URL + '/rest/v1/rpc/license_plain', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_code: input, p_product: PRODUCT })
+      })
+      .then(function(r){ return r.ok ? r.json() : null })
+      .catch(function(){ return null })
+      .then(function(plain){
+        sessionStorage.setItem('gym-plain', plain === true ? '1' : '');
+        window.location.href = 'mobile-hub.html';
+      });
+    });
+  })
+  .catch(function(){
+    checking = false;
+    reject('Connection problem — please try again');
+  });
+}
+
+function reject(msg){
+  $('gate-err').style.color = '#ff8888';
+  $('gate-err').textContent = msg;
+  var box = $('gate-code');
+  box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+  box.value=''; box.focus();
+}
+
+// No auto-focus on load — in VR, focusing an input field automatically
+// can trigger the headset's own virtual keyboard or a browser UI
+// reflow, a plausible source of the panel destabilizing right as the
+// page appears. Focus only happens now in response to a genuine user
+// action (a rejected code), never automatically.
+</script>
+</body>
+</html>
