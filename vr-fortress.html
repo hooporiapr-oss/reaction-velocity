@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Same game as Cognitivo Gym's The Fortress (cognitivo-gym-paradiso, dynamic-memory-the-fortress.html),
+     for Reaction Velocity: its sign-in, its hub, and the same shared Fortress board. -->
+<script>
+if (sessionStorage.getItem('reaction-velocity-gate-pass') !== '1') {
+  window.location.replace('index.html');
+}
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>THE FORTRESS | Reaction Velocity</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;color:#fff;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+
+#screen-intro{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:#000;z-index:100;
+  overflow-y:auto;overflow-x:hidden;
+  padding:20px 16px 24px;
+}
+.vrr-sub{font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:#a855f7;margin-bottom:8px;text-align:center}
+.vrr-title{font-size:2.4rem;font-weight:900;font-style:italic;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 0 40px rgba(124,58,237,.7);margin-bottom:16px;text-align:center}
+.vrr-title span{color:#a855f7}
+.rule-t{font-size:.9rem;color:#c9b8a8;line-height:1.55;max-width:420px;margin-bottom:22px;text-align:center}
+.rule-t b{color:#fff}
+.big-btn{width:100%;max-width:420px;height:68px;border:none;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:1.2rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 40px rgba(124,58,237,.7);margin-bottom:14px}
+.big-btn:hover{transform:scale(1.03)}
+.name-input{width:100%;max-width:420px;padding:14px;border-radius:14px;border:2px solid rgba(124,58,237,.4);background:rgba(255,255,255,.05);color:#fff;font-family:Arial,sans-serif;font-size:1rem;text-align:center;margin-bottom:14px}
+.name-input:focus{outline:none;border-color:#a855f7;box-shadow:0 0 20px rgba(124,58,237,.35)}
+.box-open-btn{width:100%;max-width:420px;height:52px;border:2px solid rgba(0,229,255,.5);background:rgba(0,229,255,.1);border-radius:14px;color:#00e5ff;font-size:.9rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:6px}
+/* the speed: a BPM box that opens on the player's Reaction Speed Free Tap speed (as in Reactific) */
+.speed-label{font-size:.68rem;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#c9a3fa;margin:0 0 8px;text-align:center}
+.bpm-box{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;width:100%;max-width:420px;min-height:58px;padding:8px 6px;margin:0 auto 10px;border:2px solid rgba(168,85,247,.45);background:rgba(124,58,237,.12);border-radius:14px;cursor:text}
+.bpm-box.active{border-color:#a855f7;background:rgba(124,58,237,.26);box-shadow:0 0 22px rgba(124,58,237,.5)}
+.bpm-box input{width:96px;height:42px;padding:0;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35);color:#fff;font-family:inherit;font-size:1.6rem;font-weight:900;text-align:center;-moz-appearance:textfield}
+.bpm-box input::-webkit-outer-spin-button,.bpm-box input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.bpm-box input:focus{outline:none;border-color:#a855f7}
+.bpm-box span{font-size:1.05rem;font-weight:900;letter-spacing:.08em;color:#fff}
+.bpm-box.locked{opacity:.45;cursor:not-allowed}
+.bpm-box.locked input{cursor:not-allowed}
+.bpm-box small{flex-basis:100%;text-align:center;font-size:.6rem;color:#a7adba;letter-spacing:.08em;font-weight:700;text-transform:uppercase}
+.bpm-step{width:44px;height:42px;padding:0;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35) !important;color:#fff;font-family:inherit;font-size:1.6rem;font-weight:900;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
+.bpm-step:active{background:rgba(124,58,237,.45) !important}
+.bpm-step:disabled{cursor:not-allowed}
+.go-rs{display:none !important;width:100%;max-width:420px;margin:0 auto 12px;padding:14px;border-radius:14px;border:2px solid #a855f7;background:rgba(124,58,237,.18);color:#fff;font-weight:900;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;text-align:center;font-size:.9rem}
+.tone-sw{display:inline-flex;align-items:center;gap:8px;margin:0 auto 14px;padding:8px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);color:#fff;font-family:inherit;font-size:.8rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.tone-sw.on{border-color:#ffd35a;color:#ffd35a;background:rgba(255,211,90,.1)}
+/* My progress: the longest chain, game by game */
+#screen-prog{position:fixed;inset:0;z-index:120;display:none;flex-direction:column;align-items:center;background:#000;overflow-y:auto;padding:24px 16px 32px;text-align:center}
+.prog-back{align-self:flex-start;padding:8px 16px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;cursor:pointer;font-family:inherit;margin-bottom:18px}
+.prog-title{font-size:2rem;font-weight:900;font-style:italic;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 0 30px rgba(124,58,237,.7)}
+.prog-title span{color:#a855f7}
+.prog-sub{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:#a7adba;margin:6px 0 18px}
+#progBody{width:100%;max-width:560px}
+.prog-empty{color:#a7adba;font-size:.9rem;padding:20px}
+.prog-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.prog-cell{text-align:center;padding:12px 6px;border-radius:12px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.4)}
+.prog-val{font-size:1.6rem;font-weight:900;color:#c9a3fa;line-height:1}
+.prog-lbl{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:#9fb3c8;margin-top:4px}
+.prog-change{font-size:.9rem;font-weight:900;color:#fff;margin-bottom:12px}
+.prog-change b{color:#a855f7}
+.prog-chart{width:100%;height:auto;display:block;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px}
+.speed-hint{font-size:.78rem;color:#9fb3c8;max-width:420px;margin:0 auto 14px;line-height:1.45;text-align:center}
+.best-line{margin-top:16px;font-size:.85rem;color:#a7adba}
+.best-line b{color:#a855f7}
+.intro-back{position:fixed;top:16px;left:16px;padding:8px 16px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;text-decoration:none;z-index:60}
+
+
+#countdown{position:fixed;inset:0;z-index:56;display:none;align-items:center;justify-content:center;background:#000}
+#bigCount{font-size:8rem;font-weight:900;color:#a855f7;text-shadow:0 0 60px rgba(124,58,237,.9)}
+
+#screen-end{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;background:#000;text-align:center;padding:20px}
+.final-num{font-size:6rem;font-weight:900;color:#a855f7;line-height:1;text-shadow:0 0 60px rgba(124,58,237,.9)}
+.final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#a7adba;margin-top:10px}
+.next-player-btn{margin-top:28px;height:64px;padding:0 40px;border:none;border-radius:16px;background:linear-gradient(120deg,#7c3aed,#a855f7);color:#fff;font-size:1.15rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 30px rgba(124,58,237,.6)}
+
+/* The final, per-run breakdown on the end screen — level reached
+   and the real elapsed time it took to get there. */
+.final-stats{display:grid;grid-template-columns:1fr;gap:10px;width:100%;max-width:160px;margin:18px auto}
+.final-stat-cell{border-radius:12px;border:2px solid rgba(124,58,237,.35);background:rgba(124,58,237,.06);padding:12px 4px;text-align:center}
+.final-stat-label{font-size:.58rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#c9a3fa;margin-bottom:4px}
+.final-stat-val{font-size:1.3rem;font-weight:900;color:#fff}
+
+/* ══════════════════════════════════════════════════════
+   GAMEPLAY SCREEN — the key drawn as a real free-throw lane, the
+   five targets set in an actual 2-1-2 zone defense formation inside
+   it: two up by the free-throw line, one at the middle of the paint,
+   two down on the blocks. Landscape orientation, matching the rest
+   of the platform — a portrait version is a separate, later build.
+   ══════════════════════════════════════════════════════ */
+#screen-game{position:fixed;inset:0;display:none;flex-direction:column;background:#000;overflow:hidden}
+.topbar{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;padding:10px 10px 4px;flex-shrink:0}
+.top-box{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);border-radius:10px;padding:5px 14px;text-align:center;min-width:70px}
+.top-label{font-size:.55rem;color:#a7adba;text-transform:uppercase;letter-spacing:.06em}
+.top-val{font-size:1.3rem;font-weight:900}
+#hLevel{color:#fff}#hBest{color:#c9a3fa}#hTime{color:#ffd35a}
+
+#msg{text-align:center;padding:6px;font-size:1.15rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;flex-shrink:0}
+#msg.watch{color:#a855f7}#msg.go{color:#ffd35a}#msg.miss{color:#ff1e3c}
+
+.court-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:6px}
+#keySvg{height:100%;max-height:100%;width:auto;max-width:96%}
+
+/* Basketballs — five, each recolored via a CSS filter/tint layer
+   rather than five separate art assets. Position and color are
+   randomized once at the start of a run, then locked for the whole
+   game, same rule every game in this family follows. */
+.fortress-ball{position:absolute;border-radius:50%;cursor:pointer;transform:translate(-50%,-50%) scale(1);transition:filter .12s,box-shadow .12s,transform .12s;pointer-events:none;opacity:1;background-size:cover}
+.fortress-ball.ready{pointer-events:all}
+.fortress-ball.lit{filter:brightness(1.55) saturate(1.25);box-shadow:0 0 40px currentColor,0 0 75px currentColor;transform:translate(-50%,-50%) scale(1.1)}
+.fortress-ball.wrong{filter:grayscale(1) brightness(.5)}
+.ripple{position:fixed;border-radius:50%;border:3px solid #a855f7;transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:14;animation:rippleOut .5s ease-out forwards}
+@keyframes rippleOut{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .1s}
+
+#controls{display:flex;justify-content:center;gap:10px;padding:8px 16px 14px;flex-shrink:0}
+.ctrl-btn{height:46px;flex:0 1 170px;max-width:200px;border:2px solid rgba(124,58,237,.5);background:rgba(0,0,0,.4);border-radius:12px;color:#fff;font-size:.92rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center}
+</style>
+<!-- The player: one name for every game (see jugador.js) -->
+<script>window.JUGADOR={modo:'juego',aqui:true,lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'},hub:'reaction-velocity.html',escuela:'reaction-velocity-school',categoria:'reaction-velocity-category',tablas:['dynamic_memory_quarter_standings','vr_reaction_speed_standings','vr_reactific_standings']};</script>
+<script src="jugador.js"></script>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="screen-intro">
+  <a class="intro-back" href="reaction-velocity.html">← Home</a>
+  <div class="vrr-sub">Reaction Velocity · The 2-1-2 Zone</div>
+  <div class="vrr-title">THE <span>FORTRESS</span></div>
+  <div class="rule-t"><b>Five basketballs, set in a real 2-1-2 zone, fixed in place.</b> Watch the chain light up inside the key — one ball per beat, at your speed — then repeat it back at your own pace. Every round the chain adds one more ball. One wrong tap ends the run — your score is the longest chain you held.</div>
+  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
+  <div class="speed-label">Chain speed</div>
+  <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Chain speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">your Reaction Speed Free Tap · or 90 BPM to start</small></label>
+  <div class="speed-hint" id="speedHint"></div>
+  <div><button type="button" class="tone-sw on" id="toneSw" aria-pressed="true">🎵 <span id="toneTxt">Tones: on</span></button>
+  <button type="button" class="tone-sw" id="sizeSw" aria-pressed="false">🎯 <span id="sizeTxt">Balls: normal</span></button></div>
+  <button class="big-btn" id="bigStart" onclick="handleStartClick()">▶ START</button>
+  <a class="box-open-btn" href="vr-fortress-standings.html" style="display:block;margin:6px auto 0;text-decoration:none;text-align:center;line-height:52px">🏆 THE STANDINGS</a>
+  <button class="box-open-btn" id="progBtn" type="button" style="display:block;margin:10px auto 0;border-color:rgba(168,85,247,.6);background:rgba(124,58,237,.12);color:#c9a3fa">📈 MY PROGRESS</button>
+  <div class="best-line" id="bestLine"></div>
+</div>
+
+<!-- MY PROGRESS -->
+<div id="screen-prog">
+  <button class="prog-back" id="closeProgBtn" type="button">← Back</button>
+  <div class="prog-title">MY <span>PROGRESS</span></div>
+  <div class="prog-sub" id="progSub">The Fortress · longest chain, game by game</div>
+  <div id="progBody"></div>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="countdown"><div id="bigCount">3</div></div>
+
+<!-- GAMEPLAY -->
+<div id="screen-game">
+  <div id="flash"></div>
+  <div class="topbar">
+    <div class="top-box"><div class="top-label">Level</div><div class="top-val" id="hLevel">0</div></div>
+    <div class="top-box"><div class="top-label">Best</div><div class="top-val" id="hBest">0</div></div>
+    <div class="top-box"><div class="top-label">Time</div><div class="top-val" id="hTime">0.0</div></div>
+  </div>
+  <div id="msg" class="watch"></div>
+  <div class="court-wrap">
+    <svg id="keySvg" viewBox="0 0 520 340" preserveAspectRatio="xMidYMid meet">
+      <!-- The lane, drawn true-to-proportion (16ft wide x 19ft deep,
+           rotated to landscape so the baseline sits on the left and
+           the free-throw line/circle sits toward the right, matching
+           this platform's wide-screen orientation). -->
+      <rect x="89" y="70" width="300" height="200" fill="none" stroke="rgba(168,85,247,.4)" stroke-width="3"/>
+      <path d="M 389 70 A 100 100 0 0 1 389 270" fill="none" stroke="rgba(168,85,247,.4)" stroke-width="3"/>
+      <line x1="89" y1="70" x2="89" y2="270" stroke="rgba(168,85,247,.55)" stroke-width="5"/>
+      <circle cx="89" cy="170" r="8" fill="none" stroke="rgba(255,211,90,.7)" stroke-width="3"/>
+      <line x1="77" y1="170" x2="101" y2="170" stroke="rgba(255,211,90,.7)" stroke-width="3"/>
+    </svg>
+    <div id="targetLayer"></div>
+  </div>
+  <div id="controls">
+    <a class="ctrl-btn" href="reaction-velocity.html">← Home</a>
+  </div>
+</div>
+
+<!-- END -->
+<div id="screen-end">
+  <div class="final-num" id="endNum">0</div>
+  <div class="final-label">Longest Chain Held</div>
+  <div class="final-stats" id="finalStats">
+    <div class="final-stat-cell"><div class="final-stat-label">Time</div><div class="final-stat-val" id="endTime">0.0s</div></div>
+    <div class="final-stat-cell"><div class="final-stat-label">Chain speed</div><div class="final-stat-val" id="endBpm">—</div></div>
+  </div>
+  <a class="box-open-btn" href="vr-fortress-standings.html" style="max-width:280px;margin:6px auto 0;display:block;text-decoration:none;text-align:center;line-height:52px">🏆 THE STANDINGS</a>
+  <button class="box-open-btn" id="endProgBtn" type="button" style="max-width:280px;display:block;margin:10px auto 0;border-color:rgba(168,85,247,.6);background:rgba(124,58,237,.12);color:#c9a3fa">📈 MY PROGRESS</button>
+  <button class="next-player-btn" id="nextPlayerBtn">▶ NEXT PLAYER</button>
+  <a href="reaction-velocity.html" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-weight:900;letter-spacing:1px;font-size:.95rem">← THE HUB</a>
+</div>
+
+<script>
+function $(id){return document.getElementById(id)}
+
+var BEST_KEY='dm-fortress-best';
+var NUM_TARGETS=5;
+// Each ball of the chain gets one beat at the chosen BPM: lit for 2/3 of
+// it, dark for 1/3 (at 120 BPM: 333 ms + 167 ms — the original speed).
+var LIGHT_MS=333;
+var GAP_MS=167;
+function setChainSpeed(bpm){var beat=60000/bpm;LIGHT_MS=Math.round(beat*2/3);GAP_MS=Math.round(beat/3)}
+var LEVEL_PAUSE_MS=800;
+
+// Five genuinely distinct ball tints — each is the same basketball
+// texture, recolored, so the "read the color" memory challenge stays
+// intact instead of collapsing into five identical orange balls.
+var TARGET_COLORS=['#ff1e3c','#ffd35a','#00D9A5','#3b82f6','#ff6b35'];
+
+// A real 2-1-2 zone, positioned as percentages of the key's own SVG
+// box (not the full viewport) — two guards up by the free-throw
+// line, one center in the middle of the paint, two forwards down on
+// the blocks by the baseline.
+var LAYOUT=[
+  {x:75,y:24},{x:75,y:76},
+  {x:51,y:50},
+  {x:25,y:24},{x:25,y:76}
+];
+
+var SB_URL='https://sdaphocueugzfvjovuxd.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
+// Standings — the same shared table every other Dynamic Memory game
+// now uses (game_key filters per tab), rather than a separate table.
+// That separate table only ever made sense for the old 4-quarter
+// breakdown shape; as one continuous run scored by level_achieved,
+// this fits the shared shape exactly like the other three games.
+var SB_TABLE='dynamic_memory_quarter_standings';
+var THIS_GAME_KEY='fortress';
+function recordScoreToStandings(name,levelAchieved,timeSeconds){
+  return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({player_name:name,game_key:THIS_GAME_KEY,level_achieved:levelAchieved,time_seconds:(timeSeconds===undefined?null:timeSeconds),speed:String(SPEED),school_name:sessionStorage.getItem('reaction-velocity-school')||null})   // speed needs fortress-velocidad.sql
+  }).catch(function(){});
+}
+$('nextPlayerBtn').addEventListener('click',function(){
+  currentPlayerName='';
+  $('playerNameInputMain').value='';
+  phase='idle';
+  $('screen-end').style.display='none';
+  $('screen-intro').style.display='flex';
+  $('playerNameInputMain').focus();
+  boxTouched=false;refreshBox();
+});
+
+var phase='idle';
+var sequence=[];
+var playerIdx=0;
+var level=0;
+var best=0;
+var timers=[];
+var targetEls=[];
+var currentPlayerName='';
+var runStartTime=0;
+
+function clrT(){timers.forEach(clearTimeout);timers=[]}
+function msg(t,c){var e=$('msg');e.textContent=t;e.className=c||'watch'}
+function flash(){var f=$('flash');f.style.background='rgba(124,58,237,.12)';f.style.opacity='1';setTimeout(function(){f.style.opacity='0'},100)}
+function ripple(x,y){var r=document.createElement('div');r.className='ripple';r.style.left=x+'px';r.style.top=y+'px';r.style.width='46px';r.style.height='46px';document.body.appendChild(r);setTimeout(function(){r.remove()},520)}
+
+function shuffle(arr){
+  var a=arr.slice();
+  for(var i=a.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    var tmp=a[i];a[i]=a[j];a[j]=tmp;
+  }
+  return a;
+}
+
+// A basketball's seam lines, drawn once as an SVG data URI and reused
+// across every target — recolored per-ball via a radial-gradient base
+// layered underneath, so five genuinely distinct colors read clearly
+// while still unmistakably looking like a basketball.
+var BALL_SEAMS="url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22c%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2249%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg%20clip-path%3D%22url%28%23c%29%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C0%2C0%2C.45%29%22%20stroke-width%3D%223.4%22%3E%3Cline%20x1%3D%2250%22%20y1%3D%22-4%22%20x2%3D%2250%22%20y2%3D%22104%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20-4%20104%2050%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20104%20104%2050%22/%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2250%22%20rx%3D%2224%22%20ry%3D%2249%22/%3E%3C/g%3E%3C/svg%3E')";
+
+function buildBoard(){
+  var layer=$('targetLayer');
+  var court=$('keySvg').getBoundingClientRect();
+  layer.style.position='absolute';
+  layer.style.left=court.left+'px';
+  layer.style.top=court.top+'px';
+  layer.style.width=court.width+'px';
+  layer.style.height=court.height+'px';
+  layer.innerHTML='';
+  targetEls=[];
+  var positions=shuffle(LAYOUT);
+  var colors=shuffle(TARGET_COLORS);
+  var size=Math.max(64,Math.min(104,court.width*.19));
+  if(bigT)size=Math.round(size*1.25);   // Big: 25% larger — as big as the 2-1-2 allows without the balls touching
+  for(var i=0;i<NUM_TARGETS;i++){
+    var el=document.createElement('div');
+    el.className='fortress-ball';
+    el.style.left=positions[i].x+'%';
+    el.style.top=positions[i].y+'%';
+    el.style.width=size+'px';
+    el.style.height=size+'px';
+    el.style.background=BALL_SEAMS+', radial-gradient(circle at 35% 32%,'+colors[i]+'dd,'+colors[i]+' 55%,'+colors[i]+'99 85%)';
+    el.style.color=colors[i];
+    el.dataset.note=TONE_HZ[TARGET_COLORS.indexOf(colors[i])];   // each color always sings the same note
+    (function(idx){
+      el.addEventListener('pointerdown',function(e){e.preventDefault();handleTargetTap(idx)});
+    })(i);
+    layer.appendChild(el);
+    targetEls.push(el);
+  }
+}
+window.addEventListener('resize',function(){if($('screen-game').style.display==='flex')buildBoard()});
+
+/* Audio — the same synthesized dribble thump used across the rest
+   of the platform (Play Call, Ritnome), not a sample. A low sine
+   sweep gives the thud its body; a short filtered noise burst on
+   top gives it the percussive slap of a ball meeting the floor.
+   Wired into lightTarget() itself, since that single function
+   already covers every real "beat" moment here — both the
+   sequence's own reveal and the player's own correct-tap
+   confirmation. */
+var audioCtx=null;
+function ensureAudio(){ if(!audioCtx){ try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){} } }
+function playThump(){
+  if(!audioCtx)return;
+  var now=audioCtx.currentTime;
+  var osc=audioCtx.createOscillator();
+  var oscGain=audioCtx.createGain();
+  osc.type='sine';
+  osc.frequency.setValueAtTime(130,now);
+  osc.frequency.exponentialRampToValueAtTime(46,now+0.1);
+  oscGain.gain.setValueAtTime(.001,now);
+  oscGain.gain.exponentialRampToValueAtTime(.85,now+0.006);
+  oscGain.gain.exponentialRampToValueAtTime(.001,now+0.16);
+  osc.connect(oscGain);oscGain.connect(audioCtx.destination);
+  osc.start(now);osc.stop(now+0.17);
+
+  var bufSize=Math.floor(audioCtx.sampleRate*0.035);
+  var buf=audioCtx.createBuffer(1,bufSize,audioCtx.sampleRate);
+  var data=buf.getChannelData(0);
+  for(var i=0;i<bufSize;i++){data[i]=(Math.random()*2-1)*(1-i/bufSize)}
+  var noise=audioCtx.createBufferSource();
+  noise.buffer=buf;
+  var noiseFilter=audioCtx.createBiquadFilter();
+  noiseFilter.type='lowpass';
+  noiseFilter.frequency.value=900;
+  var noiseGain=audioCtx.createGain();
+  noiseGain.gain.setValueAtTime(.22,now);
+  noiseGain.gain.exponentialRampToValueAtTime(.001,now+0.035);
+  noise.connect(noiseFilter);noiseFilter.connect(noiseGain);noiseGain.connect(audioCtx.destination);
+  noise.start(now);
+}
+
+// TONES — each ball has its own note (by color, the same every game:
+// red C, gold E, green G, blue A, orange high C — a pentatonic set, so
+// any chain sounds like a little tune). Played when a ball lights in
+// the chain and when the player taps it right; a low buzz on a wrong
+// tap. With tones off, the original dribble thump plays instead.
+// Remembered on this device; on to start.
+var TONE_HZ=[262,330,392,440,523];
+var tonesOn=true;
+try{tonesOn=localStorage.getItem('fortress-tones')!=='off'}catch(e){}
+function playTone(hz,dur,type){
+  if(!audioCtx||!hz)return;
+  try{
+    var now=audioCtx.currentTime, o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type=type||'triangle';o.frequency.setValueAtTime(hz,now);
+    g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(.5,now+0.012);g.gain.exponentialRampToValueAtTime(.0001,now+dur);
+    o.connect(g);g.connect(audioCtx.destination);o.start(now);o.stop(now+dur+0.02);
+    window.__tones=(window.__tones||[]);window.__tones.push(hz);
+  }catch(e){}
+}
+function showToneSw(){var b=$('toneSw');b.classList.toggle('on',tonesOn);b.setAttribute('aria-pressed',tonesOn?'true':'false');$('toneTxt').textContent=tonesOn?'Tones: on':'Tones: off'}
+$('toneSw').addEventListener('click',function(){tonesOn=!tonesOn;try{localStorage.setItem('fortress-tones',tonesOn?'on':'off')}catch(e){}showToneSw()});
+showToneSw();
+// BIG BALLS — the same "Big targets" setting as Reaction Speed and
+// Reactific on this tablet; until it is chosen, Big for age groups up to 6.
+var bigT=false;
+(function(){
+  var v='';try{v=localStorage.getItem('rv-size')||''}catch(e){}
+  if(v)bigT=v==='big';
+  else{var a=parseInt(String(sessionStorage.getItem('reaction-velocity-category')||'').replace(/^\D+/,''),10);bigT=!isNaN(a)&&a<=6}
+})();
+function showSizeSw(){var b=$('sizeSw');b.classList.toggle('on',bigT);b.setAttribute('aria-pressed',bigT?'true':'false');$('sizeTxt').textContent=bigT?'Balls: big':'Balls: normal'}
+$('sizeSw').addEventListener('click',function(){bigT=!bigT;try{localStorage.setItem('rv-size',bigT?'big':'normal')}catch(e){}showSizeSw()});
+showSizeSw();
+function lightTarget(idx){
+  targetEls[idx].classList.add('lit');
+  if(tonesOn)playTone(+targetEls[idx].dataset.note,Math.max(.18,Math.min(.6,LIGHT_MS/1000)));else playThump();
+}
+function unlightTarget(idx){targetEls[idx].classList.remove('lit')}
+function setReady(on){targetEls.forEach(function(el){el.classList.toggle('ready',on)})}
+
+function startDrill(){
+  if(phase==='running')return;
+  ensureAudio();
+  if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+  try{ if(!document.fullscreenElement && document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); } }catch(e){}
+  $('screen-intro').style.display='none';
+  $('screen-game').style.display='flex';
+  buildBoard();
+  showCountdownThen(runDrill);
+}
+
+function showCountdownThen(cb){
+  $('countdown').style.display='flex';
+  var n=3;$('bigCount').textContent=n;
+  var iv=setInterval(function(){
+    n--;
+    if(n<=0){clearInterval(iv);$('countdown').style.display='none';cb()}
+    else{$('bigCount').textContent=n}
+  },800);
+}
+
+function runDrill(){
+  phase='running';sequence=[];playerIdx=0;level=0;
+  runStartTime=performance.now();
+  $('hLevel').textContent='0';$('hTime').textContent='0.0';
+  msg('GET READY...','go');
+  timers.push(setTimeout(startLevel,900));
+  requestAnimationFrame(updateTimerDisplay);
+}
+function updateTimerDisplay(){
+  if(phase!=='running')return;
+  $('hTime').textContent=((performance.now()-runStartTime)/1000).toFixed(1);
+  requestAnimationFrame(updateTimerDisplay);
+}
+
+function startLevel(){
+  if(phase!=='running')return;
+  playerIdx=0;
+  sequence.push(Math.floor(Math.random()*NUM_TARGETS));
+  level=sequence.length;
+  $('hLevel').textContent=level;
+  setReady(false);
+  msg('WATCH THE FORTRESS','watch');
+  playSequence(0);
+}
+
+function playSequence(i){
+  if(phase!=='running')return;
+  if(i>=sequence.length){
+    setReady(true);
+    msg('YOUR TURN','go');
+    return;
+  }
+  var idx=sequence[i];
+  lightTarget(idx);
+  timers.push(setTimeout(function(){
+    unlightTarget(idx);
+    timers.push(setTimeout(function(){playSequence(i+1)},GAP_MS));
+  },LIGHT_MS));
+}
+
+function handleTargetTap(idx){
+  if(phase!=='running')return;
+  if(!targetEls[idx].classList.contains('ready'))return;
+
+  var rect=targetEls[idx].getBoundingClientRect();
+  ripple(rect.left+rect.width/2,rect.top+rect.height/2);flash();
+
+  if(idx===sequence[playerIdx]){
+    lightTarget(idx);
+    setTimeout(function(){unlightTarget(idx)},220);
+    playerIdx++;
+    if(playerIdx>=sequence.length){
+      setReady(false);
+      msg('✅ HELD THE FORTRESS','go');
+      timers.push(setTimeout(startLevel,LEVEL_PAUSE_MS));
+    }
+  }else{
+    targetEls[idx].classList.add('wrong');
+    if(tonesOn)playTone(110,.45,'sawtooth');
+    endDrill();
+  }
+}
+
+function endDrill(){
+  if(phase==='done')return;
+  phase='done';clrT();setReady(false);
+  var finalLevel=level;
+  var finalTime=(performance.now()-runStartTime)/1000;
+
+  msg('FORTRESS BROKEN','miss');
+  timers.push(setTimeout(function(){
+    showFinalScore(finalLevel,finalTime);
+  },700));
+}
+
+function showFinalScore(finalLevel,finalTime){
+  var isNewBest=finalLevel>best;
+  if(isNewBest){best=finalLevel;saveBest()}
+  recordScoreToStandings(currentPlayerName,finalLevel,finalTime);
+
+  $('endNum').textContent=finalLevel;
+  $('endTime').textContent=finalTime.toFixed(1)+'s';
+  $('endBpm').textContent=SPEED+' BPM';
+  $('screen-game').style.display='none';
+  $('screen-end').style.display='flex';
+}
+
+// MY PROGRESS — the longest chain of every Fortress game the player has
+// saved at this school, oldest first; each point also shows the chain
+// speed it was played at (games from before speeds show just the chain).
+var progReturn='screen-intro';
+function openProgress(from){
+  var n=String($('playerNameInputMain').value||currentPlayerName||'').trim();
+  progReturn=from;$(from).style.display='none';$('screen-prog').style.display='flex';
+  $('progSub').textContent='The Fortress · longest chain, game by game'+(n?' · '+n:'');
+  if(!n){$('progBody').innerHTML='<div class="prog-empty">Type the player\'s name first.</div>';return}
+  $('progBody').innerHTML='<div class="prog-empty">Loading…</div>';
+  var school=sessionStorage.getItem('reaction-velocity-school')||'';
+  var base=SB_URL+'/rest/v1/'+SB_TABLE+'?game_key=eq.fortress&hidden=is.false'+
+    '&school_name=eq.'+encodeURIComponent(school)+'&player_name=ilike.'+encodeURIComponent(n.replace(/[*%,()]/g,''));
+  var h={headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}};
+  fetch(base+'&select=level_achieved,speed,logged_at,admin_id&order=admin_id.asc',h)
+    .then(function(r){if(!r.ok)throw 0;return r.json()})
+    .catch(function(){return fetch(base+'&select=level_achieved',h).then(function(r){return r.ok?r.json():[]})})
+    .then(function(rows){drawProgress(rows||[])})
+    .catch(function(){drawProgress([])});
+}
+function drawProgress(rows){
+  var pts=[];
+  rows.forEach(function(r){var v=parseInt(r.level_achieved,10);if(v>=0)pts.push({c:v,b:/^\d+$/.test(r.speed||'')?+r.speed:0,at:r.logged_at||''})});
+  if(pts.length>40)pts=pts.slice(-40);   // the latest 40 games
+  if(!pts.length){$('progBody').innerHTML='<div class="prog-empty">No Fortress games yet — play one to start the line.</div>';return}
+  var first=pts[0].c, last=pts[pts.length-1].c, top=0, topI=0;
+  pts.forEach(function(p,i){if(p.c>top){top=p.c;topI=i}});
+  var cell=function(v,l){return '<div class="prog-cell"><div class="prog-val">'+v+'</div><div class="prog-lbl">'+l+'</div></div>'};
+  var html='<div class="prog-stats">'+cell(first,'First')+cell(last,'Latest')+cell(top,'Longest')+'</div>';
+  if(pts.length<2){$('progBody').innerHTML=html+'<div class="prog-empty">One game so far — play again to see the line.</div>';return}
+  var d=last-first;
+  html+='<div class="prog-change"><b>'+(d>0?'+':'')+d+' ball'+(Math.abs(d)===1?'':'s')+'</b> since the first game · '+pts.length+' games</div>';
+  var W=560,H=240,L=40,R=16,T=20,B=34;
+  var hi=Math.max(4,top+1), lo=0;
+  var X=function(i){return L+(W-L-R)*i/(pts.length-1)}, Y=function(v){return T+(H-T-B)*(hi-v)/(hi-lo)};
+  var svg='<svg class="prog-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="The Fortress longest chain, game by game">';
+  var step=hi<=8?1:hi<=16?2:5;
+  for(var g=lo;g<=hi;g+=step){svg+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(g)+'" y2="'+Y(g)+'" stroke="rgba(255,255,255,.08)"/><text x="'+(L-8)+'" y="'+(Y(g)+4)+'" fill="#9fb3c8" font-size="12" text-anchor="end">'+g+'</text>'}
+  svg+='<polyline fill="none" stroke="#a855f7" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map(function(p,i){return X(i).toFixed(1)+','+Y(p.c).toFixed(1)}).join(' ')+'"/>';
+  pts.forEach(function(p,i){
+    var isTop=i===topI;
+    svg+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.c).toFixed(1)+'" r="'+(isTop?7:4.5)+'" fill="'+(isTop?'#ffd35a':'#a855f7')+'" stroke="#000" stroke-width="1.5"><title>chain '+p.c+(p.b?' · '+p.b+' BPM':'')+'</title></circle>';
+  });
+  svg+='<text x="'+X(topI).toFixed(1)+'" y="'+(Y(top)-12).toFixed(1)+'" fill="#ffd35a" font-size="13" font-weight="900" text-anchor="middle">'+top+'</text>';
+  var day=function(p){if(!p.at)return 'earlier';var dd=new Date(p.at);return isNaN(dd)?'':(dd.getMonth()+1)+'/'+dd.getDate()};
+  svg+='<text x="'+L+'" y="'+(H-10)+'" fill="#9fb3c8" font-size="12">'+day(pts[0])+'</text>';
+  svg+='<text x="'+(W-R)+'" y="'+(H-10)+'" fill="#9fb3c8" font-size="12" text-anchor="end">'+day(pts[pts.length-1])+'</text>';
+  svg+='</svg>';
+  $('progBody').innerHTML=html+svg;
+}
+$('progBtn').addEventListener('click',function(){openProgress('screen-intro')});
+$('endProgBtn').addEventListener('click',function(){openProgress('screen-end')});
+$('closeProgBtn').addEventListener('click',function(){$('screen-prog').style.display='none';$(progReturn).style.display='flex'});
+
+function loadBest(){
+  best=0;
+  try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0}catch(e){}
+  $('hBest').textContent=best;
+  $('bestLine').innerHTML=best>0?('Your best final score: <b>'+best+'</b>'):'';
+}
+function saveBest(){try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
+
+function handleStartClick(){
+  var nameField=$('playerNameInputMain');
+  var name=nameField.value.trim();
+  if(!name){
+    nameField.focus();
+    nameField.style.borderColor='#ff1e3c';
+    setTimeout(function(){nameField.style.borderColor=''},600);
+    return;
+  }
+  currentPlayerName=name.slice(0,20);
+  $('bpmInput').value=bpmFromBox();SPEED=bpmFromBox();setChainSpeed(SPEED);   // a half-typed speed is settled before play
+  startDrill();
+}
+
+// ══════════════════════════════════════════════════════
+//  THE CHAIN SPEED — as in Reactific: a BPM box (10 to 300) that opens
+//  on the player's best Free Tap speed from REACTION SPEED (kept on this
+//  device per name, and looked up on this school's Reaction Speed Free
+//  Tap board so it follows them to any tablet). A player with no Free
+//  Tap yet starts at 90 BPM (the original was 120) — so no one is ever
+//  kept out of the game.
+//  − / + move 5 BPM; that changes only this game, never the default.
+// ══════════════════════════════════════════════════════
+var SPEED=90, BPM_MIN=10, BPM_MAX=300;
+function bpmFromBox(){
+  var v=parseInt($('bpmInput').value,10);
+  if(isNaN(v))v=90;
+  return Math.max(BPM_MIN,Math.min(BPM_MAX,v));
+}
+function showHint(){
+  var b=$('bpmInput').disabled?0:bpmFromBox();
+  $('speedHint').textContent=b?('Each ball lights for '+(Math.round(40000/b)/1000).toFixed(2)+' s · one ball per beat at '+b+' BPM. Repeat it back at your own pace.'):'';
+}
+function pickBox(){
+  if($('bpmInput').disabled)return;
+  SPEED=bpmFromBox();setChainSpeed(SPEED);
+  $('bpmBox').classList.add('active');showHint();
+}
+function freeKey(n){return 'rv-free-bpm:'+String(n||'').trim().toLowerCase()}   // Reaction Speed's Free Tap default
+function savedFreeBPM(n){try{var v=parseInt(localStorage.getItem(freeKey(n)),10);return isNaN(v)?0:v}catch(e){return 0}}
+var dbAsked={};
+function askBestFree(n){
+  var k=String(n||'').trim().toLowerCase(); if(!k||dbAsked[k])return;
+  dbAsked[k]=1;
+  var school=sessionStorage.getItem('reaction-velocity-school')||'';
+  var url=SB_URL+'/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*&hidden=is.false'+
+    '&school_name=eq.'+encodeURIComponent(school)+'&player_name=ilike.'+encodeURIComponent(String(n).trim().replace(/[*%,()]/g,''));
+  fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    .then(function(r){return r.ok?r.json():[]})
+    .then(function(rows){
+      var top=0;(rows||[]).forEach(function(r){var v=parseInt(String(r.speed).split('-')[1],10);if(v>top)top=v});
+      if(top>savedFreeBPM(n)){try{localStorage.setItem(freeKey(n),String(top))}catch(e){}}
+      if(String($('playerNameInputMain').value).trim().toLowerCase()===k&&$('screen-intro').style.display!=='none')refreshBox(true);
+    })
+    .catch(function(){});
+}
+function refreshBox(fromDb){
+  if(phase==='running'||$('screen-intro').style.display==='none')return;
+  var n=$('playerNameInputMain').value, own=n.trim()?savedFreeBPM(n):0, v=own||90;   // no Free Tap yet: 90 BPM
+  if(!fromDb&&n.trim())askBestFree(n);
+  var box=$('bpmBox'), inp=$('bpmInput');
+  $('bpmDown').disabled=$('bpmUp').disabled=false;
+  inp.disabled=false;box.classList.remove('locked');
+  if(!boxTouched||!inp.value)inp.value=v;   // a speed the coach already set with − / + or typed is kept
+  $('bpmNote').textContent=own?'your Reaction Speed Free Tap · − / + or type any speed':'no Free Tap yet — 90 BPM to start · − / + or type any speed';
+  pickBox();
+}
+var nameTimer=null, boxTouched=false;
+$('playerNameInputMain').addEventListener('input',function(){
+  boxTouched=false;$('bpmInput').value='';$('bpmInput').disabled=true;   // a new name starts from that player's own default
+  refreshBox(true);
+  clearTimeout(nameTimer);nameTimer=setTimeout(function(){refreshBox()},500);
+});
+function stepBPM(d){
+  if($('bpmInput').disabled)return;
+  boxTouched=true;
+  $('bpmInput').value=Math.max(BPM_MIN,Math.min(BPM_MAX,bpmFromBox()+d));pickBox();
+}
+$('bpmDown').addEventListener('click',function(e){e.preventDefault();stepBPM(-5)});
+$('bpmUp').addEventListener('click',function(e){e.preventDefault();stepBPM(5)});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(refreshBox,0)});   // after the player's name is filled in (jugador.js)
+$('bpmInput').addEventListener('focus',pickBox);
+$('bpmInput').addEventListener('input',function(){boxTouched=true;pickBox()});
+$('bpmInput').addEventListener('change',function(){$('bpmInput').value=bpmFromBox();pickBox()});
+$('bpmInput').addEventListener('keydown',function(e){if(e.key==='Enter'){$('bpmInput').value=bpmFromBox();pickBox();$('bpmInput').blur()}});
+
+$('playerNameInputMain').addEventListener('keydown',function(e){
+  if(e.key==='Enter')handleStartClick();
+});
+
+loadBest();
+</script>
+</body>
+</html>
