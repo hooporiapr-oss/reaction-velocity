@@ -152,7 +152,19 @@ function tryEnter(){
     .catch(function(){ return null })
     .then(function(cat){
       sessionStorage.setItem('reaction-velocity-category', (typeof cat === 'string' ? cat : '') || '');
-      window.location.href = 'reaction-velocity.html';
+      // TARGETS — a code can be set to plain circles (License Admin → Targets),
+      // the school look: no basketball seams, no Fortress court. No answer = basketballs.
+      return fetch(SUPABASE_URL + '/rest/v1/rpc/license_plain', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_code: input, p_product: PRODUCT })
+      })
+      .then(function(r){ return r.ok ? r.json() : null })
+      .catch(function(){ return null })
+      .then(function(plain){
+        sessionStorage.setItem('gym-plain', plain === true ? '1' : '');
+        window.location.href = 'reaction-velocity.html';
+      });
     });
   })
   .catch(function(){
