@@ -10,6 +10,8 @@ if (sessionStorage.getItem('reaction-velocity-gate-pass') !== '1') {
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>REACTION SPEED | Reaction Velocity</title>
 <style>
+/* the standings buttons are hidden on the kids' screens (no ranking in front of the group) — boards are for coaches */
+[hidden]{display:none !important}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;color:#fff;background:#000;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 #space{position:fixed;inset:0;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);overflow:hidden}
@@ -216,7 +218,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
-  <button class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
+  <button hidden class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
   <button class="box-open-btn" id="progBtn" type="button">📈 MY PROGRESS</button>
   <div class="best-line" id="bestLine"></div>
   <div class="game-switcher">
@@ -276,7 +278,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
     <div class="tbt-lbl" id="tbtLbl">Tap by tap</div>
     <div class="tap-log" id="endTapLog"></div>
   </div>
-  <button class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
+  <button hidden class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
   <button class="box-open-btn" id="endProgBtn" type="button" style="max-width:280px">📈 MY PROGRESS</button>
   <button class="next-player-btn" id="nextPlayerBtn">▶ NEXT PLAYER</button>
   <a href="vr-reactific.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#ff1e3c,#ff6b35);color:#fff;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
