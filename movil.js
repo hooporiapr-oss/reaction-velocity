@@ -1,10 +1,14 @@
 /* ══════════════════════════════════════════════════════════════════
-   REACTION MOBILE — what Home Base and Swipe It share.
+   HOME BASE and SWIPE IT — what the two games share.
 
-   Phones only, and only with a Reaction Mobile code (License Admin →
-   📱 Reaction Mobile; sign-in at mobile.html). On a tablet or computer
-   the page says it is made for phones; held sideways, it asks to turn
-   the phone upright.
+   Two ways in:
+     • a Reaction Velocity code (vreaction.com sign-in): the games sit on
+       the Reaction Velocity hub, on any device — tablet or phone;
+     • a Reaction Mobile code (mobile.html): phones only, upright only,
+       with their own hub (mobile-hub.html).
+   Every run records the device it was played on ('tablet' or 'phone'),
+   and My Progress and personal bests compare like with like — a reach
+   across a tablet is never compared with a thumb-flick on a phone.
 
    Every run saves to its own board, vr_mobile_standings (game_key
    'home-base' or 'swipe-it'), so phone BPM never mixes with the tablet
@@ -22,11 +26,16 @@
   var TABLE = 'vr_mobile_standings';
   var H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
   M.SB_URL = SB_URL; M.SB_KEY = SB_KEY; M.TABLE = TABLE;
-  M.HUB = 'mobile-hub.html';
+  function ss0(k){ try { return sessionStorage.getItem(k) || '' } catch(e){ return '' } }
+  // Which sign-in: a Reaction Mobile code wins if both are present on this device.
+  M.mode = ss0('rm-gate-pass') === '1' ? 'mobile' : (ss0('reaction-velocity-gate-pass') === '1' ? 'rv' : '');
+  var K = M.mode === 'mobile' ? { hub: 'mobile-hub.html', school: 'rm-school', cat: 'rm-category', gate: 'mobile.html' }
+                              : { hub: 'reaction-velocity.html', school: 'reaction-velocity-school', cat: 'reaction-velocity-category', gate: 'index.html' };
+  M.HUB = K.hub;
 
   function ss(k){ try { return sessionStorage.getItem(k) || '' } catch(e){ return '' } }
-  M.school = function(){ return ss('rm-school') };
-  M.category = function(){ return ss('rm-category') };
+  M.school = function(){ return ss(K.school) };
+  M.category = function(){ return ss(K.cat) };
   M.plain = function(){ return ss('gym-plain') === '1' };
 
   /* ── who may play: a Reaction Mobile code, on a phone ── */
@@ -42,6 +51,7 @@
       g.style.cssText = 'position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:28px;text-align:center;background:#000;color:#fff;font:800 1.1rem Arial,sans-serif';
       document.body.appendChild(g);
     }
+    if (M.mode !== 'mobile') { g.style.display = 'none'; return true }   // Reaction Velocity code: any device, any way up
     if (!M.isPhone()) {
       g.innerHTML = '<div style="font-size:3rem">📱</div><div>Reaction Mobile is made for phones.</div><div style="font-size:.85rem;color:#9fb3c8;font-weight:700">Open it on a phone. On a tablet, play Reaction Speed at vreaction.com.</div>';
       g.style.display = 'flex'; return false;
@@ -79,11 +89,12 @@
 
   /* ── this player's own past runs (loaded as a run starts, so it is not in them yet) ── */
   M.past = null;
+  M.device = function(){ return M.isPhone() ? 'phone' : 'tablet' };
   M.loadPast = function(name){
     M.past = null;
     var n = String(name || '').trim(); if (!n) return Promise.resolve(null);
     var url = SB_URL + '/rest/v1/' + TABLE + '?select=bpm,hits,misses,logged_at&hidden=is.false&game_key=eq.' + M.game +
-      '&school_name=eq.' + encodeURIComponent(M.school()) + '&player_name=ilike.' + encodeURIComponent(n.replace(/[*%,()]/g, '')) + '&order=admin_id.asc';
+      '&device=eq.' + M.device() + '&school_name=eq.' + encodeURIComponent(M.school()) + '&player_name=ilike.' + encodeURIComponent(n.replace(/[*%,()]/g, '')) + '&order=admin_id.asc';
     return fetch(url, { headers: H }).then(function(r){ return r.ok ? r.json() : null })
       .then(function(x){ M.past = Array.isArray(x) ? x : null; return M.past }).catch(function(){ return null });
   };
@@ -92,7 +103,7 @@
     return fetch(SB_URL + '/rest/v1/' + TABLE, {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }, H),
-      body: JSON.stringify({ game_key: M.game, player_name: String(name).trim().slice(0, 20), school_name: M.school() || null,
+      body: JSON.stringify({ game_key: M.game, device: M.device(), player_name: String(name).trim().slice(0, 20), school_name: M.school() || null,
         bpm: bpm, hits: hits, misses: misses, avg_ms: avgMs || null })
     }).catch(function(){});
   };
@@ -127,6 +138,9 @@
     return s + '</svg>';
   };
 
-  // No Reaction Mobile sign-in on this device: back to the code box.
-  if (ss('rm-gate-pass') !== '1') location.replace('mobile.html');
+  // No sign-in on this device: back to the code box.
+  if (!M.mode) location.replace('index.html');
+  // Every "← THE HUB" link goes to the hub of the sign-in used.
+  function hubLinks(){ document.querySelectorAll('a[href="mobile-hub.html"]').forEach(function(a){ a.setAttribute('href', M.HUB) }) }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hubLinks); else hubLinks();
 })();

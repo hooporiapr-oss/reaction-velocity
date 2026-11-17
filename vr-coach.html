@@ -10,8 +10,9 @@
      Reaction Speed (Free Tap BPM), Reactific (speed), The Fortress (longest chain),
      a trend arrow (latest run against the one before) and the last day played.
      Tap a player for their progress in all three games.
-     Phone games (Reaction Mobile: Home Base, Swipe It) get their own two
-     columns once the school has phone runs — phone BPM is never mixed in.
+     Home Base and Swipe It get their own two columns once the school has
+     runs of them. Tablet and phone runs are kept apart: the tablet number
+     leads, a phone number shows as 📱, and the player page has a block each.
      The code is kept in memory only: reload, Lock or ← THE HUB closes the view. -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -92,7 +93,7 @@ svg.chart{width:100%;height:auto;display:block}
 
 <div id="view" hidden>
   <div class="tabs" id="ages"></div>
-  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Fortress</span><span class="mcol">📱 Home Base</span><span class="mcol">📱 Swipe It</span><span>Last</span></div>
+  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Fortress</span><span class="mcol">Home Base</span><span class="mcol">Swipe It</span><span>Last</span></div>
   <div id="list"></div>
   <div class="count" id="count"></div>
 </div>
@@ -179,12 +180,12 @@ function loadAll(){
     readAll('vr_reaction_speed_standings',sc+'&speed=like.free-*',['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
     readAll('vr_reactific_standings',sc,['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
     readAll('dynamic_memory_quarter_standings',sc+'&game_key=eq.fortress',['select=player_name,level_achieved,time_seconds,speed,category,logged_at,admin_id'+o,'select=player_name,level_achieved,time_seconds,category','select=player_name,level_achieved,time_seconds']),
-    readAll('vr_mobile_standings',sc,['select=player_name,game_key,bpm,category,logged_at,admin_id'+o])
+    readAll('vr_mobile_standings',sc,['select=player_name,game_key,device,bpm,category,logged_at,admin_id'+o,'select=player_name,game_key,bpm,category,logged_at,admin_id'+o])
   ]).then(function(res){
     players={};
     function add(game,r,v){
       var k=String(r.player_name||'').trim().toLowerCase(); if(!k||!(v>0))return;
-      var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],hb:[],sw:[],last:''});
+      var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],hb:[],sw:[],hbP:[],swP:[],last:''});
       var c=(r.category||'').trim(); if(c)p.cats[c]=1;
       p[game].push({v:v,at:r.logged_at||'',spd:r.speed});
       if(r.logged_at&&r.logged_at>p.last){p.last=r.logged_at;p.name=String(r.player_name).trim()}
@@ -192,7 +193,7 @@ function loadAll(){
     res[0].forEach(function(r){add('rs',r,rsBpm(r))});
     res[1].forEach(function(r){add('rf',r,rfBpm(r))});
     res[2].forEach(function(r){var lv=parseInt(r.level_achieved,10);add('ft',r,lv)});
-    res[3].forEach(function(r){var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g,r,+r.bpm||0)});
+    res[3].forEach(function(r){var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g+(r.device==='phone'?'P':''),r,+r.bpm||0)});
     hasMobile=res[3].length>0; $('view').classList.toggle('m',hasMobile);
     loaded=true; render();
   }).catch(function(){$('list').innerHTML='<div class="empty">Could not load the boards.</div>'});
@@ -207,6 +208,11 @@ function trend(arr){
 function cellBpm(arr){if(!arr.length)return '<span class="dash">—</span>';var l=arr[arr.length-1].v;return l+trend(arr)+'<small>BPM · '+arr.length+' run'+(arr.length>1?'s':'')+'</small>'}
 function cellFt(arr){if(!arr.length)return '<span class="dash">—</span>';var top=0;arr.forEach(function(x){if(x.v>top)top=x.v});
   return 'Level '+top+'<small>longest · latest '+arr[arr.length-1].v+trend(arr)+'</small>'}
+function cellTP(t,ph){   // tablet leads; a phone number shows as 📱 — never mixed
+  if(!t.length&&!ph.length)return '<span class="dash">—</span>';
+  if(!t.length)return '📱 '+cellBpm(ph);
+  return cellBpm(t)+(ph.length?'<small>📱 '+ph[ph.length-1].v+' on phone</small>':'');
+}
 function day(at){if(!at)return '—';var d=new Date(at);return isNaN(d)?'—':(d.getMonth()+1)+'/'+d.getDate()}
 function inAge(p){return !currentAge||p.cats[currentAge]||!Object.keys(p.cats).length}
 function render(){
@@ -216,7 +222,7 @@ function render(){
   $('ages').querySelectorAll('.tab').forEach(function(b){b.onclick=function(){currentAge=b.dataset.a;render()}});
   var keys=Object.keys(players).filter(function(k){return inAge(players[k])}).sort(function(a,b){return players[a].name.localeCompare(players[b].name,undefined,{sensitivity:'base'})});
   $('list').innerHTML=keys.length?keys.map(function(k){var p=players[k];
-    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellBpm(p.rs)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellFt(p.ft)+'</span><span class="v mcol">'+cellBpm(p.hb)+'</span><span class="v mcol">'+cellBpm(p.sw)+'</span><span class="last">'+day(p.last)+'</span></button>';
+    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellBpm(p.rs)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellFt(p.ft)+'</span><span class="v mcol">'+cellTP(p.hb,p.hbP)+'</span><span class="v mcol">'+cellTP(p.sw,p.swP)+'</span><span class="last">'+day(p.last)+'</span></button>';
   }).join(''):'<div class="empty">No players yet'+(currentAge?' in '+esc(currentAge):'')+(school?' at '+esc(school):'')+'.</div>';
   $('count').textContent=keys.length?keys.length+' player'+(keys.length>1?'s':'')+' · listed A–Z, not ranked':'';
   $('list').querySelectorAll('.row').forEach(function(b){b.onclick=function(){showPlayer(b.dataset.k)}});
@@ -258,8 +264,10 @@ function showPlayer(k){
     block('⚡ Reaction Speed · Free Tap','#00e5ff',p.rs,'BPM','Fastest','No Free Tap yet.')+
     block('🔴 Reactific · speed','#00D9A5',p.rf,'BPM','Fastest','No Reactific games yet.')+
     block('🏰 The Fortress · chain','#a855f7',p.ft,'level','Longest','No Fortress games yet.')+
-    (hasMobile?block('📱 Home Base · phone','#ff8a5c',p.hb,'BPM','Fastest','No Home Base yet.')+
-               block('📱 Swipe It · phone','#ffd35a',p.sw,'BPM','Fastest','No Swipe It yet.'):'');
+    (hasMobile?block('🎯 Home Base · tablet','#ff8a5c',p.hb,'BPM','Fastest','No Home Base on a tablet yet.')+
+               block('👆 Swipe It · tablet','#ffd35a',p.sw,'BPM','Fastest','No Swipe It on a tablet yet.')+
+               (p.hbP.length?block('📱 Home Base · phone','#ff8a5c',p.hbP,'BPM','Fastest',''):'')+
+               (p.swP.length?block('📱 Swipe It · phone','#ffd35a',p.swP,'BPM','Fastest',''):''):'');
 }
 $('backList').onclick=function(){$('player').hidden=true;$('view').hidden=false};
 </script>

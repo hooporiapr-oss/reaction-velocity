@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Home Base | Reaction Mobile</title>
+<title>Home Base | Reaction Velocity</title>
 <!-- HOME BASE — Reaction Mobile (phones only).
      Hold a thumb on HOME. After a random wait a target lights up: lift
      off and tap it. The time from light to tap is the reaction, shown in
@@ -32,16 +32,16 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 #bar{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 0;font-size:.8rem;font-weight:900;letter-spacing:.1em;color:#9fb3c8;pointer-events:none}
 #msg{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:1.3rem;font-weight:900;letter-spacing:.05em;pointer-events:none;transition:opacity .15s}
 #msg.bad{color:#ff6b6b}#msg.good{color:#3ddc84}
-#tgt{position:absolute;width:84px;height:84px;border-radius:50%;display:none;
+#tgt{position:absolute;width:clamp(84px,14vmin,150px);height:clamp(84px,14vmin,150px);border-radius:50%;display:none;
   background:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22c%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2249%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg%20clip-path%3D%22url%28%23c%29%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C0%2C0%2C.45%29%22%20stroke-width%3D%223.4%22%3E%3Cline%20x1%3D%2250%22%20y1%3D%22-4%22%20x2%3D%2250%22%20y2%3D%22104%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20-4%20104%2050%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20104%20104%2050%22/%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2250%22%20rx%3D%2224%22%20ry%3D%2249%22/%3E%3C/g%3E%3C/svg%3E'), radial-gradient(circle at 35% 32%,#ff8a5cdd,#ff6b35 55%,#ff6b3599 85%);background-size:100% 100%,100% 100%;
   box-shadow:0 0 40px rgba(255,107,53,.9)}
 html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);box-shadow:0 0 40px rgba(255,30,60,.9)}
-#home{position:absolute;left:50%;bottom:calc(46px + env(safe-area-inset-bottom));width:110px;height:110px;margin-left:-55px;border-radius:50%;
+#home{position:absolute;left:50%;bottom:calc(46px + env(safe-area-inset-bottom));width:clamp(110px,16vmin,160px);height:clamp(110px,16vmin,160px);transform:translateX(-50%);border-radius:50%;
   display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem;letter-spacing:.12em;
   border:3px solid #00e5ff;background:rgba(0,229,255,.1);color:#00e5ff;box-shadow:0 0 30px rgba(0,229,255,.35)}
 #home.ready{animation:pulse 1.1s ease-in-out infinite}
 #home.held{background:#00e5ff;color:#031018;animation:none}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.07)}}
 /* end */
 #end{overflow-y:auto;justify-content:flex-start}
 #end>*{flex-shrink:0}   /* a long end screen scrolls instead of squeezing lines together */
@@ -59,7 +59,9 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 .btn2{padding:15px;border-radius:16px;border:2px solid rgba(0,229,255,.45);background:transparent;color:#fff;font:900 .95rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:center;text-decoration:none;cursor:pointer}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
-<script>window.JUGADOR={modo:'juego',aqui:true,hub:'mobile-hub.html',escuela:'rm-school',categoria:'rm-category',tablas:['vr_mobile_standings','vr_reaction_speed_standings','vr_reactific_standings','dynamic_memory_quarter_standings'],lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'}};</script>
+<script>(function(){var m=false;try{m=sessionStorage.getItem('rm-gate-pass')==='1'}catch(e){}
+  // a Reaction Mobile code (phones) or a Reaction Velocity code (the hub at vreaction.com)
+  window.JUGADOR={modo:'juego',aqui:true,hub:m?'mobile-hub.html':'reaction-velocity.html',escuela:m?'rm-school':'reaction-velocity-school',categoria:m?'rm-category':'reaction-velocity-category',tablas:['vr_mobile_standings','vr_reaction_speed_standings','vr_reactific_standings','dynamic_memory_quarter_standings'],lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'}}})();</script>
 <script src="jugador.js"></script>
 <script>window.MOVIL={game:'home-base',title:'Home Base'};</script>
 <script src="movil.js"></script>
@@ -69,7 +71,7 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 <div class="screen" id="intro">
   <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span></span></div>
   <div class="t">HOME <span>BASE</span></div>
-  <div class="sub" id="who">Reaction Mobile</div>
+  <div class="sub" id="who">Reaction Velocity</div>
   <div class="how">
     <div><b>1</b>Hold your thumb on HOME</div>
     <div><b>2</b>Wait — a target lights up</div>
@@ -127,7 +129,7 @@ function arm(){
   msg(homeHeld?'Lift off, then hold HOME again':'Hold HOME');
 }
 function place(){
-  var p=$('play').getBoundingClientRect(), r=42, home=$('home').getBoundingClientRect();
+  var p=$('play').getBoundingClientRect(), r=parseFloat(getComputedStyle($('tgt')).width)/2||42, home=$('home').getBoundingClientRect();
   var top=70+r, bottom=home.top-40-r, left=r+8, right=p.width-r-8;
   if(bottom<top)bottom=top;
   var x=left+Math.random()*(right-left), y=top+Math.random()*(bottom-top);

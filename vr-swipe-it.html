@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Swipe It | Reaction Mobile</title>
+<title>Swipe It | Reaction Velocity</title>
 <!-- SWIPE IT — Reaction Mobile (phones only).
      An arrow appears after a random wait: swipe that way, anywhere on
      the screen. The time from the arrow to the swipe is the reaction,
@@ -31,9 +31,9 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 #bar{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 0;font-size:.8rem;font-weight:900;letter-spacing:.1em;color:#9fb3c8;pointer-events:none}
 #msg{position:absolute;left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom));text-align:center;font-size:1.3rem;font-weight:900;letter-spacing:.05em;pointer-events:none}
 #msg.bad{color:#ff6b6b}#msg.good{color:#3ddc84}
-#arrow{position:absolute;left:50%;top:42%;width:180px;height:180px;margin:-90px 0 0 -90px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+#arrow{position:absolute;left:50%;top:42%;width:clamp(180px,30vmin,300px);height:clamp(180px,30vmin,300px);transform:translate(-50%,-50%);border-radius:50%;display:flex;align-items:center;justify-content:center;
   border:4px solid rgba(0,229,255,.25);background:rgba(0,229,255,.05);pointer-events:none}
-#arrow svg{width:120px;height:120px;transition:none;opacity:0}
+#arrow svg{width:66%;height:66%;transition:none;opacity:0}
 #arrow.on{border-color:#00e5ff;background:rgba(0,229,255,.12);box-shadow:0 0 50px rgba(0,229,255,.45)}
 #arrow.on svg{opacity:1}
 
@@ -53,7 +53,9 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 .btn2{padding:15px;border-radius:16px;border:2px solid rgba(0,229,255,.45);background:transparent;color:#fff;font:900 .95rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:center;text-decoration:none;cursor:pointer}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
-<script>window.JUGADOR={modo:'juego',aqui:true,hub:'mobile-hub.html',escuela:'rm-school',categoria:'rm-category',tablas:['vr_mobile_standings','vr_reaction_speed_standings','vr_reactific_standings','dynamic_memory_quarter_standings'],lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'}};</script>
+<script>(function(){var m=false;try{m=sessionStorage.getItem('rm-gate-pass')==='1'}catch(e){}
+  // a Reaction Mobile code (phones) or a Reaction Velocity code (the hub at vreaction.com)
+  window.JUGADOR={modo:'juego',aqui:true,hub:m?'mobile-hub.html':'reaction-velocity.html',escuela:m?'rm-school':'reaction-velocity-school',categoria:m?'rm-category':'reaction-velocity-category',tablas:['vr_mobile_standings','vr_reaction_speed_standings','vr_reactific_standings','dynamic_memory_quarter_standings'],lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'}}})();</script>
 <script src="jugador.js"></script>
 <script>window.MOVIL={game:'swipe-it',title:'Swipe It'};</script>
 <script src="movil.js"></script>
@@ -63,7 +65,7 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 <div class="screen" id="intro">
   <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span></span></div>
   <div class="t">SWIPE <span>IT</span></div>
-  <div class="sub" id="who">Reaction Mobile</div>
+  <div class="sub" id="who">Reaction Velocity</div>
   <div class="how">
     <div><b>1</b>Keep your thumb off the screen</div>
     <div><b>2</b>An arrow appears ← → ↑ ↓</div>
