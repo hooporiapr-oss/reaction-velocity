@@ -286,6 +286,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
   <div class="final-label" id="endLabel">Total Points</div>
+  <div id="pbMsg" hidden style="text-align:center;margin:4px 0 10px"></div>
   <button class="hitmiss-toggle" id="hitMissToggle" type="button">📊 Hits & Misses <span class="arrow">▼</span></button>
   <div class="hitmiss-detail" id="hitMissDetail">
     <div class="hitmiss-grid">
@@ -321,6 +322,31 @@ function recordScoreToStandings(name,finalScore,avgMs){
     headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
     body:JSON.stringify({player_name:name,score:finalScore,avg_ms:avgMs,speed:speedKey(SPEED),school_name:sessionStorage.getItem('reaction-velocity-school')||null})
   }).catch(function(){});
+}
+
+// ── Personal best: this run against the player's OWN past runs only
+//    (same school, same name) — never against other kids. Loaded as the
+//    game starts, so this run is not in it yet.
+var pbRows=null;
+function pbLoad(){
+  pbRows=null;var el=document.getElementById('pbMsg');if(el)el.hidden=true;
+  var n=String(currentPlayerName||'').trim();if(!n)return;
+  var sc=sessionStorage.getItem('reaction-velocity-school')||'';
+  fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?select=speed,score&hidden=is.false&school_name=eq.'+encodeURIComponent(sc)+'&player_name=ilike.'+encodeURIComponent(n.replace(/[*%,()]/g,'')),
+    {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    .then(function(r){return r.ok?r.json():null}).then(function(x){pbRows=Array.isArray(x)?x:null}).catch(function(){});
+}
+// now: this run; pick(row): the same measure from a past row (or null to skip it)
+function pbShow(now,pick,unit){
+  var el=document.getElementById('pbMsg');if(!el)return;el.hidden=true;
+  if(!pbRows||!(now>0))return;
+  var prev=-1;pbRows.forEach(function(r){var v=pick(r);if(v!=null&&v>prev)prev=v});
+  var big='font-size:1.15rem;font-weight:900;letter-spacing:.06em;color:#ffd35a;text-shadow:0 0 18px rgba(255,211,90,.6)';
+  var small='font-size:.8rem;color:#c8ccd4;margin-top:3px';
+  if(prev<0)el.innerHTML='<div style="'+big+'">⭐ FIRST MARK SET</div><div style="'+small+'">'+now+' '+unit+' — the one to beat next time</div>';
+  else if(now>prev)el.innerHTML='<div style="'+big+'">⭐ NEW PERSONAL BEST!</div><div style="'+small+'">'+now+' '+unit+' · your best was '+prev+'</div>';
+  else el.innerHTML='<div style="'+small+'">Your best: '+prev+' '+unit+'</div>';
+  el.hidden=false;
 }
 
 // ══════════════════════════════════════════════════════
@@ -791,6 +817,7 @@ function clrT(){timers.forEach(clearTimeout);timers=[]}
 
 function startDrill(){
   if(phase==='running')return;
+  pbLoad();
   initAudio();
   // Auto-enter fullscreen for the Promethean / big-screen experience (rides the Start tap).
   try{ if(!document.fullscreenElement && document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); } }catch(e){}
@@ -1154,6 +1181,7 @@ function endDrill(){
   if(SPEED==='free'){
     // Free Tap: the game at the player's own measured speed, on the Free
     // Tap board. The personal best in points is left alone.
+    pbShow(finalScore,function(r){return /^free/.test(r.speed||'')?(+r.score||0):null},'points');
     recordScoreToStandings(currentPlayerName,finalScore,avgRT);
     $('endNum').textContent=finalScore;
     $('endLabel').textContent='Total Points · at your speed, '+freeBPM+' BPM';
@@ -1162,6 +1190,7 @@ function endDrill(){
   }
   $('endLabel').textContent='Total Points';
   submitScore(finalScore);
+  pbShow(finalScore,function(r){return String(r.speed)===String(SPEED)?(+r.score||0):null},'points at '+SPEED+' BPM');
   recordScoreToStandings(currentPlayerName,finalScore,avgRT);
 
   $('endNum').textContent=finalScore;

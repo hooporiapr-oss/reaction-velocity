@@ -189,6 +189,7 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
   <div class="final-label">Longest Chain Held</div>
+  <div id="pbMsg" hidden style="text-align:center;margin:4px 0 10px"></div>
   <div class="final-stats" id="finalStats">
     <div class="final-stat-cell"><div class="final-stat-label">Time</div><div class="final-stat-val" id="endTime">0.0s</div></div>
     <div class="final-stat-cell"><div class="final-stat-label">Chain speed</div><div class="final-stat-val" id="endBpm">—</div></div>
@@ -241,6 +242,32 @@ function recordScoreToStandings(name,levelAchieved,timeSeconds){
     headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
     body:JSON.stringify({player_name:name,game_key:THIS_GAME_KEY,level_achieved:levelAchieved,time_seconds:(timeSeconds===undefined?null:timeSeconds),speed:String(SPEED),school_name:sessionStorage.getItem('reaction-velocity-school')||null})   // speed needs fortress-velocidad.sql
   }).catch(function(){});
+}
+
+// ── Personal best: this run against the player's OWN past runs only
+//    (same school, same name) — never against other kids. Loaded as the
+//    game starts, so this run is not in it yet.
+var pbRows=null;
+function pbLoad(){
+  pbRows=null;var el=document.getElementById('pbMsg');if(el)el.hidden=true;
+  var n=String(currentPlayerName||'').trim();if(!n)return;
+  var sc=sessionStorage.getItem('reaction-velocity-school')||'';
+  fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?select=level_achieved&hidden=is.false&game_key=eq.'+THIS_GAME_KEY+'&school_name=eq.'+encodeURIComponent(sc)+'&player_name=ilike.'+encodeURIComponent(n.replace(/[*%,()]/g,'')),
+    {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    .then(function(r){return r.ok?r.json():null}).then(function(x){pbRows=Array.isArray(x)?x:null}).catch(function(){});
+}
+// now: this run; pick(row): the same measure from a past row (or null to skip it)
+function pbShow(now,pick,unit){
+  var sp=unit.charAt(0)==='-'?'':' ';
+  var el=document.getElementById('pbMsg');if(!el)return;el.hidden=true;
+  if(!pbRows||!(now>0))return;
+  var prev=-1;pbRows.forEach(function(r){var v=pick(r);if(v!=null&&v>prev)prev=v});
+  var big='font-size:1.15rem;font-weight:900;letter-spacing:.06em;color:#ffd35a;text-shadow:0 0 18px rgba(255,211,90,.6)';
+  var small='font-size:.8rem;color:#c8ccd4;margin-top:3px';
+  if(prev<0)el.innerHTML='<div style="'+big+'">⭐ FIRST MARK SET</div><div style="'+small+'">'+now+sp+unit+' — the one to beat next time</div>';
+  else if(now>prev)el.innerHTML='<div style="'+big+'">⭐ NEW PERSONAL BEST!</div><div style="'+small+'">'+now+sp+unit+' · your best was '+prev+'</div>';
+  else el.innerHTML='<div style="'+small+'">Your best: '+prev+sp+unit+'</div>';
+  el.hidden=false;
 }
 $('nextPlayerBtn').addEventListener('click',function(){
   currentPlayerName='';
@@ -397,6 +424,7 @@ function setReady(on){targetEls.forEach(function(el){el.classList.toggle('ready'
 
 function startDrill(){
   if(phase==='running')return;
+  pbLoad();
   ensureAudio();
   if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
   try{ if(!document.fullscreenElement && document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); } }catch(e){}
@@ -495,6 +523,7 @@ function showFinalScore(finalLevel,finalTime){
   var isNewBest=finalLevel>best;
   if(isNewBest){best=finalLevel;saveBest()}
   recordScoreToStandings(currentPlayerName,finalLevel,finalTime);
+  pbShow(finalLevel,function(r){var v=parseInt(r.level_achieved,10);return v>=0?v:null},'-ball chain');
 
   $('endNum').textContent=finalLevel;
   $('endTime').textContent=finalTime.toFixed(1)+'s';
