@@ -1,15 +1,16 @@
 /* ══════════════════════════════════════════════════════════════════
    THE PLAYER — one name, entered once, used by every game.
 
-   The hub asks "Who's playing?" once per visit, before any game opens:
+   "Who's playing?" is asked when a game opens without a name — never on
+   the hub, since whoever signs in (a coach) is not a player:
      • if this device played before:  ☑ Same player: <name>   [Continue]
        untick the box to type a new player's name instead;
      • first time on this device: just the name box.
    Every game then opens with that name already in: its name box is
    hidden and shows "👤 <name>". Scores save under that name, and under
    the school and age group of the code used at sign-in.
-   "New player" (on the hub, and in each game) goes back to the hub's
-   question with the box unticked.
+   "New player" (on the hub, and in each game) asks again with the box
+   unticked — in the game itself, or (from the hub) when the next game opens.
 
    Same file in cognitivo-gym-paradiso and reaction-velocity. Each page
    sets window.JUGADOR before loading it:
@@ -117,7 +118,7 @@
     listo = true;
   }
 
-  /* ── the hub: "Who's playing?" before any game ── */
+  /* ── "Who's playing?" — asked when a game opens without a name ── */
   var alListo = null;      // in a game with aqui: what to do once the next name is in
   function preguntar(nuevo){
     var vieja = document.getElementById('jg-capa'); if (vieja) vieja.remove();
@@ -171,13 +172,19 @@
     var c = document.getElementById('jg-chip');
     if (!c) { c = document.createElement('div'); c.id = 'jg-chip'; document.body.appendChild(c) }
     c.innerHTML = '<span>👤 ' + esc(nombre) + (categoria ? ' · ' + esc(categoria) : '') + '</span><button type="button" id="jg-otro">New player</button>';
-    document.getElementById('jg-otro').onclick = function(){ preguntar(true) };
+    document.getElementById('jg-otro').onclick = function(){ c.remove(); ss('gym-player-ok', ''); ss('gym-player-new', '1'); listo = false };
   }
 
   /* ── a game: the name is already in ── */
   function enJuego(){
     var campo = document.getElementById('playerNameInputMain');
-    if (!campo || !listo) return;                       // no name yet: the game works as before
+    if (!campo) return;
+    if (!listo) {                                       // no name yet: asked here, as the game opens
+      var nuevo = ss('gym-player-new') === '1';
+      alListo = function(){ ss('gym-player-new', ''); alListo = null; enJuego(); campo.dispatchEvent(new Event('input', { bubbles: true })) };
+      preguntar(nuevo);
+      return;
+    }
     campo.value = nombre;
     campo.style.display = 'none';
     var como = document.createElement('div'); como.className = 'jg-como';
@@ -208,7 +215,10 @@
     if (C.modo === 'hub') {
       var nuevo = /[?&]nuevo=1/.test(location.search);
       if (nuevo) { try { history.replaceState(null, '', location.pathname) } catch(e){} }
-      if (!listo || nuevo) preguntar(nuevo); else chip();
+      // The hub never asks: whoever signs in (a coach) is not a player.
+      // "New player" from a game: the next game that opens asks, box unticked.
+      if (nuevo) { ss('gym-player-ok', ''); ss('gym-player-new', '1'); listo = false }
+      if (listo) chip();
     } else {
       enJuego();
     }
