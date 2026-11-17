@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Coach View | Reaction Velocity</title>
+<!-- Coach View — for coaches only. Opens with a Coach code (License Admin → Coach tab);
+     a game code never opens it, so no kid sees a ranking.
+     Every player of the coach's school, A–Z (never ranked), per age group:
+     Reaction Speed (Free Tap BPM), Reactific (speed), The Fortress (longest chain),
+     a trend arrow (latest run against the one before) and the last day played.
+     Tap a player for their progress in all three games.
+     The code is kept in memory only: reload, Lock or ← THE HUB closes the view. -->
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{background:#000;color:#fff;font-family:Arial,sans-serif}
+body{min-height:100vh;padding:20px 16px 40px;display:flex;flex-direction:column;align-items:center}
+.top{width:100%;max-width:720px;display:flex;justify-content:space-between;gap:8px;margin-bottom:18px}
+.pill{padding:8px 16px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font:900 .78rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;text-decoration:none;cursor:pointer}
+.t{font-size:2rem;font-weight:900;font-style:italic;letter-spacing:.06em;text-transform:uppercase;text-align:center;text-shadow:0 0 30px rgba(0,229,255,.5)}
+.t span{color:#00e5ff}
+.sub{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:#a7adba;margin:6px 0 16px;text-align:center}
+/* gate */
+#gate{width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;align-items:stretch;margin-top:20px}
+#code{padding:14px;border-radius:12px;border:2px solid rgba(0,229,255,.45);background:rgba(0,229,255,.06);color:#fff;font:900 1.1rem Arial,sans-serif;text-align:center;letter-spacing:.12em;text-transform:uppercase}
+#open{padding:14px;border-radius:12px;border:0;background:#00e5ff;color:#000;font:900 1rem Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+#err{min-height:1.2em;text-align:center;font-size:.85rem;color:#a7adba}
+.note{font-size:.72rem;color:#7d8696;text-align:center;line-height:1.4}
+/* list */
+#view{width:100%;max-width:720px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px}
+.tab{padding:7px 14px;border-radius:999px;border:1.5px solid rgba(0,229,255,.35);background:rgba(0,229,255,.06);color:#9fe9f5;font:900 .72rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.tab.on{background:rgba(0,229,255,.28);border-color:#00e5ff;color:#fff}
+.head,.row{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr)) 54px;gap:6px;align-items:center}
+.head{font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#7d8696;padding:0 12px 6px}
+.head span:not(:first-child),.row span:not(:first-child){text-align:center}
+.row{padding:12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);margin-bottom:7px;cursor:pointer;width:100%;color:#fff;font:inherit;text-align:left}
+.row:active{background:rgba(0,229,255,.12)}
+.nm{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v{font-weight:900;font-size:.95rem}
+.v small{display:block;font-size:.58rem;color:#7d8696;font-weight:700;letter-spacing:.04em}
+.dash{color:#4b5263;font-weight:700}
+.up{color:#3ddc84}.dn{color:#ff6b6b}.eq{color:#a7adba}
+.last{font-size:.72rem;color:#a7adba}
+.empty{color:#a7adba;text-align:center;padding:24px}
+.count{font-size:.7rem;color:#7d8696;text-align:center;margin-top:10px}
+/* player */
+#player{width:100%;max-width:640px}
+.pname{font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:4px}
+.pcat{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:#a7adba;text-align:center;margin-bottom:16px}
+.game{border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);padding:14px;margin-bottom:12px}
+.gname{font-size:.72rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.cell{text-align:center;padding:8px 4px;border-radius:10px;background:rgba(255,255,255,.04)}
+.cell b{display:block;font-size:1.4rem}
+.cell i{font-style:normal;font-size:.58rem;color:#a7adba;letter-spacing:.08em;text-transform:uppercase}
+.chg{font-size:.78rem;color:#c8ccd4;text-align:center;margin-bottom:6px}
+svg.chart{width:100%;height:auto;display:block}
+@media(max-width:520px){
+  .head,.row{grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));}
+  .head span:last-child,.row .last{display:none}
+  .v{font-size:.85rem}
+}
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="pill" id="hubBtn" href="reaction-velocity.html">← THE HUB</a>
+  <button class="pill" id="lockBtn" type="button" hidden>🔒 Lock</button>
+</div>
+<div class="t">COACH <span>VIEW</span></div>
+<div class="sub" id="sub">Coaches only</div>
+
+<div id="gate">
+  <input id="code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Coach code">
+  <button id="open" type="button">Open</button>
+  <div id="err"></div>
+  <div class="note">A Coach code is made in License Admin → Coach. A game code does not open this view.</div>
+</div>
+
+<div id="view" hidden>
+  <div class="tabs" id="ages"></div>
+  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Fortress</span><span>Last</span></div>
+  <div id="list"></div>
+  <div class="count" id="count"></div>
+</div>
+
+<div id="player" hidden>
+  <div class="top" style="max-width:none"><button class="pill" id="backList" type="button">← All players</button></div>
+  <div class="pname" id="pname"></div>
+  <div class="pcat" id="pcat"></div>
+  <div id="pbody"></div>
+</div>
+
+<script>
+// Site settings (the only lines that differ between vreaction.com and Cognitivo Gym)
+var HUB='reaction-velocity.html';
+
+var SB_URL='https://sdaphocueugzfvjovuxd.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
+var H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+function $(id){return document.getElementById(id)}
+function esc(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function ageSort(a,b){var x=parseInt(a,10),y=parseInt(b,10);if(!isNaN(x)&&!isNaN(y)&&x!==y)return x-y;return a.localeCompare(b)}
+$('hubBtn').href=HUB;
+
+// ── The coach code: held in memory only ──
+var school='', coachCat='', currentAge='', players={}, loaded=false;
+function deviceId(){var id=null;try{id=localStorage.getItem('gostar-device-id')}catch(e){}
+  if(!id){id='d-'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);try{localStorage.setItem('gostar-device-id',id)}catch(e){}}return id}
+function rpc(name,body){return fetch(SB_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify(body)})}
+var checking=false;
+function openView(){
+  if(checking)return;
+  var code=$('code').value.trim(); if(!code)return;
+  checking=true; $('err').style.color=''; $('err').textContent='Checking…';
+  rpc('check_access',{p_code:code,p_product:'coach',p_device:deviceId()})
+    .then(function(r){if(!r.ok)throw 0;return r.json()})
+    .then(function(lic){
+      if(!lic||!lic.ok){
+        checking=false;
+        var m=lic&&lic.reason==='expired'?'This code has expired.':lic&&lic.reason==='revoked'?'This code is no longer active.':lic&&lic.reason==='devices'?'This code is in use on too many devices.':'Not a Coach code — check with your administrator.';
+        $('err').style.color='#ff8888';$('err').textContent=m;$('code').value='';return;
+      }
+      school=lic.school_name||'';
+      return rpc('license_category',{p_code:code,p_product:'coach'})
+        .then(function(r){return r.ok?r.json():null}).catch(function(){return null})
+        .then(function(cat){
+          checking=false; coachCat=typeof cat==='string'?cat:''; currentAge=coachCat;
+          $('code').value=''; $('err').textContent='';
+          $('gate').hidden=true; $('view').hidden=false; $('lockBtn').hidden=false;
+          $('sub').textContent='Coaches only'+(school?' · '+school:'');
+          $('list').innerHTML='<div class="empty">Loading…</div>';
+          loadAll();
+        });
+    })
+    .catch(function(){checking=false;$('err').style.color='#ff8888';$('err').textContent='Connection problem — please try again.'});
+}
+$('open').onclick=openView;
+$('code').addEventListener('keydown',function(e){if(e.key==='Enter')openView()});
+function lock(){school='';coachCat='';players={};loaded=false;
+  $('view').hidden=true;$('player').hidden=true;$('gate').hidden=false;$('lockBtn').hidden=true;
+  $('sub').textContent='Coaches only';$('list').innerHTML='';$('ages').innerHTML=''}
+$('lockBtn').onclick=lock;
+
+// ── Reading the three boards (page by page, 1000 rows at a time) ──
+function readAll(table,filter,selects){
+  function tryS(i){
+    if(i>=selects.length)return Promise.resolve([]);
+    var out=[];
+    function page(from){
+      var url=SB_URL+'/rest/v1/'+table+'?'+filter+'&'+selects[i]+'&offset='+from+'&limit=1000';
+      return fetch(url,{headers:H}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(rows){
+        out=out.concat(rows||[]); return rows&&rows.length===1000?page(from+1000):out;
+      });
+    }
+    return page(0).catch(function(){return tryS(i+1)});
+  }
+  return tryS(0);
+}
+function rsBpm(r){var s=String(r.speed||'');return /^free-\d+$/.test(s)?parseInt(s.split('-')[1],10):0}
+function rfBpm(r){var s=r.speed;if(s==null||s==='')return 100;s=String(s);return /^free-/.test(s)?parseInt(s.split('-')[1],10):parseInt(s,10)||0}
+function loadAll(){
+  var sc='school_name=eq.'+encodeURIComponent(school)+'&hidden=is.false';
+  var o='&order=admin_id.asc';
+  Promise.all([
+    readAll('vr_reaction_speed_standings',sc+'&speed=like.free-*',['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
+    readAll('vr_reactific_standings',sc,['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
+    readAll('dynamic_memory_quarter_standings',sc+'&game_key=eq.fortress',['select=player_name,level_achieved,time_seconds,speed,category,logged_at,admin_id'+o,'select=player_name,level_achieved,time_seconds,category','select=player_name,level_achieved,time_seconds'])
+  ]).then(function(res){
+    players={};
+    function add(game,r,v){
+      var k=String(r.player_name||'').trim().toLowerCase(); if(!k||!(v>0))return;
+      var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],last:''});
+      var c=(r.category||'').trim(); if(c)p.cats[c]=1;
+      p[game].push({v:v,at:r.logged_at||'',spd:r.speed});
+      if(r.logged_at&&r.logged_at>p.last){p.last=r.logged_at;p.name=String(r.player_name).trim()}
+    }
+    res[0].forEach(function(r){add('rs',r,rsBpm(r))});
+    res[1].forEach(function(r){add('rf',r,rfBpm(r))});
+    res[2].forEach(function(r){var lv=parseInt(r.level_achieved,10);add('ft',r,lv)});
+    loaded=true; render();
+  }).catch(function(){$('list').innerHTML='<div class="empty">Could not load the boards.</div>'});
+}
+
+// ── The list: A–Z, never ranked ──
+function trend(arr){
+  if(arr.length<2)return '';
+  var a=arr[arr.length-1].v,b=arr[arr.length-2].v;
+  return a>b?' <span class="up" title="Up from the run before">↑</span>':a<b?' <span class="dn" title="Down from the run before">↓</span>':' <span class="eq" title="Same as the run before">→</span>';
+}
+function cellBpm(arr){if(!arr.length)return '<span class="dash">—</span>';var l=arr[arr.length-1].v;return l+trend(arr)+'<small>BPM · '+arr.length+' run'+(arr.length>1?'s':'')+'</small>'}
+function cellFt(arr){if(!arr.length)return '<span class="dash">—</span>';var top=0;arr.forEach(function(x){if(x.v>top)top=x.v});
+  return 'Level '+top+'<small>longest · latest '+arr[arr.length-1].v+trend(arr)+'</small>'}
+function day(at){if(!at)return '—';var d=new Date(at);return isNaN(d)?'—':(d.getMonth()+1)+'/'+d.getDate()}
+function inAge(p){return !currentAge||p.cats[currentAge]||!Object.keys(p.cats).length}
+function render(){
+  var ages={};Object.keys(players).forEach(function(k){Object.keys(players[k].cats).forEach(function(c){ages[c]=1})});
+  var list=Object.keys(ages);if(currentAge&&list.indexOf(currentAge)===-1)list.push(currentAge);list.sort(ageSort);
+  $('ages').innerHTML=list.length?[''].concat(list).map(function(a){return '<button class="tab'+(a===currentAge?' on':'')+'" data-a="'+esc(a)+'">'+(a?esc(a):'All')+'</button>'}).join(''):'';
+  $('ages').querySelectorAll('.tab').forEach(function(b){b.onclick=function(){currentAge=b.dataset.a;render()}});
+  var keys=Object.keys(players).filter(function(k){return inAge(players[k])}).sort(function(a,b){return players[a].name.localeCompare(players[b].name,undefined,{sensitivity:'base'})});
+  $('list').innerHTML=keys.length?keys.map(function(k){var p=players[k];
+    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellBpm(p.rs)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellFt(p.ft)+'</span><span class="last">'+day(p.last)+'</span></button>';
+  }).join(''):'<div class="empty">No players yet'+(currentAge?' in '+esc(currentAge):'')+(school?' at '+esc(school):'')+'.</div>';
+  $('count').textContent=keys.length?keys.length+' player'+(keys.length>1?'s':'')+' · listed A–Z, not ranked':'';
+  $('list').querySelectorAll('.row').forEach(function(b){b.onclick=function(){showPlayer(b.dataset.k)}});
+}
+
+// ── One player: progress in all three games ──
+function chart(pts,color,unit){
+  if(pts.length<2)return '';
+  var vals=pts.map(function(p){return p.v}),mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),topI=vals.indexOf(mx);
+  var stepU=unit==='BPM'?10:1, pad=unit==='BPM'?5:1;
+  var lo=Math.max(0,Math.floor((mn-pad)/stepU)*stepU), hi=Math.ceil((mx+pad)/stepU)*stepU; if(hi-lo<2*stepU*2)hi=lo+4*stepU;
+  var W=560,Hh=220,L=44,R=16,T=20,B=30;
+  var X=function(i){return L+(W-L-R)*i/(pts.length-1)},Y=function(v){return T+(Hh-T-B)*(hi-v)/(hi-lo)};
+  var g=Math.max(stepU,Math.ceil((hi-lo)/5/stepU)*stepU);
+  var s='<svg class="chart" viewBox="0 0 '+W+' '+Hh+'">';
+  for(var y=lo;y<=hi;y+=g)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="rgba(255,255,255,.08)"/><text x="'+(L-8)+'" y="'+(Y(y)+4)+'" fill="#9fb3c8" font-size="12" text-anchor="end">'+y+'</text>';
+  s+='<polyline fill="none" stroke="'+color+'" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map(function(p,i){return X(i).toFixed(1)+','+Y(p.v).toFixed(1)}).join(' ')+'"/>';
+  pts.forEach(function(p,i){var t=i===topI;s+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.v).toFixed(1)+'" r="'+(t?7:4.5)+'" fill="'+(t?'#ffd35a':color)+'" stroke="#000" stroke-width="1.5"><title>'+p.v+' '+unit+' · '+day(p.at)+'</title></circle>'});
+  s+='<text x="'+L+'" y="'+(Hh-8)+'" fill="#9fb3c8" font-size="12">'+(pts[0].at?day(pts[0].at):'earlier')+'</text><text x="'+(W-R)+'" y="'+(Hh-8)+'" fill="#9fb3c8" font-size="12" text-anchor="end">'+day(pts[pts.length-1].at)+'</text>';
+  return s+'</svg>';
+}
+function block(title,color,arr,unit,bestLbl,none){
+  var h='<div class="game"><div class="gname" style="color:'+color+'">'+title+'</div>';
+  if(!arr.length)return h+'<div class="empty" style="padding:8px">'+none+'</div></div>';
+  var pts=arr.slice(-40),first=pts[0].v,last=pts[pts.length-1].v,top=0;pts.forEach(function(p){if(p.v>top)top=p.v});
+  var u=unit==='BPM'?' BPM':'';
+  h+='<div class="stats"><div class="cell"><b>'+first+'</b><i>First'+u+'</i></div><div class="cell"><b>'+last+'</b><i>Latest'+u+'</i></div><div class="cell"><b>'+top+'</b><i>'+bestLbl+u+'</i></div></div>';
+  var d=last-first;
+  h+='<div class="chg">'+(arr.length<2?'One run so far':'<b>'+(d>0?'+':'')+d+(unit==='BPM'?' BPM':' level'+(Math.abs(d)===1?'':'s'))+'</b> since the first run · '+arr.length+' runs')+'</div>';
+  return h+chart(pts,color,unit)+'</div>';
+}
+function showPlayer(k){
+  var p=players[k]; if(!p)return;
+  $('view').hidden=true; $('player').hidden=false; window.scrollTo(0,0);
+  $('pname').textContent=p.name;
+  var cats=Object.keys(p.cats).sort(ageSort);
+  $('pcat').textContent=(cats.length?cats.join(' · ')+' · ':'')+'last played '+day(p.last);
+  $('pbody').innerHTML=
+    block('⚡ Reaction Speed · Free Tap','#00e5ff',p.rs,'BPM','Fastest','No Free Tap yet.')+
+    block('🔴 Reactific · speed','#00D9A5',p.rf,'BPM','Fastest','No Reactific games yet.')+
+    block('🏰 The Fortress · chain','#a855f7',p.ft,'level','Longest','No Fortress games yet.');
+}
+$('backList').onclick=function(){$('player').hidden=true;$('view').hidden=false};
+</script>
+</body>
+</html>
