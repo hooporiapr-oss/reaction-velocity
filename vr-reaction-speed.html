@@ -88,20 +88,24 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 <script src="jugador.js"></script>
 <script>window.MOVIL={game:'home-base',title:'Reaction Speed'};</script>
 <script src="movil.js"></script>
+<link rel="stylesheet" href="inicio.css">
 </head>
 <body>
 
-<div class="screen" id="intro">
-  <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span class="lang"><button type="button" class="lg" data-l="es">ES</button><button type="button" class="lg" data-l="en">EN</button></span></div>
-  <div class="t">REACTION <span>SPEED</span></div>
-  <div class="sub" id="who">Reaction Velocity</div>
-  <div class="how">
-    <div><b>1</b><span data-t="s1">Hold your thumb on HOME</span></div>
-    <div><b>2</b><span data-t="s2">Wait — a target lights up</span></div>
-    <div><b>3</b><span data-t="s3">Lift off and tap it, fast</span></div>
+<div class="rx-intro" id="intro">
+  <a class="intro-back" href="mobile-hub.html">← Exit</a>
+  <div class="box-lang-toggle"><button type="button" class="box-lang-btn lg" data-l="es">ES</button><button type="button" class="box-lang-btn lg" data-l="en">EN</button></div>
+  <div class="vrr-logo">REACTION <span>SPEED</span></div>
+  <div class="vrr-sub" id="who">Reaction Velocity</div>
+  <div class="tempo-hint" data-t="hint">Hold your thumb on HOME. When a target lights up, lift off and tap it — fast. 10 rounds.</div>
+  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
+  <button class="big-btn" id="startBtn" type="button" data-t="start">▶ Start · 10 rounds</button>
+  <div class="game-switcher">
+    <span class="switcher-btn game-current">Reaction<br>Speed</span>
+    <a class="switcher-btn game-active" href="vr-reactific.html">Reactific</a>
+    <a class="switcher-btn game-active" href="vr-fortress.html">The<br>Fortress</a>
+    <a class="switcher-btn game-active" href="vr-swipe-it.html">Swipe<br>It</a>
   </div>
-  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
-  <button class="go" id="startBtn" type="button" data-t="start">Start · 10 rounds</button>
 </div>
 
 <div class="screen" id="play" hidden>
@@ -130,11 +134,11 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (remembered on this device) ── */
 var TX={
-  es:{s1:'Mantén el pulgar en HOME',s2:'Espera: un objetivo se enciende',s3:'Suelta y tócalo, rápido',start:'Empezar · 10 rondas',name:'Tu nombre',hub:'← EL HUB',newp:'Nuevo jugador',
+  es:{s1:'Mantén el pulgar en HOME',s2:'Espera: un objetivo se enciende',s3:'Suelta y tócalo, rápido',start:'▶ Empezar · 10 rondas',hint:'Mantén el pulgar en HOME. Cuando un objetivo se encienda, suelta y tócalo — rápido. 10 rondas.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
       lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Reactific →',nextp:'Siguiente jugador',
       hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',early:'muy temprano',
       'Too early':'Muy temprano','Too slow':'Muy lento','Lift off HOME first':'Suelta HOME primero','Missed the target':'Fallaste el objetivo'},
-  en:{s1:'Hold your thumb on HOME',s2:'Wait — a target lights up',s3:'Lift off and tap it, fast',start:'Start · 10 rounds',name:'Your name',hub:'← THE HUB',newp:'New player',
+  en:{s1:'Hold your thumb on HOME',s2:'Wait — a target lights up',s3:'Lift off and tap it, fast',start:'▶ Start · 10 rounds',hint:'Hold your thumb on HOME. When a target lights up, lift off and tap it — fast. 10 rounds.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
       lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Reactific →',nextp:'Next Player',
       hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',early:'too early',
       'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target'}
@@ -145,9 +149,10 @@ function applyLang(){
   document.documentElement.lang=LANG;
   document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=T(el.getAttribute('data-t'))});
   $('playerNameInputMain').placeholder=T('name');
-  document.querySelectorAll('a.pill,#end a.btn2:not(#nextGameBtn)').forEach(function(a){a.textContent=T('hub')});
+  document.querySelectorAll('#intro .intro-back').forEach(function(a){a.textContent=T('exit')});
+  document.querySelectorAll('#end a.btn2:not(#nextGameBtn)').forEach(function(a){a.textContent=T('hub')});
   var np=document.querySelector('.jg-como a'); if(np)np.textContent=T('newp');   // the player chip (jugador.js)
-  document.querySelectorAll('.lg').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-l')===LANG)});
+  document.querySelectorAll('.lg').forEach(function(b){var on=b.getAttribute('data-l')===LANG;b.classList.toggle('on',on);b.classList.toggle('active',on)});
 }
 document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
 applyLang();

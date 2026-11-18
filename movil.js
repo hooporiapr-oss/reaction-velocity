@@ -146,6 +146,10 @@
   // No sign-in on this device: back to the code box.
   if (!M.mode) location.replace('index.html');
   // Every "← THE HUB" link goes to the hub of the sign-in used.
-  function hubLinks(){ document.querySelectorAll('a[href="mobile-hub.html"]').forEach(function(a){ a.setAttribute('href', M.HUB) }) }
+  function hubLinks(){
+    document.querySelectorAll('a[href="mobile-hub.html"]').forEach(function(a){ a.setAttribute('href', M.HUB) });
+    // Cognitivo Gym's Fortress has its own file name
+    if (M.mode === 'gym') document.querySelectorAll('a[href="vr-fortress.html"]').forEach(function(a){ a.setAttribute('href', 'dynamic-memory-the-fortress.html') });
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hubLinks); else hubLinks();
 })();

@@ -122,40 +122,44 @@ html.plain #keySvg>*{display:none}   /* school codes: no court, same ball spots 
 
 #controls{display:flex;justify-content:center;gap:10px;padding:8px 16px 14px;flex-shrink:0}
 .ctrl-btn{height:46px;flex:0 1 170px;max-width:200px;border:2px solid rgba(124,58,237,.5);background:rgba(0,0,0,.4);border-radius:12px;color:#fff;font-size:.92rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center}
-/* ── PHONES ONLY (600 px wide and narrower): tablets never see these rules ── */
-@media (max-width:600px){
-  #screen-intro{justify-content:flex-start;padding:66px 16px 28px}
-  #screen-intro>*{flex-shrink:0}
-  #screen-intro .intro-back{position:absolute}
-  .vrr-title{font-size:2rem;margin-bottom:10px}
-  .vrr-sub{letter-spacing:.16em}
-  .rule-t{font-size:.86rem;margin-bottom:16px}
-  .big-btn{height:60px;font-size:1.1rem}
-}
+
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
 <script>window.JUGADOR={modo:'juego',aqui:true,lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'},hub:'reaction-velocity.html',escuela:'reaction-velocity-school',categoria:'reaction-velocity-category',tablas:['dynamic_memory_quarter_standings','vr_reaction_speed_standings','vr_reactific_standings']};</script>
 <script src="jugador.js"></script>
 <script>/* School codes (License Admin → Targets: Plain circles): plain targets, no basketball look */try{if(sessionStorage.getItem('gym-plain')==='1')document.documentElement.classList.add('plain')}catch(e){}</script>
+<link rel="stylesheet" href="inicio.css">
+<script src="idioma.js"></script>
 </head>
 <body>
 
 <!-- INTRO -->
-<div id="screen-intro">
-  <a class="intro-back" href="reaction-velocity.html">← Home</a>
+<div id="screen-intro" class="rx-intro">
+  <a class="intro-back" href="reaction-velocity.html">← Exit</a>
+  <div class="box-lang-toggle">
+    <button class="box-lang-btn" data-lang="es">ES</button>
+    <button class="box-lang-btn" data-lang="en">EN</button>
+  </div>
+  <div class="vrr-logo">THE <span>FORTRESS</span></div>
   <div class="vrr-sub">Reaction Velocity · The 2-1-2 Zone</div>
-  <div class="vrr-title">THE <span>FORTRESS</span></div>
-  <div class="rule-t"><b>Five basketballs, set in a real 2-1-2 zone, fixed in place.</b> Watch the chain light up inside the key — one ball per beat, at your speed — then repeat it back at your own pace. Every round the chain adds one more ball. One wrong tap ends the run — your score is the longest chain you held.</div>
-  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
+  <div class="tempo-hint">Watch the chain light up inside the key — one ball per beat, at your speed — then repeat it back. Every round adds one more ball; one wrong tap ends the run.</div>
   <div class="speed-label">Chain speed</div>
-  <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Chain speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">your Reaction Speed Free Tap · or 90 BPM to start</small></label>
-  <div class="speed-hint" id="speedHint"></div>
-  <div><button type="button" class="tone-sw on" id="toneSw" aria-pressed="true">🎵 <span id="toneTxt">Tones: on</span></button>
-  <button type="button" class="tone-sw" id="sizeSw" aria-pressed="false">🎯 <span id="sizeTxt">Balls: normal</span></button></div>
+  <div class="speed-row">
+    <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Chain speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">your Reaction Speed · or 90 BPM to start</small></label>
+  </div>
+  <div class="note-line" id="speedHint"></div>
+  <div><button type="button" class="tone-sw on" id="toneSw" aria-pressed="true">🎵 <span id="toneTxt">Tones: on</span></button><button type="button" class="tone-sw" id="sizeSw" aria-pressed="false">🎯 <span id="sizeTxt">Balls: normal</span></button></div>
+  <input type="text" id="playerNameInputMain" class="name-input" style="max-width:320px;margin:8px auto" maxlength="20" placeholder="Your name" autocomplete="off">
   <button class="big-btn" id="bigStart" onclick="handleStartClick()">▶ START</button>
-  <a hidden class="box-open-btn" href="vr-fortress-standings.html" style="display:block;margin:6px auto 0;text-decoration:none;text-align:center;line-height:52px">🏆 THE STANDINGS</a>
-  <button class="box-open-btn" id="progBtn" type="button" style="display:block;margin:10px auto 0;border-color:rgba(168,85,247,.6);background:rgba(124,58,237,.12);color:#c9a3fa">📈 MY PROGRESS</button>
+  <a hidden class="box-open-btn" href="vr-fortress-standings.html">🏆 THE STANDINGS</a>
+  <button class="box-open-btn" id="progBtn" type="button">📈 MY PROGRESS</button>
   <div class="best-line" id="bestLine"></div>
+  <div class="game-switcher">
+    <a class="switcher-btn game-active" href="vr-reaction-speed.html">Reaction<br>Speed</a>
+    <a class="switcher-btn game-active" href="vr-reactific.html">Reactific</a>
+    <span class="switcher-btn game-current">The<br>Fortress</span>
+    <a class="switcher-btn game-active" href="vr-swipe-it.html">Swipe<br>It</a>
+  </div>
 </div>
 
 <!-- MY PROGRESS -->

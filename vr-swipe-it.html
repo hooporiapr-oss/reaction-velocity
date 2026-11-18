@@ -101,28 +101,29 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 <script src="jugador.js"></script>
 <script>window.MOVIL={game:'swipe-it',title:'Swipe It'};</script>
 <script src="movil.js"></script>
+<link rel="stylesheet" href="inicio.css">
 </head>
 <body>
 
-<div class="screen" id="intro" style="overflow-y:auto">
-  <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span class="lang"><button type="button" class="lg" data-l="es">ES</button><button type="button" class="lg" data-l="en">EN</button></span></div>
-  <div class="t">SWIPE <span>IT</span></div>
-  <div class="sub" id="who">Reaction Velocity</div>
-  <div class="how">
-    <div><b>1</b><span data-t="s1">An arrow flashes once at your speed, in a new spot each time</span></div>
-    <div><b>2</b><span data-t="s2">Swipe where it was, the way it pointed</span></div>
-    <div><b>3</b><span data-t="s3">Fast — your swipe gives your BPM · 25 arrows</span></div>
+<div class="rx-intro" id="intro">
+  <a class="intro-back" href="mobile-hub.html">← Exit</a>
+  <div class="box-lang-toggle"><button type="button" class="box-lang-btn lg" data-l="es">ES</button><button type="button" class="box-lang-btn lg" data-l="en">EN</button></div>
+  <div class="vrr-logo">SWIPE <span>IT</span></div>
+  <div class="vrr-sub" id="who">Reaction Velocity</div>
+  <div class="tempo-hint" data-t="hint">An arrow flashes once at your speed, in a new spot. Swipe where it was, the way it pointed — your swipe gives your BPM. 25 arrows.</div>
+  <div class="speed-label" data-t="speedLbl">Speed</div>
+  <div class="speed-row">
+    <a class="speed-btn free" id="goRS" href="vr-reaction-speed.html" data-t="goRS" style="display:none">⚡ Play Reaction Speed first</a>
+    <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" aria-label="Slower" disabled>−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" aria-label="Faster" disabled>+</button><span>BPM</span><small id="bpmNote"></small></label>
   </div>
-  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
-  <div class="bpm-row">
-    <button type="button" class="bpm-step" id="bpmDown" aria-label="Slower" disabled>−</button>
-    <input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" disabled aria-label="Speed in BPM">
-    <span class="bpm-unit">BPM</span>
-    <button type="button" class="bpm-step" id="bpmUp" aria-label="Faster" disabled>+</button>
+  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
+  <button class="big-btn" id="startBtn" type="button" data-t="start">▶ Start · 25 arrows</button>
+  <div class="game-switcher">
+    <a class="switcher-btn game-active" href="vr-reaction-speed.html">Reaction<br>Speed</a>
+    <a class="switcher-btn game-active" href="vr-reactific.html">Reactific</a>
+    <a class="switcher-btn game-active" href="vr-fortress.html">The<br>Fortress</a>
+    <span class="switcher-btn game-current">Swipe<br>It</span>
   </div>
-  <div id="bpmNote"></div>
-  <a id="goRS" href="vr-reaction-speed.html" data-t="goRS">⚡ Play Reaction Speed first</a>
-  <button class="go" id="startBtn" type="button" data-t="start">Start · 25 arrows</button>
 </div>
 
 <div id="countdown"><div id="bigCount">5</div></div>
@@ -152,14 +153,14 @@ var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (same choice as Reaction Speed, remembered on this device) ── */
 var TX={
   es:{s1:'Una flecha destella una vez a tu velocidad, cada vez en otro lugar',s2:'Desliza donde estaba, hacia donde apuntaba',s3:'Rápido: tu deslizamiento da tu BPM · 25 flechas',lab:'BPM de Swipe It',flashAt:'parpadeo a',
-      start:'Empezar · 25 flechas',name:'Tu nombre',hub:'← EL HUB',newp:'Nuevo jugador',goRS:'⚡ Juega Reaction Speed primero',
+      start:'▶ Empezar · 25 flechas',speedLbl:'Velocidad',hint:'Una flecha destella una vez a tu velocidad, en otro lugar. Desliza donde estaba, hacia donde apuntaba — tu deslizamiento da tu BPM. 25 flechas.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',goRS:'⚡ Juega Reaction Speed primero',
       noRS:'aún no hay Reaction Speed — juégalo primero',fromRS:'tu velocidad viene de Reaction Speed',mine:'tu velocidad · − / + o escribe cualquier velocidad',rsNote:'tu Reaction Speed · − / + o escribe cualquier velocidad',
       hit:'acierto',hits:'aciertos',of:'de',at:'a',dots:'Flecha por flecha',prog:'Mi progreso · Swipe It',again:'Jugar otra vez',nextp:'Siguiente jugador',
       first:'PRIMERA MARCA',firstSub:'la que hay que superar la próxima vez',pb:'¡NUEVO RÉCORD PERSONAL!',was:'tu mejor era',best:'Tu mejor a',strong:'Muy bien — prueba',tryS:'Prueba',next:'la próxima vez',
       again1:'Juega otra vez a',again2:'para empezar tu línea de progreso.',
       'Too slow':'Muy lento','Off the arrow':'Fuera de la flecha','Wrong way':'Dirección equivocada','Too early':'Muy temprano','Swipe, don’t tap':'Desliza, no toques'},
   en:{s1:'An arrow flashes once at your speed, in a new spot each time',s2:'Swipe where it was, the way it pointed',s3:'Fast — your swipe gives your BPM · 25 arrows',lab:'Swipe It BPM',flashAt:'flashing at',
-      start:'Start · 25 arrows',name:'Your name',hub:'← THE HUB',newp:'New player',goRS:'⚡ Play Reaction Speed first',
+      start:'▶ Start · 25 arrows',speedLbl:'Speed',hint:'An arrow flashes once at your speed, in a new spot. Swipe where it was, the way it pointed — your swipe gives your BPM. 25 arrows.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',goRS:'⚡ Play Reaction Speed first',
       noRS:'no Reaction Speed yet — play it first',fromRS:'your speed comes from Reaction Speed',mine:'your speed · − / + or type any speed',rsNote:'your Reaction Speed · − / + or type any speed',
       hit:'hit',hits:'hits',of:'of',at:'at',dots:'Arrow by arrow',prog:'My Progress · Swipe It',again:'Play again',nextp:'Next Player',
       first:'FIRST MARK SET',firstSub:'the one to beat next time',pb:'NEW PERSONAL BEST!',was:'your best was',best:'Your best at',strong:'Strong — try',tryS:'Try',next:'next',
@@ -171,9 +172,10 @@ function applyLang(){
   document.documentElement.lang=LANG;
   document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=T(el.getAttribute('data-t'))});
   $('playerNameInputMain').placeholder=T('name');
-  document.querySelectorAll('a.pill,#end a.btn2').forEach(function(a){a.textContent=T('hub')});
+  document.querySelectorAll('#intro .intro-back').forEach(function(a){a.textContent=T('exit')});
+  document.querySelectorAll('#end a.btn2').forEach(function(a){a.textContent=T('hub')});
   var np=document.querySelector('.jg-como a'); if(np)np.textContent=T('newp');   // the player chip (jugador.js)
-  document.querySelectorAll('.lg').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-l')===LANG)});
+  document.querySelectorAll('.lg').forEach(function(b){var on=b.getAttribute('data-l')===LANG;b.classList.toggle('on',on);b.classList.toggle('active',on)});
   if(typeof refreshBox==='function'&&!$('intro').hidden)refreshBox(true);
 }
 document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
@@ -208,8 +210,8 @@ function refreshBox(fromDb){
   var x=$('playerNameInputMain').value, v=x.trim()?savedBPM(x):0;
   if(!fromDb&&x.trim())askBest(x);
   $('bpmDown').disabled=$('bpmUp').disabled=$('bpmInput').disabled=!v; $('startBtn').disabled=!v;
-  if(!v){$('bpmInput').value='';$('bpmNote').textContent=x.trim()?T('noRS'):T('fromRS');$('goRS').style.display=x.trim()?'inline-block':'none';return}
-  $('goRS').style.display='none';
+  if(!v){$('bpmInput').value='';$('bpmNote').textContent=x.trim()?T('noRS'):T('fromRS');$('goRS').style.display=x.trim()?'block':'none';$('bpmBox').style.display=x.trim()?'none':'';$('bpmBox').classList.add('locked');return}
+  $('goRS').style.display='none'; $('bpmBox').style.display=''; $('bpmBox').classList.remove('locked'); $('bpmBox').classList.add('active');
   if(!touched||!$('bpmInput').value)$('bpmInput').value=v;
   $('bpmNote').textContent=touched?T('mine'):T('rsNote');
 }
