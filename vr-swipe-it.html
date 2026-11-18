@@ -190,7 +190,8 @@ function show(id){['intro','play','end'].forEach(function(s){$(s).hidden=(s!==id
 /* ── the speed box: opens on the player's best Reaction Speed BPM ── */
 function rsKey(x){return 'rv-rs-bpm:'+String(x||'').trim().toLowerCase()}
 function freeKey(x){return 'rv-free-bpm:'+String(x||'').trim().toLowerCase()}
-function savedBPM(x){try{var v=parseInt(localStorage.getItem(rsKey(x)),10);if(v>0)return v;v=parseInt(localStorage.getItem(freeKey(x)),10);return isNaN(v)?0:v}catch(e){return 0}}
+// Cognitivo Gym keeps the tap Reaction Speed: its Free Tap comes first there; vreaction.com: the new Reaction Speed first
+function savedBPM(x){try{var a=localStorage.getItem(rsKey(x)),b=localStorage.getItem(freeKey(x));if(MOVIL.mode==='gym'){var t=a;a=b;b=t}var v=parseInt(a,10);if(v>0)return v;v=parseInt(b,10);return isNaN(v)?0:v}catch(e){return 0}}
 var asked={}, touched=false;
 function askBest(x){
   var k=String(x||'').trim().toLowerCase(); if(!k||asked[k])return; asked[k]=1;

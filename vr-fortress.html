@@ -653,7 +653,10 @@ function pickBox(){
 // saved as 'home-base'); the old tap game's Free Tap is only a fallback.
 function rsKey(n){return 'rv-rs-bpm:'+String(n||'').trim().toLowerCase()}       // Reaction Speed
 function freeKey(n){return 'rv-free-bpm:'+String(n||'').trim().toLowerCase()}   // the old tap game's Free Tap
-function savedFreeBPM(n){try{var v=parseInt(localStorage.getItem(rsKey(n)),10);if(v>0)return v;v=parseInt(localStorage.getItem(freeKey(n)),10);return isNaN(v)?0:v}catch(e){return 0}}
+// RS_FIRST: 'new' on vreaction.com (hold-lift-tap Reaction Speed first, the old Free Tap as a fallback);
+// Cognitivo Gym (tablets) keeps the tap Reaction Speed, so its Free Tap comes first there.
+var RS_FIRST='new';
+function savedFreeBPM(n){try{var a=localStorage.getItem(rsKey(n)),b=localStorage.getItem(freeKey(n));if(RS_FIRST==='classic'){var t=a;a=b;b=t}var v=parseInt(a,10);if(v>0)return v;v=parseInt(b,10);return isNaN(v)?0:v}catch(e){return 0}}
 var dbAsked={};
 function askBestFree(n){
   var k=String(n||'').trim().toLowerCase(); if(!k||dbAsked[k])return;
