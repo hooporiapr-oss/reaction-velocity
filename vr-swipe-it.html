@@ -4,13 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Swipe It | Reaction Velocity</title>
-<!-- SWIPE IT — Reaction Mobile (phones only).
-     An arrow appears after a random wait: swipe that way, anywhere on
-     the screen. The time from the arrow to the swipe is the reaction,
-     shown in BPM. Touching before the arrow, or a swipe under
-     120 ms (a guess, not a reaction) = too early; the wrong way,
-     a tap instead of a swipe, or waiting too long = a miss.
-     10 arrows. Saves to vr_mobile_standings (game_key 'swipe-it'). -->
+<!-- SWIPE IT — plays like Reactific: at a set speed.
+     The BPM box opens on the player's best Reaction Speed BPM (− / + or
+     type any speed, 10–300). After a 5-4-3-2-1 countdown, one small arrow
+     flashes per beat in a random spot: swipe ON the arrow, the way it
+     points, before the next beat. The wrong way, off the arrow, too slow or
+     faster than a human can react (under 120 ms) = a miss.
+     25 arrows. Saves to vr_mobile_standings (game_key 'swipe-it'):
+     bpm = the speed played, hits / misses, and the device. -->
+<script>try{if(sessionStorage.getItem('gym-plain')==='1')document.documentElement.classList.add('plain')}catch(e){}</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none !important}
@@ -26,17 +28,27 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 .how b{flex:0 0 30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#00e5ff;color:#000;font-size:.95rem}
 .name-input{width:100%;max-width:320px;padding:14px;border-radius:14px;border:2px solid rgba(0,229,255,.4);background:rgba(255,255,255,.06);color:#fff;font-size:1.05rem;text-align:center}
 .go{width:100%;max-width:320px;margin-top:14px;padding:18px;border:0;border-radius:16px;background:linear-gradient(135deg,#00e5ff,#0091ff);color:#031018;font:900 1.15rem Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+/* the speed box (as in Reactific) */
+.bpm-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0 4px}
+.bpm-step{width:52px;height:52px;border-radius:50%;border:2px solid rgba(0,229,255,.5);background:rgba(0,229,255,.08);color:#fff;font:900 1.6rem Arial,sans-serif;cursor:pointer}
+.bpm-step:disabled{opacity:.3}
+#bpmInput{width:110px;padding:10px;border-radius:14px;border:2px solid rgba(0,229,255,.5);background:rgba(255,255,255,.06);color:#fff;font:900 1.6rem Arial,sans-serif;text-align:center}
+#bpmInput:disabled{opacity:.4}
+.bpm-unit{font-size:.8rem;font-weight:900;color:#9fb3c8;letter-spacing:.1em}
+#bpmNote{font-size:.78rem;color:#9fb3c8;text-align:center;min-height:1.2em;margin-bottom:6px}
+#goRS{display:none;margin:6px 0;padding:12px 18px;border-radius:14px;background:rgba(0,229,255,.12);border:2px solid #00e5ff;color:#fff;font:900 .9rem Arial,sans-serif;text-decoration:none}
+.go:disabled{opacity:.35}
+#countdown{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(0,4,12,.94)}
+#bigCount{font-size:9rem;font-weight:900;color:#00e5ff;text-shadow:0 0 50px rgba(0,229,255,.7)}
 /* play */
 #play{padding:0;touch-action:none}
 #bar{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 0;font-size:.8rem;font-weight:900;letter-spacing:.1em;color:#9fb3c8;pointer-events:none}
-#msg{position:absolute;left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom));text-align:center;font-size:1.3rem;font-weight:900;letter-spacing:.05em;pointer-events:none}
-#msg.bad{color:#ff6b6b}#msg.good{color:#3ddc84}
-#arrow{position:absolute;left:50%;top:42%;width:clamp(180px,30vmin,300px);height:clamp(180px,30vmin,300px);transform:translate(-50%,-50%);border-radius:50%;display:flex;align-items:center;justify-content:center;
-  border:4px solid rgba(0,229,255,.25);background:rgba(0,229,255,.05);pointer-events:none}
-#arrow svg{width:66%;height:66%;transition:none;opacity:0}
-#arrow.on{border-color:#00e5ff;background:rgba(0,229,255,.12);box-shadow:0 0 50px rgba(0,229,255,.45)}
-#arrow.on svg{opacity:1}
-
+#arrow{position:absolute;width:clamp(64px,10vmin,100px);height:clamp(64px,10vmin,100px);border-radius:50%;display:none;align-items:center;justify-content:center;
+  border:3px solid #00e5ff;background:rgba(0,229,255,.14);box-shadow:0 0 30px rgba(0,229,255,.55);pointer-events:none}
+#arrow svg{width:68%;height:68%}
+#arrow.hit{border-color:#3ddc84;background:rgba(61,220,132,.3);box-shadow:0 0 30px rgba(61,220,132,.7)}
+#arrow.miss{border-color:#ff6b6b;background:rgba(255,107,107,.25);box-shadow:0 0 30px rgba(255,107,107,.6)}
+/* end */
 #end{overflow-y:auto;justify-content:flex-start}
 #end>*{flex-shrink:0}   /* a long end screen scrolls instead of squeezing lines together */
 .big{font-size:4.2rem;font-weight:900;line-height:1;margin-top:10px;color:#00e5ff;text-shadow:0 0 30px rgba(0,229,255,.5)}
@@ -51,6 +63,10 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 .btns{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
 .btns .go{max-width:none;margin:0}
 .btn2{padding:15px;border-radius:16px;border:2px solid rgba(0,229,255,.45);background:transparent;color:#fff;font:900 .95rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:center;text-decoration:none;cursor:pointer}
+.dots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.dots div{font-size:.72rem;font-weight:800;padding:6px 4px;border-radius:8px;text-align:center;background:rgba(61,220,132,.14);color:#3ddc84}
+.dots div.x{background:rgba(255,107,107,.12);color:#ff8a8a}
+#suggest{font-size:.85rem;color:#c8ccd4;text-align:center;margin:-4px 0 12px}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
 <script>(function(){var g=function(k){try{return sessionStorage.getItem(k)==='1'}catch(e){return false}};
@@ -63,32 +79,41 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 </head>
 <body>
 
-<div class="screen" id="intro">
+<div class="screen" id="intro" style="overflow-y:auto">
   <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span></span></div>
   <div class="t">SWIPE <span>IT</span></div>
   <div class="sub" id="who">Reaction Velocity</div>
   <div class="how">
-    <div><b>1</b>Keep your thumb off the screen</div>
-    <div><b>2</b>An arrow appears ← → ↑ ↓</div>
-    <div><b>3</b>Swipe that way, fast</div>
+    <div><b>1</b>One arrow per beat, anywhere on the screen</div>
+    <div><b>2</b>Swipe on the arrow, the way it points</div>
+    <div><b>3</b>Before the next beat — 25 arrows</div>
   </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
-  <button class="go" id="startBtn" type="button">Start · 10 arrows</button>
+  <div class="bpm-row">
+    <button type="button" class="bpm-step" id="bpmDown" aria-label="Slower" disabled>−</button>
+    <input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" disabled aria-label="Speed in BPM">
+    <span class="bpm-unit">BPM</span>
+    <button type="button" class="bpm-step" id="bpmUp" aria-label="Faster" disabled>+</button>
+  </div>
+  <div id="bpmNote"></div>
+  <a id="goRS" href="vr-reaction-speed.html">⚡ Play Reaction Speed first</a>
+  <button class="go" id="startBtn" type="button">Start · 25 arrows</button>
 </div>
 
+<div id="countdown"><div id="bigCount">5</div></div>
+
 <div class="screen" id="play" hidden>
-  <div id="bar"><span id="rnd">1 / 10</span><span id="hits">0 hits</span></div>
+  <div id="bar"><span id="rnd">1 / 25</span><span id="spd"></span><span id="hits">0 hits</span></div>
   <div id="arrow"><svg viewBox="0 0 100 100"><path d="M50 8 L88 52 H62 V92 H38 V52 H12 Z" fill="#00e5ff"/></svg></div>
-  <div id="msg"></div>
 </div>
 
 <div class="screen" id="end" hidden>
-  <div class="big" id="endBpm">0</div>
-  <div class="lab">Swipe It BPM</div>
+  <div class="big" id="endHits">0</div>
+  <div class="lab" id="endLab">of 25 · at 0 BPM</div>
   <div id="pbMsg"></div>
-  <div class="hm" id="endHm"></div>
-  <div class="card"><h3>Swipe by swipe</h3><div class="taps" id="taps"></div></div>
-  <div class="card"><h3>My Progress · Swipe It</h3><div id="prog"></div></div>
+  <div id="suggest"></div>
+  <div class="card"><h3>Arrow by arrow</h3><div class="dots" id="dots"></div></div>
+  <div class="card"><h3 id="progH">My Progress · Swipe It</h3><div id="prog"></div></div>
   <div class="btns">
     <button class="go" id="againBtn" type="button">Play again</button>
     <button class="btn2" id="nextPlayerBtn" type="button">Next Player</button>
@@ -98,76 +123,127 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 
 <script>
 var $=function(id){return document.getElementById(id)};
-var GUESS_MS=120;   // faster than any human reaction: a guess, counted as too early
-var ROUNDS=10, WAIT_MIN=900, WAIT_MAX=2800, TOO_SLOW=2000, SWIPE_PX=40;
+var TOTAL=25, GUESS_MS=120, BPM_MIN=10, BPM_MAX=300;
 var DIRS={up:0,right:90,down:180,left:270}, NAMES=['up','right','down','left'];
-var state='idle', round=0, results=[], waitT=null, slowT=null, t0=0, want='', start=null, playerName='';
+var SPEED=0, BEAT_MS=0, state='idle', n=0, results=[], beatT=null, t0=0, want='', start=null, done1=false, playerName='';
 (function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)$('who').textContent=w})();
-
 function show(id){['intro','play','end'].forEach(function(s){$(s).hidden=(s!==id)})}
-function msg(t,c){var m=$('msg');m.textContent=t||'';m.className=c||''}
-function bar(){$('rnd').textContent=Math.min(round+1,ROUNDS)+' / '+ROUNDS;var h=results.filter(function(r){return r.ok}).length;$('hits').textContent=h+(h===1?' hit':' hits')}
 
+/* ── the speed box: opens on the player's best Reaction Speed BPM ── */
+function rsKey(x){return 'rv-rs-bpm:'+String(x||'').trim().toLowerCase()}
+function freeKey(x){return 'rv-free-bpm:'+String(x||'').trim().toLowerCase()}
+function savedBPM(x){try{var v=parseInt(localStorage.getItem(rsKey(x)),10);if(v>0)return v;v=parseInt(localStorage.getItem(freeKey(x)),10);return isNaN(v)?0:v}catch(e){return 0}}
+var asked={}, touched=false;
+function askBest(x){
+  var k=String(x||'').trim().toLowerCase(); if(!k||asked[k])return; asked[k]=1;
+  var who='&hidden=is.false&school_name=eq.'+encodeURIComponent(MOVIL.school())+'&player_name=ilike.'+encodeURIComponent(String(x).trim().replace(/[*%,()]/g,''));
+  var H={headers:{apikey:MOVIL.SB_KEY,Authorization:'Bearer '+MOVIL.SB_KEY}};
+  function get(u){return fetch(MOVIL.SB_URL+u,H).then(function(r){return r.ok?r.json():[]}).catch(function(){return []})}
+  Promise.all([get('/rest/v1/vr_mobile_standings?select=bpm&game_key=eq.home-base'+who),get('/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*'+who)]).then(function(res){
+    function keep(key,top){try{if(top>(parseInt(localStorage.getItem(key),10)||0))localStorage.setItem(key,String(top))}catch(e){}}
+    var rs=0;(res[0]||[]).forEach(function(r){var v=parseInt(r.bpm,10);if(v>rs)rs=v});
+    var fr=0;(res[1]||[]).forEach(function(r){var v=parseInt(String(r.speed).split('-')[1],10);if(v>fr)fr=v});
+    keep(rsKey(x),rs);keep(freeKey(x),fr);
+    if($('playerNameInputMain').value.trim().toLowerCase()===k&&!$('intro').hidden)refreshBox(true);
+  });
+}
+function boxBPM(){var v=parseInt($('bpmInput').value,10);return isNaN(v)?0:Math.max(BPM_MIN,Math.min(BPM_MAX,v))}
+function refreshBox(fromDb){
+  var x=$('playerNameInputMain').value, v=x.trim()?savedBPM(x):0;
+  if(!fromDb&&x.trim())askBest(x);
+  $('bpmDown').disabled=$('bpmUp').disabled=$('bpmInput').disabled=!v; $('startBtn').disabled=!v;
+  if(!v){$('bpmInput').value='';$('bpmNote').textContent=x.trim()?'no Reaction Speed yet — play it first':'your speed comes from Reaction Speed';$('goRS').style.display=x.trim()?'inline-block':'none';return}
+  $('goRS').style.display='none';
+  if(!touched||!$('bpmInput').value)$('bpmInput').value=v;
+  $('bpmNote').textContent=touched?'your speed · − / + or type any speed':'your Reaction Speed · − / + or type any speed';
+}
+function step(d){if($('bpmInput').disabled)return;touched=true;$('bpmInput').value=Math.max(BPM_MIN,Math.min(BPM_MAX,boxBPM()+d));refreshBox(true)}
+$('bpmDown').onclick=function(){step(-5)}; $('bpmUp').onclick=function(){step(5)};
+$('bpmInput').addEventListener('input',function(){touched=true});
+$('bpmInput').addEventListener('change',function(){$('bpmInput').value=boxBPM()||'';refreshBox(true)});
+$('playerNameInputMain').addEventListener('input',function(){touched=false;$('bpmInput').value='';refreshBox()});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(refreshBox,0)});
+
+/* ── start: countdown, then one arrow per beat ── */
 $('startBtn').onclick=function(){
   if(!MOVIL.guard())return;
-  var n=$('playerNameInputMain').value.trim();
-  if(!n){$('playerNameInputMain').focus();return}
-  playerName=n; MOVIL.unlock(); MOVIL.loadPast(n);
-  round=0; results=[]; show('play'); next();
+  var x=$('playerNameInputMain').value.trim(); if(!x){$('playerNameInputMain').focus();return}
+  SPEED=boxBPM(); if(!SPEED)return;
+  BEAT_MS=Math.round(60000/SPEED); playerName=x; MOVIL.unlock(); MOVIL.loadPast(x);
+  n=0; results=[]; show('play'); $('spd').textContent=SPEED+' BPM'; bar();
+  var c=5; $('bigCount').textContent=c; $('countdown').style.display='flex'; state='count';
+  var iv=setInterval(function(){c--; if(c<=0){clearInterval(iv);$('countdown').style.display='none';state='run';beat()} else $('bigCount').textContent=c},1000);
 };
-$('againBtn').onclick=function(){$('startBtn').click()};
-$('nextPlayerBtn').addEventListener('click',function(){show('intro')});
+$('againBtn').onclick=function(){show('intro');refreshBox(true);$('startBtn').click()};
+$('nextPlayerBtn').addEventListener('click',function(){show('intro');touched=false;$('bpmInput').value='';refreshBox()});
+function bar(){$('rnd').textContent=Math.min(Math.max(n,1),TOTAL)+' / '+TOTAL;var h=results.filter(function(r){return r.ok}).length;$('hits').textContent=h+(h===1?' hit':' hits')}
 
-function next(){
-  clearTimeout(waitT);clearTimeout(slowT); start=null;
-  state='wait'; $('arrow').className=''; bar(); msg('Get ready…');
-  waitT=setTimeout(appear,WAIT_MIN+Math.random()*(WAIT_MAX-WAIT_MIN));
+function place(){
+  var a=$('arrow'), p=$('play').getBoundingClientRect(), r=parseFloat(getComputedStyle(a).width)/2||40;
+  var top=64+r, bottom=p.height-24-r, left=12+r, right=p.width-12-r;
+  var x=left+Math.random()*(right-left), y=top+Math.random()*(bottom-top);
+  a.style.left=(x-r)+'px'; a.style.top=(y-r)+'px'; a.dataset.cx=x; a.dataset.cy=y; a.dataset.r=r;
 }
-function appear(){
-  if(state!=='wait')return;
-  var prev=want; do{want=NAMES[Math.floor(Math.random()*4)]}while(want===prev&&Math.random()<.6);
-  $('arrow').querySelector('svg').style.transform='rotate('+DIRS[want]+'deg)';
-  $('arrow').className='on'; msg(''); t0=performance.now(); state='live';
-  slowT=setTimeout(function(){done(false,0,'Too slow')},TOO_SLOW);
+function beat(){
+  if(state!=='run')return;
+  if(n>0&&!done1)result(false,0,'Too slow');      // the last arrow got no swipe in its beat
+  if(n>=TOTAL){finish();return}
+  var prev=want; do{want=NAMES[Math.floor(Math.random()*4)]}while(want===prev&&Math.random()<.5);
+  var a=$('arrow'); a.className=''; a.querySelector('svg').style.transform='rotate('+DIRS[want]+'deg)';
+  a.style.display='flex'; place(); t0=performance.now(); start=null; done1=false; n++; bar();
+  beatT=setTimeout(beat,BEAT_MS);
 }
-function done(ok,ms,why){
-  if(state!=='live'&&state!=='wait')return;
-  clearTimeout(waitT);clearTimeout(slowT);
-  state='between'; $('arrow').className=''; start=null;
+function result(ok,ms,why){
+  if(done1)return; done1=true;
   results.push({ok:ok,ms:ms,why:why});
-  if(ok){MOVIL.hitSound();msg(MOVIL.bpm(ms)+' BPM','good')}else{MOVIL.missSound();MOVIL.vibrate(80);msg(why,'bad')}
-  round++; bar();
-  setTimeout(function(){round>=ROUNDS?finish():next()},750);
+  var a=$('arrow'); a.className=ok?'hit':'miss';
+  if(ok)MOVIL.hitSound(); else {MOVIL.missSound();MOVIL.vibrate(60)}
+  setTimeout(function(){if(done1)a.style.display='none'},Math.min(160,BEAT_MS/3));
+  bar();
 }
-
 var play=$('play');
 play.addEventListener('pointerdown',function(e){
   e.preventDefault();
-  if(state==='wait'){done(false,0,'Too early');return}
-  if(state==='live'&&!start)start={x:e.clientX,y:e.clientY,id:e.pointerId};
+  if(state!=='run'||done1||start)return;
+  var a=$('arrow'), dx=e.clientX-a.dataset.cx, dy=e.clientY-a.dataset.cy, r=+a.dataset.r;
+  if(Math.sqrt(dx*dx+dy*dy)>r*1.8){result(false,0,'Off the arrow');return}   // a little extra room for a finger
+  start={x:e.clientX,y:e.clientY,id:e.pointerId};
 });
 play.addEventListener('pointermove',function(e){
-  if(state!=='live'||!start||e.pointerId!==start.id)return;
+  if(state!=='run'||done1||!start||e.pointerId!==start.id)return;
   var dx=e.clientX-start.x, dy=e.clientY-start.y;
-  if(Math.max(Math.abs(dx),Math.abs(dy))<SWIPE_PX)return;
-  var got=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up');
-  if(got===want){var ms=performance.now()-t0; if(ms<GUESS_MS)done(false,0,'Too early'); else done(true,ms,'')}
-  else done(false,0,'Wrong way');
+  if(Math.max(Math.abs(dx),Math.abs(dy))<30)return;
+  var got=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'), ms=performance.now()-t0;
+  if(got!==want)result(false,0,'Wrong way'); else if(ms<GUESS_MS)result(false,0,'Too early'); else result(true,ms,'');
 });
-function up(e){ if(state==='live'&&start&&e.pointerId===start.id)done(false,0,'Swipe, don’t tap') }
-addEventListener('pointerup',up); addEventListener('pointercancel',function(e){ if(start&&e.pointerId===start.id)start=null });
+addEventListener('pointerup',function(e){if(state==='run'&&start&&!done1&&e.pointerId===start.id)result(false,0,'Swipe, don’t tap')});
 
+/* ── the end ── */
 function finish(){
-  state='idle';
-  var hits=results.filter(function(r){return r.ok}), misses=results.length-hits.length;
-  var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0, bpm=MOVIL.bpm(avg);
-  var early=results.filter(function(r){return r.why==='Too early'}).length;
-  $('endBpm').textContent=bpm||'—';
-  $('endHm').textContent=hits.length+' / '+ROUNDS+' hits'+(early?' · '+early+' too early':'');
-  $('taps').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x"')+'>'+(i+1)+' · '+(r.ok?MOVIL.bpm(r.ms)+' BPM':MOVIL.esc(r.why))+'</div>'}).join('');
-  $('pbMsg').innerHTML=MOVIL.bestHtml(bpm);
-  $('prog').innerHTML=MOVIL.progressSvg(bpm);
-  if(hits.length)MOVIL.save(playerName,bpm,hits.length,misses,Math.round(avg));
+  state='idle'; clearTimeout(beatT); $('arrow').style.display='none';
+  var hits=results.filter(function(r){return r.ok}), misses=TOTAL-hits.length;
+  var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0;
+  $('endHits').textContent=hits.length; $('endLab').textContent='of '+TOTAL+' · at '+SPEED+' BPM';
+  $('dots').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x" title="'+MOVIL.esc(r.why)+'"')+'>'+(i+1)+(r.ok?' ✓':' ✗')+'</div>'}).join('');
+  // personal best: hits at this same speed, against the player's own runs only
+  var same=(MOVIL.past||[]).filter(function(r){return +r.bpm===SPEED}), prev=-1;
+  same.forEach(function(r){var v=+r.hits||0;if(v>prev)prev=v});
+  var big='font-size:1.15rem;font-weight:900;letter-spacing:.06em;color:#ffd35a;text-shadow:0 0 18px rgba(255,211,90,.6)', small='font-size:.82rem;color:#c8ccd4;margin-top:3px';
+  $('pbMsg').innerHTML=!MOVIL.past?'':prev<0?'<div style="'+big+'">⭐ FIRST MARK SET</div><div style="'+small+'">'+hits.length+' hits at '+SPEED+' BPM — the one to beat next time</div>'
+    :hits.length>prev?'<div style="'+big+'">⭐ NEW PERSONAL BEST!</div><div style="'+small+'">'+hits.length+' hits at '+SPEED+' BPM · your best was '+prev+'</div>'
+    :'<div style="'+small+'">Your best at '+SPEED+' BPM: '+prev+' hits</div>';
+  $('suggest').textContent=hits.length>=22?'Strong — try '+Math.min(BPM_MAX,SPEED+5)+' BPM next':hits.length<=12?'Try '+Math.max(BPM_MIN,SPEED-5)+' BPM next':'';
+  // My Progress: hits at this speed, run by run
+  var pts=same.map(function(r){return +r.hits||0}); pts.push(hits.length); pts=pts.slice(-20);
+  $('progH').textContent='My Progress · '+SPEED+' BPM';
+  $('prog').innerHTML=pts.length<2?'<div style="color:#8fa0b4;font-size:.82rem;text-align:center;padding:10px">Play again at '+SPEED+' BPM to start your progress line.</div>':(function(){
+    var W=340,Hh=150,L=30,R=10,T=12,B=20,X=function(i){return L+(W-L-R)*i/(pts.length-1)},Y=function(v){return T+(Hh-T-B)*(TOTAL-v)/TOTAL};
+    var s='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto;display:block">';
+    [0,5,10,15,20,25].forEach(function(y){s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="rgba(255,255,255,.08)"/><text x="'+(L-6)+'" y="'+(Y(y)+4)+'" fill="#8fa0b4" font-size="10" text-anchor="end">'+y+'</text>'});
+    s+='<polyline fill="none" stroke="#00e5ff" stroke-width="2.5" points="'+pts.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1)}).join(' ')+'"/>';
+    pts.forEach(function(v,i){var l=i===pts.length-1;s+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="'+(l?5.5:3.5)+'" fill="'+(l?'#ffd35a':'#00e5ff')+'"/>'});
+    return s+'</svg>'})();
+  MOVIL.save(playerName,SPEED,hits.length,misses,hits.length?Math.round(avg):null);
   show('end');
 }
 </script>

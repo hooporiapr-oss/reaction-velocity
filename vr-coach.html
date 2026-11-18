@@ -182,14 +182,14 @@ function loadAll(){
     readAll('vr_reaction_speed_standings',sc+'&speed=like.free-*',['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
     readAll('vr_reactific_standings',sc,['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
     readAll('dynamic_memory_quarter_standings',sc+'&game_key=eq.fortress',['select=player_name,level_achieved,time_seconds,speed,category,logged_at,admin_id'+o,'select=player_name,level_achieved,time_seconds,category','select=player_name,level_achieved,time_seconds']),
-    readAll('vr_mobile_standings',sc,['select=player_name,game_key,device,bpm,category,logged_at,admin_id'+o,'select=player_name,game_key,bpm,category,logged_at,admin_id'+o])
+    readAll('vr_mobile_standings',sc,['select=player_name,game_key,device,bpm,hits,category,logged_at,admin_id'+o,'select=player_name,game_key,device,bpm,category,logged_at,admin_id'+o,'select=player_name,game_key,bpm,category,logged_at,admin_id'+o])
   ]).then(function(res){
     players={};
     function add(game,r,v){
       var k=String(r.player_name||'').trim().toLowerCase(); if(!k||!(v>0))return;
       var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],hb:[],sw:[],hbP:[],swP:[],last:''});
       var c=(r.category||'').trim(); if(c)p.cats[c]=1;
-      p[game].push({v:v,at:r.logged_at||'',spd:r.speed});
+      p[game].push({v:v,at:r.logged_at||'',spd:r.speed,h:r.hits});
       if(r.logged_at&&r.logged_at>p.last){p.last=r.logged_at;p.name=String(r.player_name).trim()}
     }
     res[0].forEach(function(r){add('rs',r,rsBpm(r))});
@@ -215,6 +215,12 @@ function cellTP(t,ph){   // tablet leads; a phone number shows as 📱 — never
   if(!t.length)return '📱 '+cellBpm(ph);
   return cellBpm(t)+(ph.length?'<small>📱 '+ph[ph.length-1].v+' on phone</small>':'');
 }
+function cellSW(t,ph){   // Swipe It: hits out of 25 at the speed played — tablet leads, phone as 📱
+  function one(a){var l=a[a.length-1];return (l.h!=null?l.h+'/25':'—')+'<small>at '+l.v+' BPM · '+a.length+' run'+(a.length>1?'s':'')+'</small>'}
+  if(!t.length&&!ph.length)return '<span class="dash">—</span>';
+  if(!t.length)return '📱 '+one(ph);
+  return one(t)+(ph.length?'<small>📱 '+(ph[ph.length-1].h!=null?ph[ph.length-1].h+'/25 ':'')+'on phone</small>':'');
+}
 function cellRS(p){   // the new Reaction Speed; the old tap game only when there is nothing newer
   if(p.hb.length||p.hbP.length)return cellTP(p.hb,p.hbP);
   if(p.rs.length)return cellBpm(p.rs).replace('<small>','<small>classic · ');
@@ -229,7 +235,7 @@ function render(){
   $('ages').querySelectorAll('.tab').forEach(function(b){b.onclick=function(){currentAge=b.dataset.a;render()}});
   var keys=Object.keys(players).filter(function(k){return inAge(players[k])}).sort(function(a,b){return players[a].name.localeCompare(players[b].name,undefined,{sensitivity:'base'})});
   $('list').innerHTML=keys.length?keys.map(function(k){var p=players[k];
-    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellFt(p.ft)+'</span><span class="v mcol">'+cellTP(p.sw,p.swP)+'</span><span class="last">'+day(p.last)+'</span></button>';
+    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellFt(p.ft)+'</span><span class="v mcol">'+cellSW(p.sw,p.swP)+'</span><span class="last">'+day(p.last)+'</span></button>';
   }).join(''):'<div class="empty">No players yet'+(currentAge?' in '+esc(currentAge):'')+(school?' at '+esc(school):'')+'.</div>';
   $('count').textContent=keys.length?keys.length+' player'+(keys.length>1?'s':'')+' · listed A–Z, not ranked':'';
   $('list').querySelectorAll('.row').forEach(function(b){b.onclick=function(){showPlayer(b.dataset.k)}});
@@ -273,8 +279,8 @@ function showPlayer(k){
     (p.rs.length?block('⚡ Reaction Speed · classic tap (before)','#5a8fa0',p.rs,'BPM','Fastest',''):'')+
     block('🔴 Reactific · speed','#00D9A5',p.rf,'BPM','Fastest','No Reactific games yet.')+
     block('🏰 The Fortress · chain','#a855f7',p.ft,'level','Longest','No Fortress games yet.')+
-    (hasMobile?block('👆 Swipe It · tablet','#ffd35a',p.sw,'BPM','Fastest','No Swipe It on a tablet yet.')+
-               (p.swP.length?block('📱 Swipe It · phone','#ffd35a',p.swP,'BPM','Fastest',''):''):'');
+    (hasMobile?block('👆 Swipe It · speed played (tablet)','#ffd35a',p.sw,'BPM','Fastest','No Swipe It on a tablet yet.')+
+               (p.swP.length?block('📱 Swipe It · speed played (phone)','#ffd35a',p.swP,'BPM','Fastest',''):''):'');
 }
 $('backList').onclick=function(){$('player').hidden=true;$('view').hidden=false};
 </script>
