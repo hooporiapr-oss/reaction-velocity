@@ -4,11 +4,11 @@
    scoped to .rx-intro, the start-screen container (#screen-intro or
    #intro), so nothing else on a page changes. Same file in reaction-velocity and cognitivo-gym-paradiso.
    Each game has its own color (the same as in the Coach View):
-     Reaction Speed blue · Reactific green · The Fortress purple · Swipe It red
+     Reaction Speed gold · Reactific green · The Fortress purple · Swipe It red
    set by a class on the container (rx-rs, rx-rf, rx-ft, rx-sw).
    ══════════════════════════════════════════════════════════════════ */
 .rx-intro{--g:#00D9A5;--g2:#00b88d;--g-rgb:0,217,165}
-.rx-intro.rx-rs{--g:#2f7bff;--g2:#1d4ed8;--g-rgb:47,123,255}
+.rx-intro.rx-rs{--g:#ffc400;--g2:#f0a500;--g-rgb:255,196,0}
 .rx-intro.rx-ft{--g:#a855f7;--g2:#7c3aed;--g-rgb:168,85,247}
 .rx-intro.rx-sw{--g:#ff2b3d;--g2:#c8102e;--g-rgb:255,43,61}
 #screen-intro.rx-intro,#intro.rx-intro{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a1a2e 0%,#000 70%);padding:20px;text-align:center}
