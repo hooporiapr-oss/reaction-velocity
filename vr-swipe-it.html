@@ -66,6 +66,9 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 .dots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .dots div{font-size:.72rem;font-weight:800;padding:6px 4px;border-radius:8px;text-align:center;background:rgba(61,220,132,.14);color:#3ddc84}
 .dots div.x{background:rgba(255,107,107,.12);color:#ff8a8a}
+.lang{display:flex;gap:4px}
+.lg{padding:7px 11px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#9fb3c8;font:900 .72rem Arial,sans-serif;letter-spacing:.08em;cursor:pointer}
+.lg.on{background:#00e5ff;border-color:#00e5ff;color:#031018}
 #suggest{font-size:.85rem;color:#c8ccd4;text-align:center;margin:-4px 0 12px}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
@@ -80,13 +83,13 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 <body>
 
 <div class="screen" id="intro" style="overflow-y:auto">
-  <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span></span></div>
+  <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span class="lang"><button type="button" class="lg" data-l="es">ES</button><button type="button" class="lg" data-l="en">EN</button></span></div>
   <div class="t">SWIPE <span>IT</span></div>
   <div class="sub" id="who">Reaction Velocity</div>
   <div class="how">
-    <div><b>1</b>One arrow per beat, anywhere on the screen</div>
-    <div><b>2</b>Swipe on the arrow, the way it points</div>
-    <div><b>3</b>Before the next beat — 25 arrows</div>
+    <div><b>1</b><span data-t="s1">One arrow per beat, anywhere on the screen</span></div>
+    <div><b>2</b><span data-t="s2">Swipe on the arrow, the way it points</span></div>
+    <div><b>3</b><span data-t="s3">Before the next beat — 25 arrows</span></div>
   </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
   <div class="bpm-row">
@@ -96,8 +99,8 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
     <button type="button" class="bpm-step" id="bpmUp" aria-label="Faster" disabled>+</button>
   </div>
   <div id="bpmNote"></div>
-  <a id="goRS" href="vr-reaction-speed.html">⚡ Play Reaction Speed first</a>
-  <button class="go" id="startBtn" type="button">Start · 25 arrows</button>
+  <a id="goRS" href="vr-reaction-speed.html" data-t="goRS">⚡ Play Reaction Speed first</a>
+  <button class="go" id="startBtn" type="button" data-t="start">Start · 25 arrows</button>
 </div>
 
 <div id="countdown"><div id="bigCount">5</div></div>
@@ -112,17 +115,46 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
   <div class="lab" id="endLab">of 25 · at 0 BPM</div>
   <div id="pbMsg"></div>
   <div id="suggest"></div>
-  <div class="card"><h3>Arrow by arrow</h3><div class="dots" id="dots"></div></div>
+  <div class="card"><h3 data-t="dots">Arrow by arrow</h3><div class="dots" id="dots"></div></div>
   <div class="card"><h3 id="progH">My Progress · Swipe It</h3><div id="prog"></div></div>
   <div class="btns">
-    <button class="go" id="againBtn" type="button">Play again</button>
-    <button class="btn2" id="nextPlayerBtn" type="button">Next Player</button>
+    <button class="go" id="againBtn" type="button" data-t="again">Play again</button>
+    <button class="btn2" id="nextPlayerBtn" type="button" data-t="nextp">Next Player</button>
     <a class="btn2" href="mobile-hub.html">← THE HUB</a>
   </div>
 </div>
 
 <script>
 var $=function(id){return document.getElementById(id)};
+/* ── language: opens in Spanish; EN / ES on the start screen (same choice as Reaction Speed, remembered on this device) ── */
+var TX={
+  es:{s1:'Una flecha por pulso, en cualquier lugar de la pantalla',s2:'Desliza sobre la flecha, hacia donde apunta',s3:'Antes del siguiente pulso — 25 flechas',
+      start:'Empezar · 25 flechas',name:'Tu nombre',hub:'← EL HUB',newp:'Nuevo jugador',goRS:'⚡ Juega Reaction Speed primero',
+      noRS:'aún no hay Reaction Speed — juégalo primero',fromRS:'tu velocidad viene de Reaction Speed',mine:'tu velocidad · − / + o escribe cualquier velocidad',rsNote:'tu Reaction Speed · − / + o escribe cualquier velocidad',
+      hit:'acierto',hits:'aciertos',of:'de',at:'a',dots:'Flecha por flecha',prog:'Mi progreso',again:'Jugar otra vez',nextp:'Siguiente jugador',
+      first:'PRIMERA MARCA',firstSub:'la que hay que superar la próxima vez',pb:'¡NUEVO RÉCORD PERSONAL!',was:'tu mejor era',best:'Tu mejor a',strong:'Muy bien — prueba',tryS:'Prueba',next:'la próxima vez',
+      again1:'Juega otra vez a',again2:'para empezar tu línea de progreso.',
+      'Too slow':'Muy lento','Off the arrow':'Fuera de la flecha','Wrong way':'Dirección equivocada','Too early':'Muy temprano','Swipe, don’t tap':'Desliza, no toques'},
+  en:{s1:'One arrow per beat, anywhere on the screen',s2:'Swipe on the arrow, the way it points',s3:'Before the next beat — 25 arrows',
+      start:'Start · 25 arrows',name:'Your name',hub:'← THE HUB',newp:'New player',goRS:'⚡ Play Reaction Speed first',
+      noRS:'no Reaction Speed yet — play it first',fromRS:'your speed comes from Reaction Speed',mine:'your speed · − / + or type any speed',rsNote:'your Reaction Speed · − / + or type any speed',
+      hit:'hit',hits:'hits',of:'of',at:'at',dots:'Arrow by arrow',prog:'My Progress',again:'Play again',nextp:'Next Player',
+      first:'FIRST MARK SET',firstSub:'the one to beat next time',pb:'NEW PERSONAL BEST!',was:'your best was',best:'Your best at',strong:'Strong — try',tryS:'Try',next:'next',
+      again1:'Play again at',again2:'to start your progress line.'}
+};
+var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){}
+function T(k){return (TX[LANG]&&TX[LANG][k])||TX.en[k]||k}
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=T(el.getAttribute('data-t'))});
+  $('playerNameInputMain').placeholder=T('name');
+  document.querySelectorAll('a.pill,#end a.btn2').forEach(function(a){a.textContent=T('hub')});
+  var np=document.querySelector('.jg-como a'); if(np)np.textContent=T('newp');   // the player chip (jugador.js)
+  document.querySelectorAll('.lg').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-l')===LANG)});
+  if(typeof refreshBox==='function'&&!$('intro').hidden)refreshBox(true);
+}
+document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(applyLang,0)});   // after jugador.js adds the player chip
 var TOTAL=25, GUESS_MS=120, BPM_MIN=10, BPM_MAX=300;
 var DIRS={up:0,right:90,down:180,left:270}, NAMES=['up','right','down','left'];
 var SPEED=0, BEAT_MS=0, state='idle', n=0, results=[], beatT=null, t0=0, want='', start=null, done1=false, playerName='';
@@ -152,10 +184,10 @@ function refreshBox(fromDb){
   var x=$('playerNameInputMain').value, v=x.trim()?savedBPM(x):0;
   if(!fromDb&&x.trim())askBest(x);
   $('bpmDown').disabled=$('bpmUp').disabled=$('bpmInput').disabled=!v; $('startBtn').disabled=!v;
-  if(!v){$('bpmInput').value='';$('bpmNote').textContent=x.trim()?'no Reaction Speed yet — play it first':'your speed comes from Reaction Speed';$('goRS').style.display=x.trim()?'inline-block':'none';return}
+  if(!v){$('bpmInput').value='';$('bpmNote').textContent=x.trim()?T('noRS'):T('fromRS');$('goRS').style.display=x.trim()?'inline-block':'none';return}
   $('goRS').style.display='none';
   if(!touched||!$('bpmInput').value)$('bpmInput').value=v;
-  $('bpmNote').textContent=touched?'your speed · − / + or type any speed':'your Reaction Speed · − / + or type any speed';
+  $('bpmNote').textContent=touched?T('mine'):T('rsNote');
 }
 function step(d){if($('bpmInput').disabled)return;touched=true;$('bpmInput').value=Math.max(BPM_MIN,Math.min(BPM_MAX,boxBPM()+d));refreshBox(true)}
 $('bpmDown').onclick=function(){step(-5)}; $('bpmUp').onclick=function(){step(5)};
@@ -176,7 +208,7 @@ $('startBtn').onclick=function(){
 };
 $('againBtn').onclick=function(){show('intro');refreshBox(true);$('startBtn').click()};
 $('nextPlayerBtn').addEventListener('click',function(){show('intro');touched=false;$('bpmInput').value='';refreshBox()});
-function bar(){$('rnd').textContent=Math.min(Math.max(n,1),TOTAL)+' / '+TOTAL;var h=results.filter(function(r){return r.ok}).length;$('hits').textContent=h+(h===1?' hit':' hits')}
+function bar(){$('rnd').textContent=Math.min(Math.max(n,1),TOTAL)+' / '+TOTAL;var h=results.filter(function(r){return r.ok}).length;$('hits').textContent=h+' '+(h===1?T('hit'):T('hits'))}
 
 function place(){
   var a=$('arrow'), p=$('play').getBoundingClientRect(), r=parseFloat(getComputedStyle(a).width)/2||40;
@@ -223,20 +255,21 @@ function finish(){
   state='idle'; clearTimeout(beatT); $('arrow').style.display='none';
   var hits=results.filter(function(r){return r.ok}), misses=TOTAL-hits.length;
   var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0;
-  $('endHits').textContent=hits.length; $('endLab').textContent='of '+TOTAL+' · at '+SPEED+' BPM';
-  $('dots').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x" title="'+MOVIL.esc(r.why)+'"')+'>'+(i+1)+(r.ok?' ✓':' ✗')+'</div>'}).join('');
+  $('endHits').textContent=hits.length; $('endLab').textContent=T('of')+' '+TOTAL+' · '+T('at')+' '+SPEED+' BPM';
+  $('dots').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x" title="'+MOVIL.esc(T(r.why))+'"')+'>'+(i+1)+(r.ok?' ✓':' ✗')+'</div>'}).join('');
   // personal best: hits at this same speed, against the player's own runs only
   var same=(MOVIL.past||[]).filter(function(r){return +r.bpm===SPEED}), prev=-1;
   same.forEach(function(r){var v=+r.hits||0;if(v>prev)prev=v});
   var big='font-size:1.15rem;font-weight:900;letter-spacing:.06em;color:#ffd35a;text-shadow:0 0 18px rgba(255,211,90,.6)', small='font-size:.82rem;color:#c8ccd4;margin-top:3px';
-  $('pbMsg').innerHTML=!MOVIL.past?'':prev<0?'<div style="'+big+'">⭐ FIRST MARK SET</div><div style="'+small+'">'+hits.length+' hits at '+SPEED+' BPM — the one to beat next time</div>'
-    :hits.length>prev?'<div style="'+big+'">⭐ NEW PERSONAL BEST!</div><div style="'+small+'">'+hits.length+' hits at '+SPEED+' BPM · your best was '+prev+'</div>'
-    :'<div style="'+small+'">Your best at '+SPEED+' BPM: '+prev+' hits</div>';
-  $('suggest').textContent=hits.length>=22?'Strong — try '+Math.min(BPM_MAX,SPEED+5)+' BPM next':hits.length<=12?'Try '+Math.max(BPM_MIN,SPEED-5)+' BPM next':'';
+  var hs=hits.length+' '+T('hits')+' '+T('at')+' '+SPEED+' BPM';
+  $('pbMsg').innerHTML=!MOVIL.past?'':prev<0?'<div style="'+big+'">⭐ '+T('first')+'</div><div style="'+small+'">'+hs+' — '+T('firstSub')+'</div>'
+    :hits.length>prev?'<div style="'+big+'">⭐ '+T('pb')+'</div><div style="'+small+'">'+hs+' · '+T('was')+' '+prev+'</div>'
+    :'<div style="'+small+'">'+T('best')+' '+SPEED+' BPM: '+prev+' '+T('hits')+'</div>';
+  $('suggest').textContent=hits.length>=22?T('strong')+' '+Math.min(BPM_MAX,SPEED+5)+' BPM '+T('next'):hits.length<=12?T('tryS')+' '+Math.max(BPM_MIN,SPEED-5)+' BPM '+T('next'):'';
   // My Progress: hits at this speed, run by run
   var pts=same.map(function(r){return +r.hits||0}); pts.push(hits.length); pts=pts.slice(-20);
-  $('progH').textContent='My Progress · '+SPEED+' BPM';
-  $('prog').innerHTML=pts.length<2?'<div style="color:#8fa0b4;font-size:.82rem;text-align:center;padding:10px">Play again at '+SPEED+' BPM to start your progress line.</div>':(function(){
+  $('progH').textContent=T('prog')+' · '+SPEED+' BPM';
+  $('prog').innerHTML=pts.length<2?'<div style="color:#8fa0b4;font-size:.82rem;text-align:center;padding:10px">'+T('again1')+' '+SPEED+' BPM '+T('again2')+'</div>':(function(){
     var W=340,Hh=150,L=30,R=10,T=12,B=20,X=function(i){return L+(W-L-R)*i/(pts.length-1)},Y=function(v){return T+(Hh-T-B)*(TOTAL-v)/TOTAL};
     var s='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto;display:block">';
     [0,5,10,15,20,25].forEach(function(y){s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="rgba(255,255,255,.08)"/><text x="'+(L-6)+'" y="'+(Y(y)+4)+'" fill="#8fa0b4" font-size="10" text-anchor="end">'+y+'</text>'});
@@ -246,6 +279,7 @@ function finish(){
   MOVIL.save(playerName,SPEED,hits.length,misses,hits.length?Math.round(avg):null);
   show('end');
 }
+applyLang();
 </script>
 </body>
 </html>
