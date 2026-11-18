@@ -1,1154 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>
-if (sessionStorage.getItem('reaction-velocity-gate-pass') !== '1') {
-  window.location.replace('index.html');
-}
-</script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>REACTION SPEED | Reaction Velocity</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Reaction Speed | Reaction Velocity</title>
+<!-- REACTION SPEED (built as Home Base; the old tap game is vr-reaction-speed-classic.html).
+     Same file in reaction-velocity and cognitivo-gym-paradiso: it opens with a
+     Reaction Velocity code, a Cognitivo Gym code or a Reaction Mobile code.
+     Hold a thumb on HOME. After a random wait a target lights up: lift
+     off and tap it. The time from light to tap is the reaction, shown in
+     BPM like Reaction Speed. Lifting early, or a tap under 120 ms (a
+     guess, not a reaction) = too early (a miss); tapping
+     while still on HOME, missing the target or waiting too long = a miss.
+     10 rounds. Saves to vr_mobile_standings (game_key 'home-base', with the
+     device). Its BPM is what Reactific and The Fortress start from. -->
+<script>try{if(sessionStorage.getItem('gym-plain')==='1')document.documentElement.classList.add('plain')}catch(e){}</script>
 <style>
-/* the standings buttons are hidden on the kids' screens (no ranking in front of the group) — boards are for coaches */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none !important}
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;color:#fff;background:#000;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-#space{position:fixed;inset:0;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);overflow:hidden}
-#stars{position:fixed;inset:0;pointer-events:none;z-index:0}
-#edge-glow{position:fixed;inset:0;pointer-events:none;z-index:1;border:3px solid transparent;box-shadow:inset 0 0 80px rgba(255,30,60,.28),0 0 80px rgba(255,30,60,.1)}
-#flash{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .1s}
-
-#hud{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-around;align-items:center;padding:14px 22px;background:linear-gradient(180deg,rgba(0,0,0,.85),transparent)}
-.hud-box{text-align:center}
-.hud-label{font-size:.5rem;color:#ff1e3c;font-weight:900;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
-.hud-val{font-size:2rem;font-weight:900;line-height:1}
-#hScore{color:#fff;font-size:2.6rem}#hBest{font-size:1.3rem;color:#9fb3c8}#hLeft{color:#ff1e3c}
-
-#msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:20;font-size:1.6rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;text-align:center;pointer-events:none;text-shadow:0 0 30px currentColor;transition:opacity .3s}
-#msg.watch{color:#ff1e3c}#msg.go{color:#ffd35a}
-
-#target{position:fixed;z-index:15;border-radius:50%;cursor:pointer;transform:translate(-50%,-50%) scale(0);transition:transform .12s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;justify-content:center;pointer-events:none}
-#target.visible{transform:translate(-50%,-50%) scale(1);pointer-events:all}
-#target-inner{width:100%;height:100%;border-radius:50%;background:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22c%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2249%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg%20clip-path%3D%22url%28%23c%29%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C0%2C0%2C.4%29%22%20stroke-width%3D%223.4%22%3E%3Cline%20x1%3D%2250%22%20y1%3D%22-4%22%20x2%3D%2250%22%20y2%3D%22104%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20-4%20104%2050%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20104%20104%2050%22/%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2250%22%20rx%3D%2224%22%20ry%3D%2249%22/%3E%3C/g%3E%3C/svg%3E'),radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);background-size:100% 100%,100% 100%;box-shadow:0 0 40px rgba(255,30,60,.9),0 0 80px rgba(255,30,60,.5)}
-.ripple{position:fixed;border-radius:50%;border:3px solid #ff1e3c;transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:14;animation:rippleOut .5s ease-out forwards}
-@keyframes rippleOut{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
-
-#controls{position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;justify-content:center;gap:10px;padding:10px 16px 14px;background:linear-gradient(0deg,rgba(0,0,0,.9),transparent)}
-.ctrl-btn{height:48px;flex:0 1 170px;max-width:200px;border:2px solid rgba(255,30,60,.5);background:rgba(0,0,0,.4);border-radius:12px;color:#fff;font-size:1rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(4px);text-decoration:none;display:flex;align-items:center;justify-content:center}
-
-html.plain #target-inner{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c)}
-#screen-intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);padding:20px;text-align:center}
-.vrr-logo{font-size:2.8rem;font-weight:900;font-style:italic;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 60px rgba(255,30,60,1);margin-bottom:6px}
-.vrr-logo span{color:#ff1e3c}
-.vrr-sub{font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;color:#ff1e3c;margin-bottom:28px}
-.rule-t{font-size:.9rem;color:#cbd5e1;line-height:1.5;max-width:420px;margin-bottom:26px}
-.speed-label{font-size:.68rem;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#ffd35a;margin:-12px 0 8px;text-align:center}
-.speed-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 auto 14px;width:100%;max-width:420px}
-.speed-btn{height:50px;border:2px solid rgba(255,30,60,.35);background:rgba(255,30,60,.07);border-radius:14px;color:#fff;font-size:1.05rem;font-weight:900;cursor:pointer;font-family:inherit}
-.speed-btn small{display:block;font-size:.55rem;color:#a7adba;letter-spacing:.08em;font-weight:700}
-.speed-btn.free{grid-column:1/-1;font-size:.95rem;text-transform:uppercase}
-.speed-btn.active{border-color:#ff1e3c;background:rgba(255,30,60,.25);box-shadow:0 0 22px rgba(255,30,60,.5)}
-.bpm-box{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;min-height:58px;padding:8px 6px;border:2px solid rgba(255,30,60,.35);background:rgba(255,30,60,.07);border-radius:14px;cursor:text}
-.bpm-box.active{border-color:#ff1e3c;background:rgba(255,30,60,.25);box-shadow:0 0 22px rgba(255,30,60,.5)}
-.bpm-box input{width:96px;height:42px;padding:0;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35);color:#fff;font-family:inherit;font-size:1.6rem;font-weight:900;text-align:center;-moz-appearance:textfield}
-.bpm-box input::-webkit-outer-spin-button,.bpm-box input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.bpm-box input:focus{outline:none;border-color:#ff1e3c}
-.bpm-box span{font-size:1.05rem;font-weight:900;letter-spacing:.08em;color:#fff}
-.bpm-box.locked{opacity:.45;cursor:not-allowed}
-.beat-sw{display:inline-flex;align-items:center;gap:8px;margin:0 auto 12px;padding:8px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);color:#fff;font-family:inherit;font-size:.8rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
-.beat-sw.on{border-color:#ffd35a;color:#ffd35a;background:rgba(255,211,90,.1)}
-.sw-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.sw-row .beat-sw{margin:0 0 12px}
-/* My progress: the player's Free Tap speed, run by run */
-.prog-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.prog-stats .hitmiss-cell{text-align:center}
-.prog-change{text-align:center;font-size:.9rem;font-weight:900;color:#fff;margin-bottom:12px}
-.prog-change b{color:#00e5ff}
-.prog-chart{width:100%;height:auto;display:block;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px}
-.bpm-step{width:44px;height:42px;padding:0;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35) !important;color:#fff;font-family:inherit;font-size:1.6rem;font-weight:900;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
-.bpm-step:active{background:rgba(255,30,60,.35) !important}
-.bpm-step:disabled{cursor:not-allowed}
-.bpm-box.locked input{cursor:not-allowed}
-.bpm-box small{flex-basis:100%;text-align:center;font-size:.6rem;color:#a7adba;letter-spacing:.08em;font-weight:700;text-transform:uppercase}
-@media (max-height:760px){.speed-btn{height:42px}.rule-t{margin-bottom:18px}}
-.rule-t b{color:#fff}
-.big-btn{width:100%;max-width:440px;height:72px;border:none;border-radius:20px;background:linear-gradient(135deg,#ff1e3c,#d6102e);color:#fff;font-size:1.3rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 40px rgba(255,30,60,.7);animation:btnPulse 2s ease-in-out infinite}
-@keyframes btnPulse{0%,100%{box-shadow:0 0 40px rgba(255,30,60,.7)}50%{box-shadow:0 0 80px rgba(255,30,60,1)}}
-.intro-back{position:fixed;top:16px;left:16px;padding:8px 16px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;text-decoration:none;z-index:60}
-.intro-fs{position:fixed;top:58px;right:16px;padding:8px 16px;border:2px solid rgba(255,30,60,.4);background:rgba(0,0,0,.5);color:#ff1e3c;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;cursor:pointer;z-index:60}
-@media(max-width:768px){.intro-fs{display:none}}
-.best-line{margin-top:18px;font-size:.85rem;color:#9fb3c8}
-.name-input{
-  width:100%;max-width:400px;padding:16px;border-radius:14px;border:2px solid rgba(255,107,53,.4);
-  background:rgba(255,255,255,.06);color:#fff;font-size:1.2rem;font-weight:900;
-  letter-spacing:.02em;text-align:center;font-family:Arial,sans-serif;margin-bottom:16px;
-}
-.name-input:focus{outline:none;border-color:#FF6B35;box-shadow:0 0 24px rgba(255,107,53,.35)}
-.box-lang-toggle{position:fixed;top:16px;right:16px;display:flex;gap:6px;z-index:60}
-.box-lang-btn{padding:7px 14px;border:1px solid rgba(255,107,53,.4);background:transparent;color:#9fb3c8;border-radius:8px;font-size:.72rem;font-weight:900;letter-spacing:.06em;cursor:pointer}
-.box-lang-btn.active{border-color:#FF6B35;color:#fff;background:rgba(255,107,53,.18)}
-.game-switcher{display:flex;gap:8px;max-width:420px;width:100%;margin:18px auto 0;flex-wrap:wrap}
-.switcher-btn{flex:1;min-width:70px;padding:10px 4px;border-radius:12px;text-decoration:none;text-align:center;font-size:.6rem;font-weight:900;letter-spacing:.03em;text-transform:uppercase;line-height:1.3}
-.switcher-btn.game-active{border:2px solid rgba(255,107,53,.5);background:rgba(255,107,53,.12);color:#ffb38a}
-.switcher-btn.game-current{border:2px solid rgba(255,107,53,.8);background:rgba(255,107,53,.28);color:#fff}
-.best-line b{color:#ff1e3c}
-
-#screen-end{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);text-align:center;padding:20px}
-/* the final scoreboard scrolls when the tap-by-tap list makes it taller than the screen */
-#screen-end{overflow-y:auto;justify-content:safe center}
-#screen-end>*{flex-shrink:0}
-.final-num{font-size:6rem;font-weight:900;color:#ff1e3c;line-height:1;text-shadow:0 0 60px rgba(255,30,60,.9)}
-.final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
-.next-speed{display:none;margin-top:18px;text-align:center}
-.next-speed .ns-txt{font-size:.95rem;font-weight:800;color:#fff;margin-bottom:10px}
-.next-speed button{padding:13px 26px;border-radius:999px;border:2px solid #ffd35a;background:rgba(255,211,90,.12);color:#ffd35a;font-family:inherit;font-size:.95rem;font-weight:900;letter-spacing:.06em;cursor:pointer}
-
-/* Hits/Miss breakdown — a click-to-expand detail under the final
-   score, rather than a permanent HUD box during live play, so the
-   number the player sees while actually reacting is only ever their
-   score, not a secondary stat to parse mid-round. */
-.hitmiss-toggle{margin-top:18px;padding:10px 20px;border-radius:999px;border:1.5px solid rgba(255,30,60,.4);background:rgba(255,30,60,.08);color:#ff8f6b;font-size:.78rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-.hitmiss-toggle .arrow{transition:transform .2s}
-.hitmiss-toggle.open .arrow{transform:rotate(180deg)}
-.hitmiss-detail{max-height:0;overflow:hidden;transition:max-height .3s ease;width:100%;max-width:360px;margin:0 auto}
-.hitmiss-detail.open{max-height:62vh;margin-top:14px}
-/* tap by tap: every target of the game, hit (with its time) or miss */
-.tbt-lbl{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin:12px 0 0}
-#endTapLog{max-height:38vh;overflow-y:auto;justify-content:center}
-#endTapLog .tap-chip.hit{color:#fff}
-.hitmiss-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.hitmiss-cell{border-radius:12px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);padding:12px 8px}
-.hitmiss-cell.hits{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.06)}
-.hitmiss-cell.miss{border-color:rgba(255,30,60,.4);background:rgba(255,30,60,.06)}
-.hitmiss-val{font-size:1.6rem;font-weight:900}
-.hitmiss-cell.hits .hitmiss-val{color:#00e5ff}
-.hitmiss-cell.miss .hitmiss-val{color:#ff6b7f}
-.hitmiss-lbl{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#9fb3c8;margin-top:2px}
-
-/* Free Tap: the speed scoreboard between the 10-tap check and the game */
-#screen-speed{position:fixed;inset:0;z-index:57;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);text-align:center;padding:20px}
-#screen-speed .sp-top{font-size:.8rem;letter-spacing:.24em;text-transform:uppercase;color:#9fb3c8;margin-bottom:6px}
-#screen-speed .sp-sub{font-size:.85rem;color:#cbd5e1;margin-top:8px}
-#screen-speed .sp-go{margin-top:30px;font-size:.75rem;letter-spacing:.22em;text-transform:uppercase;color:#9fb3c8}
-#spCount{font-size:5.5rem;font-weight:900;color:#fff;line-height:1;text-shadow:0 0 40px rgba(255,30,60,.8);margin-top:6px}
-#countdown{position:fixed;inset:0;z-index:56;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%)}
-#bigCount{font-size:8rem;font-weight:900;color:#ff1e3c;text-shadow:0 0 60px rgba(255,30,60,.9)}
-@media(max-width:420px){.vrr-logo{font-size:2.1rem}.big-btn{height:60px;font-size:1.1rem}}
-
-/* Standings — in-page board, ported from the working pattern already
-   live on Shoot It. Own It. and Make It Count. This game only ever
-   tracks a final score and an average reaction time per player, so
-   the board here is a flat ranked list, no per-tap expand. */
-#screen-box,#screen-prog{position:fixed;inset:0;z-index:58;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%);padding:24px;overflow-y:auto}
-.box-title{font-size:1.7rem;font-weight:900;font-style:italic;letter-spacing:.06em;text-transform:uppercase;color:#fff;text-shadow:0 0 40px rgba(255,30,60,.8);margin-bottom:2px}
-.box-title span{color:#ff1e3c}
-.box-sub{font-size:.65rem;letter-spacing:.24em;text-transform:uppercase;color:#ff1e3c;margin-bottom:22px}
-.box-section{width:100%;max-width:600px;margin-bottom:24px}
-.box-section-label{font-size:.65rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#ffd35a;margin-bottom:8px;text-align:left;padding-left:4px}
-.box-empty{color:#7fa8c0;font-size:.85rem;padding:24px 8px;font-style:italic;text-align:center}
-.box-back-btn{width:100%;max-width:440px;height:56px;border:none;border-radius:16px;background:linear-gradient(135deg,#ff1e3c,#d6102e);color:#fff;font-size:1rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 30px rgba(255,30,60,.6);margin-top:6px}
-.standings-row{font-size:.8rem;color:#9fb3c8;padding:10px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:12px}
-.standings-row:last-child{border-bottom:none}
-.standings-rank{font-weight:900;font-size:1.05rem;color:#ff1e3c;min-width:28px}
-.standings-row.rank-1 .standings-rank{color:#ffd35a}
-.standings-row.rank-2 .standings-rank{color:#c4b5fd}
-.standings-row.rank-3 .standings-rank{color:#fb923c}
-.standings-name{flex:1;color:#fff;font-weight:700;text-align:left}
-.standings-pts{color:#00e5ff;font-weight:900;font-size:1rem}
-.standings-bpm{color:#9fb3c8;font-size:.72rem;min-width:64px;text-align:right}
-.box-open-btn{width:100%;max-width:420px;height:52px;border:2px solid rgba(0,229,255,.5);background:rgba(0,229,255,.1);border-radius:14px;color:#00e5ff;font-size:.9rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:6px}
-.standings-tab-row{display:flex;gap:6px;width:100%;max-width:600px;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
-.standings-tab{padding:8px 14px;border-radius:999px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:#9fb3c8;font-size:.68rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
-.standings-tab.active{border-color:#ff1e3c;color:#ff1e3c;background:rgba(255,30,60,.1)}
-.tap-log{display:flex;flex-wrap:wrap;gap:4px;padding:10px;background:rgba(255,107,53,.05);border:1px solid rgba(255,107,53,.25);border-radius:12px;margin-top:8px}
-.tap-chip{flex:0 0 auto;min-width:44px;padding:4px 6px;border-radius:7px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:.62rem;font-weight:900;line-height:1.3}
-.tap-chip.hit{background:rgba(255,107,53,.22);border:1px solid rgba(255,107,53,.5);color:#c4b5fd}
-.tap-chip.miss{background:rgba(255,20,147,.16);border:1px solid rgba(255,20,147,.4);color:#ff8fb8}
-.tap-chip .tap-bpm{display:block;font-size:.68rem}
-.tap-chip .tap-pts{display:block;opacity:.85;font-size:.58rem;margin-top:1px}
-.tap-log-total{width:100%;text-align:center;margin-top:0;padding:8px 14px 14px;border-top:1px solid rgba(255,107,53,.25);font-size:.85rem;font-weight:900;color:#fff}
-.tap-log-total b{color:#00e5ff;font-size:1.1rem}
-.tap-log-empty{color:#7fa8c0;font-size:.75rem;font-style:italic;padding:8px}
-.next-player-btn{margin-top:28px;height:64px;padding:0 40px;border:none;border-radius:16px;background:linear-gradient(120deg,#ff1e3c,#d6102e);color:#fff;font-size:1.15rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 30px rgba(255,30,60,.6)}
+html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.pill{padding:8px 14px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font:900 .72rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;text-decoration:none;cursor:pointer}
+.top{width:100%;display:flex;justify-content:space-between;align-items:center}
+.t{font-size:2rem;font-weight:900;font-style:italic;letter-spacing:.05em;text-transform:uppercase;text-align:center;margin-top:18px;text-shadow:0 0 30px rgba(0,229,255,.5)}
+.t span{color:#00e5ff}
+.sub{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin:6px 0 18px;text-align:center}
+.how{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.how div{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);font-size:.95rem;font-weight:700;line-height:1.3}
+.how b{flex:0 0 30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#00e5ff;color:#000;font-size:.95rem}
+.name-input{width:100%;max-width:320px;padding:14px;border-radius:14px;border:2px solid rgba(0,229,255,.4);background:rgba(255,255,255,.06);color:#fff;font-size:1.05rem;text-align:center}
+.go{width:100%;max-width:320px;margin-top:14px;padding:18px;border:0;border-radius:16px;background:linear-gradient(135deg,#00e5ff,#0091ff);color:#031018;font:900 1.15rem Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+/* play */
+#play{padding:0;touch-action:none}
+#bar{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 0;font-size:.8rem;font-weight:900;letter-spacing:.1em;color:#9fb3c8;pointer-events:none}
+#msg{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:1.3rem;font-weight:900;letter-spacing:.05em;pointer-events:none;transition:opacity .15s}
+#msg.bad{color:#ff6b6b}#msg.good{color:#3ddc84}
+#tgt{position:absolute;width:clamp(84px,14vmin,150px);height:clamp(84px,14vmin,150px);border-radius:50%;display:none;
+  background:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22c%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2249%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg%20clip-path%3D%22url%28%23c%29%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C0%2C0%2C.45%29%22%20stroke-width%3D%223.4%22%3E%3Cline%20x1%3D%2250%22%20y1%3D%22-4%22%20x2%3D%2250%22%20y2%3D%22104%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20-4%20104%2050%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20104%20104%2050%22/%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2250%22%20rx%3D%2224%22%20ry%3D%2249%22/%3E%3C/g%3E%3C/svg%3E'), radial-gradient(circle at 35% 32%,#ff8a5cdd,#ff6b35 55%,#ff6b3599 85%);background-size:100% 100%,100% 100%;
+  box-shadow:0 0 40px rgba(255,107,53,.9)}
+html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);box-shadow:0 0 40px rgba(255,30,60,.9)}
+#home{position:absolute;left:50%;bottom:calc(46px + env(safe-area-inset-bottom));width:clamp(110px,16vmin,160px);height:clamp(110px,16vmin,160px);transform:translateX(-50%);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem;letter-spacing:.12em;
+  border:3px solid #00e5ff;background:rgba(0,229,255,.1);color:#00e5ff;box-shadow:0 0 30px rgba(0,229,255,.35)}
+#home.ready{animation:pulse 1.1s ease-in-out infinite}
+#home.held{background:#00e5ff;color:#031018;animation:none}
+@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.07)}}
+/* end */
+#end{overflow-y:auto;justify-content:flex-start}
+#end>*{flex-shrink:0}   /* a long end screen scrolls instead of squeezing lines together */
+.big{font-size:4.2rem;font-weight:900;line-height:1;margin-top:10px;color:#00e5ff;text-shadow:0 0 30px rgba(0,229,255,.5)}
+.lab{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin:4px 0 10px}
+#pbMsg{text-align:center;margin:2px 0 10px;min-height:1em}
+.hm{font-size:.95rem;font-weight:800;margin-bottom:12px;color:#c8ccd4}
+.card{width:100%;max-width:380px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);padding:12px;margin-bottom:12px}
+.card h3{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin-bottom:8px}
+.taps{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.taps div{font-size:.82rem;font-weight:800;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.04)}
+.taps .x{color:#ff8a8a}
+.btns{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.btns .go{max-width:none;margin:0}
+.btn2{padding:15px;border-radius:16px;border:2px solid rgba(0,229,255,.45);background:transparent;color:#fff;font:900 .95rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:center;text-decoration:none;cursor:pointer}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
-<script>window.JUGADOR={modo:'juego',aqui:true,lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'},hub:'reaction-velocity.html',escuela:'reaction-velocity-school',categoria:'reaction-velocity-category',tablas:['vr_reactific_standings','vr_reaction_speed_standings','dynamic_memory_quarter_standings']};</script>
+<script>(function(){var g=function(k){try{return sessionStorage.getItem(k)==='1'}catch(e){return false}};
+  // which sign-in: Reaction Mobile (phones), Reaction Velocity (vreaction.com) or Cognitivo Gym
+  var k=g('rm-gate-pass')?['mobile-hub.html','rm-']:g('reaction-velocity-gate-pass')?['reaction-velocity.html','reaction-velocity-']:['dynamic-hub.html','ritnome-'];
+  window.JUGADOR={modo:'juego',aqui:true,hub:k[0],escuela:k[1]+'school',categoria:k[1]+'category',tablas:['vr_mobile_standings','vr_reaction_speed_standings','vr_reactific_standings','dynamic_memory_quarter_standings'],lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'}}})();</script>
 <script src="jugador.js"></script>
-<script>/* School codes (License Admin → Targets: Plain circles): plain targets, no basketball look */try{if(sessionStorage.getItem('gym-plain')==='1')document.documentElement.classList.add('plain')}catch(e){}</script>
+<script>window.MOVIL={game:'home-base',title:'Reaction Speed'};</script>
+<script src="movil.js"></script>
 </head>
 <body>
-<div id="space">
-  <canvas id="stars"></canvas>
-  <div id="edge-glow"></div>
-  <div id="flash"></div>
-</div>
 
-<div id="hud">
-  <div class="hud-box"><div class="hud-label">Left</div><div class="hud-val" id="hLeft">25</div></div>
-  <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="hScore">0</div></div>
-  <div class="hud-box"><div class="hud-label">Best</div><div class="hud-val" id="hBest">0</div></div>
-</div>
-
-<div id="msg" class="watch"></div>
-<div id="target"><div id="target-inner"></div></div>
-
-<div id="controls">
-  <a class="ctrl-btn" href="reaction-velocity.html">← Exit</a>
-  <button class="ctrl-btn" id="fsBtnGame">⛶ Full Court</button>
-</div>
-
-<!-- INTRO -->
-<div id="screen-intro">
-  <a class="intro-back" href="reaction-velocity.html">← Exit</a>
-  <button class="intro-fs" id="fsBtn" data-i18n="fullscreen">⛶ Fullscreen</button>
-  <div class="box-lang-toggle">
-    <button class="box-lang-btn active" id="introLangEN">EN</button>
-    <button class="box-lang-btn" id="introLangES">ES</button>
+<div class="screen" id="intro">
+  <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span></span></div>
+  <div class="t">REACTION <span>SPEED</span></div>
+  <div class="sub" id="who">Reaction Velocity</div>
+  <div class="how">
+    <div><b>1</b>Hold your thumb on HOME</div>
+    <div><b>2</b>Wait — a target lights up</div>
+    <div><b>3</b>Lift off and tap it, fast</div>
   </div>
-  <div class="vrr-logo">REACTION <span>SPEED</span></div>
-  <div class="vrr-sub">Reaction Velocity · To The Beat</div>
-  <div class="rule-t" id="ruleT"></div>
-  <div class="speed-label" id="speedLabel">Speed</div>
-  <div class="speed-row" id="speedRow">
-    <button class="speed-btn free active" data-speed="free" type="button"><span id="freeName">👆 Free Tap</span><small id="freeSub">10-tap speed check · then 25 targets at your BPM</small></button>
-    <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">play Free Tap first to unlock</small></label>
-  </div>
-  <div class="sw-row">
-    <button type="button" class="beat-sw on" id="beatSw" aria-pressed="true">🔊 <span id="beatTxt">Beat: on</span></button>
-    <button type="button" class="beat-sw" id="sizeSw" aria-pressed="false">🎯 <span id="sizeTxt">Targets: normal</span></button>
-  </div>
-  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
-  <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
-  <button hidden class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
-  <button class="box-open-btn" id="progBtn" type="button">📈 MY PROGRESS</button>
-  <div class="best-line" id="bestLine"></div>
-  <div class="game-switcher">
-    <span class="switcher-btn game-current">Reaction<br>Speed</span>
-    <a class="switcher-btn game-active" href="vr-reactific.html">Reactific</a>
-    <a class="switcher-btn game-active" href="vr-fortress.html">The<br>Fortress</a>
-  </div>
+  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
+  <button class="go" id="startBtn" type="button">Start · 10 rounds</button>
 </div>
 
-<!-- THE STANDINGS -->
-<div id="screen-box">
-  <button class="box-back-btn" id="closeBoxBtn" style="margin-top:0;margin-bottom:20px">← Back</button>
-  <div class="box-title">THE <span>STANDINGS</span></div>
-  <div class="box-sub" id="boxSub">Reaction Speed · Player vs. Player</div>
-  <div class="standings-tab-row" id="standingsTabRow"></div>
-  <div class="standings-tab-row" id="standingsSpeedRow"></div>
-  <div class="standings-tab-row" id="standingsAgeRow" style="display:none"></div>
-  <div class="box-section">
-    <div class="box-section-label">Standings — Best Score Per Player</div>
-    <div id="standingsList"></div>
-    <div class="tap-log" id="standingsTapLog" style="display:none"></div>
+<div class="screen" id="play" hidden>
+  <div id="bar"><span id="rnd">1 / 10</span><span id="hits">0 hits</span></div>
+  <div id="msg"></div>
+  <div id="tgt"></div>
+  <div id="home">HOME</div>
+</div>
+
+<div class="screen" id="end" hidden>
+  <div class="big" id="endBpm">0</div>
+  <div class="lab">Reaction Speed BPM</div>
+  <div id="pbMsg"></div>
+  <div class="hm" id="endHm"></div>
+  <div class="card"><h3>Tap by tap</h3><div class="taps" id="taps"></div></div>
+  <div class="card"><h3>My Progress · Reaction Speed</h3><div id="prog"></div></div>
+  <div class="btns">
+    <button class="go" id="againBtn" type="button">Play again</button>
+    <a class="btn2" id="nextGameBtn" href="vr-reactific.html">Next game: Reactific →</a>
+    <button class="btn2" id="nextPlayerBtn" type="button">Next Player</button>
+    <a class="btn2" href="mobile-hub.html">← THE HUB</a>
   </div>
-</div>
-
-<!-- MY PROGRESS -->
-<div id="screen-prog">
-  <button class="box-back-btn" id="closeProgBtn" style="margin-top:0;margin-bottom:20px">← Back</button>
-  <div class="box-title" id="progTitle">MY <span>PROGRESS</span></div>
-  <div class="box-sub" id="progSub">Free Tap speed, run by run</div>
-  <div class="box-section"><div id="progBody"></div></div>
-</div>
-
-<!-- COUNTDOWN -->
-<div id="countdown"><div id="bigCount">3</div></div>
-
-<!-- FREE TAP: YOUR SPEED -->
-<div id="screen-speed" role="status" aria-live="polite">
-  <div class="sp-top" id="spTop">Your speed</div>
-  <div class="final-num" id="spBpm">0</div>
-  <div class="final-label">BPM</div>
-  <div class="sp-sub" id="spSub"></div>
-  <div class="sp-go" id="spGo">25 targets at your speed · starting in</div>
-  <div id="spCount">5</div>
-</div>
-
-<!-- END -->
-<div id="screen-end">
-  <div class="final-num" id="endNum">0</div>
-  <div class="final-label" id="endLabel">Total Points</div>
-  <div id="pbMsg" hidden style="text-align:center;margin:4px 0 10px"></div>
-  <div class="next-speed" id="nextSpeed"><div class="ns-txt" id="nsTxt"></div><button type="button" id="nsBtn"></button></div>
-  <button class="hitmiss-toggle" id="hitMissToggle">📊 Hits & Misses <span class="arrow">▼</span></button>
-  <div class="hitmiss-detail" id="hitMissDetail">
-    <div class="hitmiss-grid">
-      <div class="hitmiss-cell hits"><div class="hitmiss-val" id="endHits">0</div><div class="hitmiss-lbl">Hits</div></div>
-      <div class="hitmiss-cell miss"><div class="hitmiss-val" id="endMisses">0</div><div class="hitmiss-lbl">Misses</div></div>
-    </div>
-    <div class="tbt-lbl" id="tbtLbl">Tap by tap</div>
-    <div class="tap-log" id="endTapLog"></div>
-  </div>
-  <button hidden class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
-  <button class="box-open-btn" id="endProgBtn" type="button" style="max-width:280px">📈 MY PROGRESS</button>
-  <button class="next-player-btn" id="nextPlayerBtn">▶ NEXT PLAYER</button>
-  <a href="vr-reactific.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#ff1e3c,#ff6b35);color:#fff;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
-  <a href="reaction-velocity.html" id="endHubBtn" style="display:block;margin-top:12px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:13px 24px;border-radius:100px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.06);color:#fff;font-weight:900;letter-spacing:1px;font-size:.95rem">← THE HUB</a>
 </div>
 
 <script>
-// SPEED — chosen on the start screen. 100 BPM is the original setting
-// and stays the default. 'free' (Free Tap) runs in two steps:
-//   1. speed check — 10 targets with no beat: each waits until it is
-//      tapped, then moves; those 10 taps measure the player's BPM;
-//   2. the game — 25 targets at that measured BPM, played as usual.
-// Only the pace changes; the game screen is the same.
-var SPEED=100;
-var BPM=100;
-var PACE_MS=Math.round(60000/BPM); // one full beat between one tap resolving and the next target appearing
-var TOTAL_BEAT=50, TOTAL_CHECK=10, TOTAL_FREE=25;
-var TOTAL=TOTAL_BEAT;
-var freeStage='', freeStart=0, freeBPM=0;
-function setSpeed(v){
-  SPEED=v;
-  if(v!=='free'){BPM=v;PACE_MS=Math.round(60000/BPM)}
-  TOTAL=v==='free'?TOTAL_CHECK:TOTAL_BEAT;
-}
-// The speed is kept with each saved run, so every speed has its own
-// board. Runs saved before speeds existed were all at 100 BPM. A Free
-// Tap run is saved as 'free-<measured BPM>' on the Free Tap board.
-function speedKey(v){return v==='free'?'free-'+freeBPM:String(v)}
-var BEST_KEY='rct-reaction-speed-best';
-var BEST_MS_KEY='rct-reaction-speed-best-ms';
+var $=function(id){return document.getElementById(id)};
+var GUESS_MS=120;   // faster than any human reaction: a guess, counted as too early
+var ROUNDS=10, WAIT_MIN=1000, WAIT_MAX=3500, TOO_SLOW=1500;
+var state='idle', round=0, results=[], homeId=null, homeHeld=false, waitT=null, slowT=null, t0=0, playerName='';
+(function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)$('who').textContent=w})();
 
-// The Gostar Digital standings board — reads from this table via the
-// standalone standings repo, separate from any personal-login system.
-var SB_URL='https://sdaphocueugzfvjovuxd.supabase.co';
-var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
-var SB_TABLE='vr_reaction_speed_standings';
-function recordScoreToStandings(name,finalScore,avgMs,hits,misses){
-  return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{
-    method:'POST',
-    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({player_name:name,score:finalScore,avg_ms:avgMs,hits:hits,misses:misses,speed:speedKey(SPEED),school_name:sessionStorage.getItem('reaction-velocity-school')||null})
-  }).catch(function(){});
-}
+function show(id){['intro','play','end'].forEach(function(s){$(s).hidden=(s!==id)})}
+function msg(t,c){var m=$('msg');m.textContent=t||'';m.className=c||''}
+function bar(){$('rnd').textContent=Math.min(round+1,ROUNDS)+' / '+ROUNDS;var h=results.filter(function(r){return r.ok}).length;$('hits').textContent=h+(h===1?' hit':' hits')}
 
-// ── Personal best: this run against the player's OWN past runs only
-//    (same school, same name) — never against other kids. Loaded as the
-//    game starts, so this run is not in it yet.
-var pbRows=null;
-function pbLoad(){
-  pbRows=null;var el=document.getElementById('pbMsg');if(el)el.hidden=true;
-  var n=String(currentPlayerName||'').trim();if(!n)return;
-  var sc=sessionStorage.getItem('reaction-velocity-school')||'';
-  fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?select=speed,score&hidden=is.false&school_name=eq.'+encodeURIComponent(sc)+'&player_name=ilike.'+encodeURIComponent(n.replace(/[*%,()]/g,'')),
-    {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
-    .then(function(r){return r.ok?r.json():null}).then(function(x){pbRows=Array.isArray(x)?x:null}).catch(function(){});
-}
-// now: this run; pick(row): the same measure from a past row (or null to skip it)
-function pbShow(now,pick,unit){
-  var el=document.getElementById('pbMsg');if(!el)return;el.hidden=true;
-  if(!pbRows||!(now>0))return;
-  var prev=-1;pbRows.forEach(function(r){var v=pick(r);if(v!=null&&v>prev)prev=v});
-  var big='font-size:1.15rem;font-weight:900;letter-spacing:.06em;color:#ffd35a;text-shadow:0 0 18px rgba(255,211,90,.6)';
-  var small='font-size:.8rem;color:#c8ccd4;margin-top:3px';
-  if(prev<0)el.innerHTML='<div style="'+big+'">⭐ FIRST MARK SET</div><div style="'+small+'">'+now+' '+unit+' — the one to beat next time</div>';
-  else if(now>prev)el.innerHTML='<div style="'+big+'">⭐ NEW PERSONAL BEST!</div><div style="'+small+'">'+now+' '+unit+' · your best was '+prev+'</div>';
-  else el.innerHTML='<div style="'+small+'">Your best: '+prev+' '+unit+'</div>';
-  el.hidden=false;
-}
-
-// ══════════════════════════════════════════════════════
-//  STANDINGS — every game's own board, one tap away from any other.
-//  Two data shapes exist across the four games: Reactific and
-//  Reaction Speed only ever save a score + average reaction time;
-//  Shoot It. Own It. and Make It Count. also save a full shot-by-shot
-//  log, rendered as an expandable per-player detail. This file (and
-//  each of the other three) carries the fetch/render logic for all
-//  four, so switching tabs never leaves the page.
-// ══════════════════════════════════════════════════════
-var STANDINGS_GAMES=[
-  {key:'reaction-speed',label:'Reaction Speed',table:'vr_reaction_speed_standings',rich:false},
-  {key:'reactific',label:'Reactific',table:'vr_reactific_standings',rich:false}
-];   // only these two are on the hub; the other games' boards stay on file
-var THIS_GAME_KEY='reaction-speed';
-var currentStandingsGame=THIS_GAME_KEY;
-var currentStandingsSpeed=100;
-// The speed tabs list Free Tap plus every speed this school has played
-// (and the one on the start screen), since any BPM can be typed.
-var speedsSeen=[100];
-function speedOf(r){return /^free/.test(r.speed||'')?'free':(r.speed?parseInt(r.speed,10):100)}
-function renderSpeedTabs(){
-  var list=speedsSeen.slice();
-  if(typeof SPEED==='number'&&list.indexOf(SPEED)===-1)list.push(SPEED);
-  if(currentStandingsSpeed!=='free'&&list.indexOf(currentStandingsSpeed)===-1)list.push(currentStandingsSpeed);
-  list.sort(function(a,b){return a-b});
-  var SPEEDS=['free'].concat(list);
-  var row=$('standingsSpeedRow');
-  if(currentStandingsGame!=='reaction-speed'){row.style.display='none';row.innerHTML='';return}
-  row.style.display='flex';
-  row.innerHTML=SPEEDS.map(function(v){
-    return '<button class="standings-tab'+(v===currentStandingsSpeed?' active':'')+'" data-speed="'+v+'">'+(v==='free'?'Free Tap':v+' BPM')+'</button>';
-  }).join('');
-  row.querySelectorAll('.standings-tab').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      currentStandingsSpeed=btn.dataset.speed==='free'?'free':parseInt(btn.dataset.speed,10);
-      renderStandingsForGame('reaction-speed');
-    });
-  });
-}
-
-
-function renderTapLog(container,shots,finalScore){
-  if(!shots||!shots.length){
-    container.innerHTML='<div class="tap-log-empty">No tap-by-tap detail saved for this game.</div>';
-    return;
-  }
-  var chips=shots.map(function(s){
-    if(s.hit){
-      return '<div class="tap-chip hit"><span class="tap-bpm">'+s.bpm+' BPM</span><span class="tap-pts">+'+s.pts+'</span></div>';
-    }
-    var label=s.noResponse?'NO RESP':(s.bpm>0?s.bpm+' BPM':'MISS');
-    return '<div class="tap-chip miss"><span class="tap-bpm">'+label+'</span><span class="tap-pts">'+s.pts+'</span></div>';
-  }).join('');
-  container.innerHTML=chips+'<div class="tap-log-total">Final Total: <b>'+finalScore+' PTS</b></div>';
-}
-
-// This run's hits, misses, and the resulting hit-rate average — only
-// Reactific and Reaction Speed genuinely track this (the sequence
-// games in this family have no hit/miss concept at all), so this
-// gracefully falls back to a plain message when the data isn't there.
-function renderHitMissDetail(container,hits,misses,avgMs){
-  if(hits==null||misses==null){
-    container.innerHTML='<div class="tap-log-empty">No hit/miss detail saved for this game.</div>';
-    return;
-  }
-  var total=hits+misses;
-  var rate=total>0?Math.round((hits/total)*100):0;
-  // BPM, not milliseconds — a faster reaction genuinely produces a
-  // higher BPM (60000/ms), so "higher number = better" finally holds
-  // true here, unlike ms where a bigger number means a slower tap.
-  // Full decimal precision, not the rounded whole-number BPM used
-  // elsewhere in the game, since this is meant to be a real,
-  // fine-grained tiebreaker stat, not a quick glance figure.
-  var avgLine=avgMs>0?('<div class="tap-log-total">Avg Speed: <b>'+(60000/avgMs).toFixed(2)+' BPM</b></div>'):'';
-  container.innerHTML=
-     '<div class="hitmiss-grid" style="width:100%">'
-    +'<div class="hitmiss-cell hits"><div class="hitmiss-val">'+hits+'</div><div class="hitmiss-lbl">Hits</div></div>'
-    +'<div class="hitmiss-cell miss"><div class="hitmiss-val">'+misses+'</div><div class="hitmiss-lbl">Misses</div></div>'
-    +'</div>'
-    +'<div class="tap-log-total">Hit Rate — This Run: <b>'+rate+'%</b></div>'
-    +avgLine;
-}
-
-// AGE GROUPS — runs carry the age group of the code used at sign-in.
-// When a school has more than one, the board gets a tab per group and
-// opens on the player's own; "All" shows the whole school.
-var myAge=sessionStorage.getItem('reaction-velocity-category')||'';
-var currentAge=myAge, agesSeen=[];
-function ageSort(a,b){var x=parseInt(a,10),y=parseInt(b,10);if(!isNaN(x)&&!isNaN(y)&&x!==y)return x-y;return a.localeCompare(b)}
-function renderAgeTabs(){
-  var row=$('standingsAgeRow'), list=agesSeen.slice();
-  if(currentAge&&list.indexOf(currentAge)===-1)list.push(currentAge);
-  list.sort(ageSort);
-  if(!list.length){row.style.display='none';row.innerHTML='';return}
-  row.style.display='flex';
-  row.innerHTML=[''].concat(list).map(function(a){
-    var safe=a.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    return '<button class="standings-tab'+(a===currentAge?' active':'')+'" data-age="'+safe+'">'+(a?safe:tx('allAges'))+'</button>';
-  }).join('');
-  row.querySelectorAll('.standings-tab').forEach(function(btn){
-    btn.addEventListener('click',function(){currentAge=btn.dataset.age;renderStandingsForGame(currentStandingsGame)});
-  });
-}
-function fetchStandingsFor(gameConfig){
-  var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms,hits,misses';
-  var porVel=gameConfig.key==='reaction-speed';
-  if(porVel)cols+=',speed';
-  cols+=',category';
-  // Scoped to the current session's own school — two different
-  // access codes are two genuinely separate boards. A player never
-  // sees, or competes against, scores from a school they didn't
-  // actually enter through.
-  var school=sessionStorage.getItem('reaction-velocity-school')||'';
-  var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc&school_name=eq.'+encodeURIComponent(school)+'&hidden=is.false';   // hidden in the admin: kept on file, off the board
-  if(gameConfig.key==='reactific')url+='&or=(speed.is.null,speed.eq.100)';   // Reactific's original 100 BPM board
-  return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
-    .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
-    .then(function(rows){
-      var ages={};
-      (rows||[]).forEach(function(r){var a=(r.category||'').trim();if(a)ages[a]=1});
-      agesSeen=Object.keys(ages);
-      if(currentAge)rows=(rows||[]).filter(function(r){return (r.category||'').trim()===currentAge});
-      if(porVel){
-        // Every speed played here gets a tab; the board shows the one picked.
-        var seen={100:1};
-        (rows||[]).forEach(function(r){var v=speedOf(r);if(v!=='free')seen[v]=1});
-        speedsSeen=Object.keys(seen).map(Number);
-        rows=(rows||[]).filter(function(r){return speedOf(r)===currentStandingsSpeed});
-      }
-      var best={};
-      (rows||[]).forEach(function(r){
-        var existing=best[r.player_name];
-        if(!existing||r.score>existing.pts){
-          best[r.player_name]=gameConfig.rich
-            ?{name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[]}
-            :{name:r.player_name,pts:r.score,ms:r.avg_ms,hits:r.hits,misses:r.misses};
-        }
-      });
-      // Equal scores are a real possibility now that hits are worth a
-      // flat 100 — average reaction time breaks the tie, faster first.
-      // A player with no recorded average sorts last among ties, never
-      // ahead of someone who genuinely has a real time on the board.
-      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){
-        if(b.pts!==a.pts)return b.pts-a.pts;
-        return (a.ms||Infinity)-(b.ms||Infinity);
-      });
-    });
-}
-
-function renderStandingsTabs(){
-  var row=$('standingsTabRow');
-  row.innerHTML=STANDINGS_GAMES.map(function(g){
-    return '<button class="standings-tab'+(g.key===currentStandingsGame?' active':'')+'" data-key="'+g.key+'">'+g.label+'</button>';
-  }).join('');
-  row.querySelectorAll('.standings-tab').forEach(function(btn){
-    btn.addEventListener('click',function(){renderStandingsForGame(btn.dataset.key)});
-  });
-}
-
-function renderStandingsForGame(gameKey){
-  currentStandingsGame=gameKey;
-  var gameConfig=STANDINGS_GAMES.filter(function(g){return g.key===gameKey})[0];
-  renderStandingsTabs();
-  renderSpeedTabs();
-  var isFreeBoard=false;
-  $('boxSub').textContent=gameConfig.label+(gameKey==='reaction-speed'?' · '+(currentStandingsSpeed==='free'?'Free Tap · at each player\'s own speed':currentStandingsSpeed+' BPM'):'')+' · Player vs. Player';
-
-  var listEl=$('standingsList');
-  var tapLogEl=$('standingsTapLog');
-  tapLogEl.style.display='none';
-  listEl.innerHTML='<div class="box-empty">Loading standings…</div>';
-
-  fetchStandingsFor(gameConfig).then(function(ranked){
-    if(currentStandingsGame!==gameKey)return;
-    renderSpeedTabs();
-    renderAgeTabs();
-    if(!ranked.length){
-      listEl.innerHTML='<div class="box-empty">No players yet — be the first name on the board.</div>';
-      return;
-    }
-    var openRowName=null;
-    listEl.innerHTML=ranked.map(function(p,i){
-      var rankClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
-      var safeName=p.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-      return '<div class="standings-row '+rankClass+'" data-name="'+safeName+'">'
-        +'<span class="standings-rank">'+(i+1)+'</span>'
-        +'<span class="standings-name">'+safeName+'</span>'
-        +'<span class="standings-pts">'+p.pts+(isFreeBoard?' BPM':'')+'</span>'
-        +'</div>';
-    }).join('');
-    listEl.querySelectorAll('.standings-row').forEach(function(row){
-      row.addEventListener('click',function(){
-        var name=row.dataset.name;
-        if(openRowName===name){tapLogEl.style.display='none';openRowName=null;return}
-        openRowName=name;
-        var p=ranked.filter(function(r){return r.name===name})[0];
-        if(gameConfig.rich){
-          renderTapLog(tapLogEl,p.shots,p.pts);
-        }else{
-          renderHitMissDetail(tapLogEl,p.hits,p.misses,p.ms);
-        }
-        tapLogEl.style.display='flex';
-        row.insertAdjacentElement('afterend',tapLogEl);
-      });
-    });
-  }).catch(function(){
-    if(currentStandingsGame!==gameKey)return;
-    listEl.innerHTML='<div class="box-empty">Couldn\'t reach the standings — check the connection. <span class="standings-retry-btn" style="color:#ff1e3c;text-decoration:underline;cursor:pointer">Try again</span></div>';
-    var retryBtn=listEl.querySelector('.standings-retry-btn');
-    if(retryBtn)retryBtn.addEventListener('click',function(){renderStandingsForGame(gameKey)});
-  });
-}
-function renderStandings(){renderStandingsForGame(THIS_GAME_KEY)}
-
-var standingsReturnScreen='screen-intro';
-function openStandings(fromScreen){
-  standingsReturnScreen=fromScreen;
-  currentStandingsSpeed=SPEED;
-  renderStandings();
-  $(fromScreen).style.display='none';
-  $('screen-box').style.display='flex';
-}
-$('openBoxBtn').addEventListener('click',function(){openStandings('screen-intro')});
-$('endStandingsBtn').addEventListener('click',function(){openStandings('screen-end')});
-if(new URLSearchParams(window.location.search).get('standings')==='1'){
-  openStandings('screen-intro');
-}
-$('closeBoxBtn').onclick=function(){
-  $('screen-box').style.display='none';
-  $(standingsReturnScreen).style.display='flex';
+$('startBtn').onclick=function(){
+  if(!MOVIL.guard())return;
+  var n=$('playerNameInputMain').value.trim();
+  if(!n){$('playerNameInputMain').focus();return}
+  playerName=n; MOVIL.unlock(); MOVIL.loadPast(n);
+  round=0; results=[]; show('play'); arm();
 };
-$('nextPlayerBtn').addEventListener('click',function(){
-  currentPlayerName='';choseFree=false;
-  $('playerNameInputMain').value='';
-  phase='idle';
-  $('screen-end').style.display='none';
-  $('nextSpeed').style.display='none';
-  $('screen-intro').style.display='flex';
-  $('playerNameInputMain').focus();
-  refreshBox();
-  $('hitMissToggle').classList.remove('open');
-  $('hitMissDetail').classList.remove('open');
+$('againBtn').onclick=function(){$('startBtn').click()};
+$('nextPlayerBtn').addEventListener('click',function(){show('intro')});
+
+function arm(){
+  clearTimeout(waitT);clearTimeout(slowT);
+  state='armed'; $('tgt').style.display='none'; $('home').className='ready'; bar();
+  msg(homeHeld?'Lift off, then hold HOME again':'Hold HOME');
+}
+function place(){
+  var p=$('play').getBoundingClientRect(), r=parseFloat(getComputedStyle($('tgt')).width)/2||42, home=$('home').getBoundingClientRect();
+  var top=70+r, bottom=home.top-40-r, left=r+8, right=p.width-r-8;
+  if(bottom<top)bottom=top;
+  var x=left+Math.random()*(right-left), y=top+Math.random()*(bottom-top);
+  var t=$('tgt'); t.style.left=(x-r)+'px'; t.style.top=(y-r)+'px'; t.style.display='block';
+}
+function light(){
+  if(state!=='holding')return;
+  place(); msg(''); t0=performance.now(); state='live';
+  slowT=setTimeout(function(){done(false,0,'Too slow')},TOO_SLOW);
+}
+function done(ok,ms,why){
+  if(state!=='live'&&state!=='holding')return;
+  clearTimeout(waitT);clearTimeout(slowT);
+  state='between'; $('tgt').style.display='none';
+  results.push({ok:ok,ms:ms,why:why});
+  if(ok){MOVIL.hitSound();msg(MOVIL.bpm(ms)+' BPM','good')}else{MOVIL.missSound();MOVIL.vibrate(80);msg(why,'bad')}
+  round++; bar();
+  setTimeout(function(){round>=ROUNDS?finish():arm()},750);
+}
+
+// HOME: press and hold
+$('home').addEventListener('pointerdown',function(e){
+  e.preventDefault();
+  homeHeld=true; homeId=e.pointerId; $('home').className='held';
+  if(state==='armed'){state='holding';msg('Wait for it…');waitT=setTimeout(light,WAIT_MIN+Math.random()*(WAIT_MAX-WAIT_MIN))}
+});
+function homeUp(e){
+  if(e.pointerId!==homeId)return;
+  homeHeld=false; homeId=null;
+  if(state==='holding'){done(false,0,'Too early')}
+  else{ $('home').className=state==='armed'?'ready':''; if(state==='armed')msg('Hold HOME') }
+}
+addEventListener('pointerup',homeUp); addEventListener('pointercancel',homeUp);
+
+// the target, or anywhere else while it is lit
+$('play').addEventListener('pointerdown',function(e){
+  if(e.target.id==='home')return;
+  e.preventDefault();
+  if(state!=='live')return;
+  if(homeHeld){done(false,0,'Lift off HOME first');return}
+  if(e.target.id==='tgt'){var ms=performance.now()-t0; if(ms<GUESS_MS)done(false,0,'Too early'); else done(true,ms,'')}
+  else done(false,0,'Missed the target');
 });
 
-function $(id){return document.getElementById(id)}
-
-var phase='idle';
-var idx=0,score=0,best=0,totalRT=0,rtCount=0,bestRT=0,bestAvgMs=0,hitCount=0,missCount=0;
-var timers=[],targetEl=$('target'),targetInner=$('target-inner');
-var targetX=0,targetY=0,tapLocked=false,shownAt=0;
-var responseTimer=null;
-
-var currentPlayerName='';
-function handleStartClick(){
-  var nameField=$('playerNameInputMain');
-  var name=nameField.value.trim();
-  if(!name){
-    nameField.focus();
-    nameField.style.borderColor='#ff1e3c';
-    setTimeout(function(){nameField.style.borderColor=''},600);
-    return;
-  }
-  currentPlayerName=name.slice(0,20);
-  if(SPEED!=='free'){$('bpmInput').value=bpmFromBox();setSpeed(bpmFromBox())}   // a half-typed speed is settled before play
-  startDrill();
+function finish(){
+  state='idle';
+  var hits=results.filter(function(r){return r.ok}), misses=results.length-hits.length;
+  var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0, bpm=MOVIL.bpm(avg);
+  var early=results.filter(function(r){return r.why==='Too early'}).length;
+  $('endBpm').textContent=bpm||'—';
+  $('endHm').textContent=hits.length+' / '+ROUNDS+' hits'+(early?' · '+early+' too early':'');
+  $('taps').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x"')+'>'+(i+1)+' · '+(r.ok?MOVIL.bpm(r.ms)+' BPM':MOVIL.esc(r.why))+'</div>'}).join('');
+  $('pbMsg').innerHTML=MOVIL.bestHtml(bpm);
+  $('prog').innerHTML=MOVIL.progressSvg(bpm);
+  if(hits.length)MOVIL.save(playerName,bpm,hits.length,misses,Math.round(avg));
+  // Reactific and The Fortress start at this player's best Reaction Speed BPM
+  if(bpm>0){try{var rk='rv-rs-bpm:'+playerName.trim().toLowerCase(),old=parseInt(localStorage.getItem(rk),10)||0;if(bpm>old)localStorage.setItem(rk,String(bpm))}catch(e){}}
+  show('end');
 }
-$('playerNameInputMain').addEventListener('keydown',function(e){
-  if(e.key==='Enter')handleStartClick();
-});
-// The speed: Free Tap, or any BPM typed in the box (10 to 300).
-var BPM_MIN=10, BPM_MAX=300;
-function bpmFromBox(){
-  var v=parseInt($('bpmInput').value,10);
-  if(isNaN(v))v=100;
-  return Math.max(BPM_MIN,Math.min(BPM_MAX,v));
-}
-function pickFree(){
-  setSpeed('free');
-  document.querySelector('.speed-btn.free').classList.add('active');$('bpmBox').classList.remove('active');
-  $('ruleT').innerHTML=tx('ruleFree');
-}
-function pickBox(){
-  if($('bpmInput').disabled)return;
-  setSpeed(bpmFromBox());
-  document.querySelector('.speed-btn.free').classList.remove('active');$('bpmBox').classList.add('active');
-  $('ruleT').innerHTML=tx('ruleBeat');
-}
-document.querySelector('.speed-btn.free').onclick=function(){choseFree=true;pickFree()};
-
-// The BPM box stays locked until the player has done a Free Tap. Their
-// measured speed is kept on this device, per player name, and the box
-// then opens on it as their default — they can type any other speed.
-function freeKey(n){return 'rv-free-bpm:'+String(n||'').trim().toLowerCase()}
-function savedFreeBPM(n){try{var v=parseInt(localStorage.getItem(freeKey(n)),10);return isNaN(v)?0:v}catch(e){return 0}}
-// The player's best Free Tap speed at this school, from every Free Tap
-// run saved to the boards — so it follows them to any tablet or phone.
-// The copy kept on this device answers at once; the database adds any
-// faster run from another device.
-var dbBest={}, dbAsked={};
-function askBestFree(n){
-  var k=String(n||'').trim().toLowerCase(); if(!k||dbAsked[k])return;
-  dbAsked[k]=1;
-  var school=sessionStorage.getItem('reaction-velocity-school')||'';
-  var url=SB_URL+'/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*&hidden=is.false'+
-    '&school_name=eq.'+encodeURIComponent(school)+'&player_name=ilike.'+encodeURIComponent(String(n).trim().replace(/[*%,()]/g,''));
-  fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
-    .then(function(r){return r.ok?r.json():[]})
-    .then(function(rows){
-      var top=0;(rows||[]).forEach(function(r){var v=parseInt(String(r.speed).split('-')[1],10);if(v>top)top=v});
-      dbBest[k]=top;
-      if(top>savedFreeBPM(n)){try{localStorage.setItem(freeKey(n),String(top))}catch(e){}}
-      if(String($('playerNameInputMain').value).trim().toLowerCase()===k&&$('screen-intro').style.display!=='none')refreshBox(true);
-    })
-    .catch(function(){});
-}
-// Free Tap picked by hand stays picked: a late answer about the player's
-// saved speed only unlocks the box, it never switches the choice — and
-// nothing on the start screen changes once a game is under way.
-var choseFree=false;
-function refreshBox(fromDb){
-  if(phase==='running'||$('screen-intro').style.display==='none')return;
-  var n=$('playerNameInputMain').value, v=n.trim()?savedFreeBPM(n):0;
-  if(!fromDb&&n.trim())askBestFree(n);
-  var box=$('bpmBox'), inp=$('bpmInput');
-  $('bpmDown').disabled=$('bpmUp').disabled=!v;
-  if(!v){
-    inp.disabled=true;inp.value='';box.classList.add('locked');box.classList.remove('active');
-    $('bpmNote').textContent=tx('locked');
-    pickFree();
-    return;
-  }
-  var wasLocked=inp.disabled;
-  inp.disabled=false;box.classList.remove('locked');
-  if(wasLocked||!inp.value)inp.value=v;   // a speed the player already typed is kept
-  $('bpmNote').textContent=tx('open');
-  if(!choseFree)pickBox();
-}
-var nameTimer=null;
-$('playerNameInputMain').addEventListener('input',function(){
-  choseFree=false;$('bpmInput').value='';$('bpmInput').disabled=true;   // a new name starts from that player's own default
-  refreshBox(true);                                   // this device's copy at once
-  clearTimeout(nameTimer);nameTimer=setTimeout(function(){refreshBox()},500);   // the database once they stop typing
-});
-// − / + move the speed down or up 5 BPM at a time (or type any number).
-// This changes only this game's speed — the player's default stays the
-// Free Tap speed until a faster Free Tap replaces it.
-function stepBPM(d){
-  if($('bpmInput').disabled)return;
-  var v=bpmFromBox()+d; v=Math.max(BPM_MIN,Math.min(BPM_MAX,v));
-  choseFree=false;$('bpmInput').value=v; pickBox();
-}
-$('bpmDown').addEventListener('click',function(e){e.preventDefault();stepBPM(-5)});
-$('bpmUp').addEventListener('click',function(e){e.preventDefault();stepBPM(5)});
-document.addEventListener('DOMContentLoaded',function(){setTimeout(refreshBox,0)});   // after the player's name is filled in (jugador.js)
-$('bpmInput').addEventListener('focus',function(){choseFree=false;pickBox()});
-$('bpmInput').addEventListener('input',pickBox);
-$('bpmInput').addEventListener('change',function(){$('bpmInput').value=bpmFromBox();pickBox()});
-$('bpmInput').addEventListener('keydown',function(e){if(e.key==='Enter'){$('bpmInput').value=bpmFromBox();pickBox();$('bpmInput').blur()}});
-
-// Arriving here via "Next Game" from another game in the chain — the
-// name they already typed once carries over, so they're not asked to
-// type it again for what's really the same session, just a different
-// drill. Read once, then cleared, so it never lingers into a later,
-// unrelated visit to this same page.
-(function(){
-  var carried=sessionStorage.getItem('db-carryover-name');
-  if(carried){
-    $('playerNameInputMain').value=carried;
-    currentPlayerName=carried;
-    sessionStorage.removeItem('db-carryover-name');
-  }
-})();
-
-// Translations for the intro screen only — the title "Reaction
-// Speed" stays as-is in both languages, since it's a brand name, not
-// a description, same as every other game in this family.
-var INTRO_I18N={
-  en:{
-    fullscreen:'⛶ Fullscreen',
-    start:'▶ START',
-    standingsBtn:'🏆 THE STANDINGS'
-  },
-  es:{
-    fullscreen:'⛶ Pantalla Completa',
-    start:'▶ EMPEZAR',
-    standingsBtn:'🏆 LA CLASIFICACIÓN'
-  }
-};
-// The words added with the speed choice, in both languages. tx() picks
-// the language chosen on the start screen (EN / ES).
-var TX={
-  en:{
-    speed:'Speed', freeName:'👆 Free Tap', freeSub:'10-tap speed check · then 25 targets at your BPM',
-    ruleBeat:'<b>50 targets at your BPM.</b> A cell lights up — tap it before the next beat or it counts as a miss (−100). Every hit is +100, and every reaction is shown as its own beats-per-minute.',
-    ruleFree:'<b>Free Tap.</b> First a <b>speed check</b>: 10 targets with no beat — each waits for you, tap it and the next one appears. That measures <b>your BPM</b>. Then the game opens at your speed for <b>25 targets</b>.',
-    locked:'play Free Tap first to unlock', open:'your Free Tap speed · − / + or type to change',
-    check:'SPEED CHECK · 10 TAPS', ready:'GET READY...',
-    spTop:'Your speed', spGo:'25 targets at your speed · starting in',
-    taps:function(s){return '10 taps in '+s+'s'}, newBest:function(b){return 'NEW BEST (was '+b+')'}, yourBest:function(b){return 'your best: '+b+' BPM'},
-    ns_up:function(h,t,n){return h+'/'+t+' — ready for '+n+' BPM?'},
-    ns_down:function(h,t,n){return h+'/'+t+' — try '+n+' BPM next'},
-    ns_stay:function(h,t,n){return h+'/'+t+' — stay at '+n+' BPM and go again'},
-    nsBtn:function(n){return '▶ PLAY AT '+n+' BPM'},
-    endFree:function(b,p){return 'Hits · at your speed, '+b+' BPM · '+p+' pts'}, endPts:'Total Points',
-    beatOn:'Beat: on', beatOff:'Beat: off', allAges:'All',
-    sizeN:'Targets: normal', sizeB:'Targets: big', tapByTap:'Tap by tap', miss:'miss',
-    progBtn:'📈 MY PROGRESS', progTitle:'MY <span>PROGRESS</span>', progSub:'Free Tap speed, run by run', back:'← Back',
-    progNoName:'Type the player’s name first.', loading:'Loading…',
-    progNone:'No Free Tap runs yet — play Free Tap to start the line.',
-    progOne:'One Free Tap run so far — play it again to see the line.',
-    first:'First', latest:'Latest', best:'Best', earlier:'earlier', runs:'runs',
-    change:function(d){return '<b>'+(d>0?'+':'')+d+' BPM</b> since the first run'}
-  },
-  es:{
-    speed:'Velocidad', freeName:'👆 Toque Libre', freeSub:'prueba de velocidad de 10 toques · luego 25 objetivos a tu BPM',
-    ruleBeat:'<b>50 objetivos a tu BPM.</b> Se ilumina una celda — tócala antes del próximo pulso o cuenta como fallo (−100). Cada acierto vale +100, y cada reacción se muestra como sus propios pulsos por minuto.',
-    ruleFree:'<b>Toque Libre.</b> Primero una <b>prueba de velocidad</b>: 10 objetivos sin pulso — cada uno te espera, tócalo y aparece el próximo. Eso mide <b>tu BPM</b>. Luego el juego empieza a tu velocidad con <b>25 objetivos</b>.',
-    locked:'juega Toque Libre primero para desbloquear', open:'tu velocidad de Toque Libre · − / + o escribe para cambiar',
-    check:'PRUEBA DE VELOCIDAD · 10 TOQUES', ready:'PREPÁRATE...',
-    spTop:'Tu velocidad', spGo:'25 objetivos a tu velocidad · empieza en',
-    taps:function(s){return '10 toques en '+s+'s'}, newBest:function(b){return 'NUEVO RÉCORD (antes '+b+')'}, yourBest:function(b){return 'tu récord: '+b+' BPM'},
-    ns_up:function(h,t,n){return h+'/'+t+' — ¿listo para '+n+' BPM?'},
-    ns_down:function(h,t,n){return h+'/'+t+' — prueba '+n+' BPM'},
-    ns_stay:function(h,t,n){return h+'/'+t+' — quédate en '+n+' BPM y juega otra vez'},
-    nsBtn:function(n){return '▶ JUGAR A '+n+' BPM'},
-    endFree:function(b,p){return 'Aciertos · a tu velocidad, '+b+' BPM · '+p+' pts'}, endPts:'Puntos Totales',
-    beatOn:'Pulso: sí', beatOff:'Pulso: no', allAges:'Todos',
-    sizeN:'Objetivos: normales', sizeB:'Objetivos: grandes', tapByTap:'Toque a toque', miss:'fallo',
-    progBtn:'📈 MI PROGRESO', progTitle:'MI <span>PROGRESO</span>', progSub:'Velocidad de Toque Libre, juego por juego', back:'← Atrás',
-    progNoName:'Escribe el nombre del jugador primero.', loading:'Cargando…',
-    progNone:'Todavía no hay juegos de Toque Libre — juega Toque Libre para empezar la línea.',
-    progOne:'Un juego de Toque Libre hasta ahora — juégalo otra vez para ver la línea.',
-    first:'Primero', latest:'Último', best:'Récord', earlier:'antes', runs:'juegos',
-    change:function(d){return '<b>'+(d>0?'+':'')+d+' BPM</b> desde el primer juego'}
-  }
-};
-function tx(k){return (TX[introLang]||TX.en)[k]}
-// After a game: the next speed to try. 88% or more of the targets hit
-// → 10 BPM faster; under 60% → 10 slower; in between → stay. The player
-// decides — the button just starts the next game at that speed.
-function suggestNext(bpm,hits,total){
-  var r=total?hits/total:0, next=bpm, k='stay';
-  if(r>=0.88){next=bpm+10;k='up'}else if(r<0.6){next=bpm-10;k='down'}
-  next=Math.max(BPM_MIN,Math.min(BPM_MAX,next));
-  $('nsTxt').textContent=tx('ns_'+k)(hits,total,next);
-  $('nsBtn').textContent=tx('nsBtn')(next);
-  $('nsBtn').onclick=function(){
-    $('screen-end').style.display='none';
-    $('hitMissToggle').classList.remove('open');$('hitMissDetail').classList.remove('open');
-    $('nextSpeed').style.display='none';
-    choseFree=false;$('bpmInput').disabled=false;$('bpmBox').classList.remove('locked');$('bpmInput').value=next;pickBox();
-    startDrill();
-  };
-  $('nextSpeed').style.display='block';
-}
-function applySpeedWords(){
-  $('speedLabel').textContent=tx('speed');$('freeName').textContent=tx('freeName');$('freeSub').textContent=tx('freeSub');
-  $('spTop').textContent=tx('spTop');$('spGo').textContent=tx('spGo');
-  $('ruleT').innerHTML=SPEED==='free'?tx('ruleFree'):tx('ruleBeat');
-  $('bpmNote').textContent=$('bpmInput').disabled?tx('locked'):tx('open');
-  showBeatSw();showSizeSw();
-  $('progBtn').textContent=$('endProgBtn').textContent=tx('progBtn');
-  $('tbtLbl').textContent=tx('tapByTap');
-}
-var introLang='en';
-refreshBox();   // the BPM box and the rule text, once the words above exist
-function applyIntroTranslations(){
-  var t=INTRO_I18N[introLang];
-  $('fsBtn').textContent=t.fullscreen;
-  $('bigStart').textContent=t.start;
-  $('openBoxBtn').textContent=t.standingsBtn;
-  applySpeedWords();
-}
-$('introLangEN').addEventListener('click',function(){
-  introLang='en';
-  this.classList.add('active');
-  $('introLangES').classList.remove('active');
-  applyIntroTranslations();
-});
-$('introLangES').addEventListener('click',function(){
-  introLang='es';
-  this.classList.add('active');
-  $('introLangEN').classList.remove('active');
-  applyIntroTranslations();
-});
-
-function loadBest(){
-  best=0;
-  try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0}catch(e){}
-  try{bestAvgMs=parseInt(localStorage.getItem(BEST_MS_KEY)||'0',10)||0}catch(e){bestAvgMs=0}
-  $('hBest').textContent=best;
-  $('bestLine').innerHTML=best>0?('Your best: <b>'+best+' pts</b>'):'';
-}
-function saveBest(){try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
-function saveBestMs(){try{localStorage.setItem(BEST_MS_KEY,String(bestAvgMs))}catch(e){}}
-
-var fsb=$('fsBtn');
-if(fsb)fsb.onclick=async function(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
-var fsg=$('fsBtnGame');
-if(fsg)fsg.onclick=async function(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
-
-(function(){
-  var c=$('stars'),ctx=c.getContext('2d'),stars=[];
-  function size(){c.width=innerWidth;c.height=innerHeight}
-  size();addEventListener('resize',size);
-  for(var i=0;i<150;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.4+.3,o:Math.random()*.6+.1,s:Math.random()*.5+.2});
-  (function draw(){ctx.clearRect(0,0,c.width,c.height);var t=Date.now()/1000;stars.forEach(function(s){var p=s.o+Math.sin(t*s.s)*.13;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.283);ctx.fillStyle='rgba(255,255,255,'+Math.max(0,Math.min(1,p))+')';ctx.fill()});requestAnimationFrame(draw)})();
-})();
-
-function msg(t,c){var e=$('msg');e.textContent=t;e.className=c||'watch'}
-function clrT(){timers.forEach(clearTimeout);timers=[]}
-function bpmFromMs(v){return v?Math.round(60000/v):0}
-function ripple(x,y){var r=document.createElement('div');r.className='ripple';r.style.left=x+'px';r.style.top=y+'px';r.style.width='50px';r.style.height='50px';document.body.appendChild(r);setTimeout(function(){r.remove()},520)}
-function flash(){var f=$('flash');f.style.background='rgba(255,30,60,.12)';f.style.opacity='1';setTimeout(function(){f.style.opacity='0'},100)}
-
-function startDrill(){
-  if(phase==='running')return;
-  pbLoad();
-  initAudio();   // the start tap lets the browser play the beat
-  try{ if(!document.fullscreenElement && document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); } }catch(e){}
-  $('screen-intro').style.display='none';
-  $('countdown').style.display='flex';
-  var n=3;$('bigCount').textContent=n;
-  var iv=setInterval(function(){
-    n--;
-    if(n<=0){clearInterval(iv);$('countdown').style.display='none';runDrill()}
-    else{$('bigCount').textContent=n}
-  },800);
-}
-
-function runDrill(){
-  freeStart=0;freeBPM=0;
-  if(SPEED==='free'){freeStage='check';TOTAL=TOTAL_CHECK}else freeStage='';
-  phase='running';idx=0;score=0;totalRT=0;rtCount=0;bestRT=0;hitCount=0;missCount=0;taps=[];
-  $('hScore').textContent='0';$('hLeft').textContent=TOTAL;
-  msg(freeStage==='check'?tx('check'):tx('ready'),'go');
-  timers.push(setTimeout(function(){msg('','go');nextTarget()},900));
-}
-// Free Tap: the 10-tap speed check is done — the game opens at the
-// measured BPM for 25 targets, scored from zero.
-// After the 10 taps: a scoreboard with the player's BPM, then a 5-4-3-2-1
-// countdown on it, then the 25 targets at that speed.
-function startFreeGame(){
-  var secs=Math.max(0.001,(performance.now()-freeStart)/1000);
-  freeBPM=Math.max(20,Math.min(200,Math.round(TOTAL_CHECK*60/secs)));
-  // The player's default speed: their first Free Tap unlocks the BPM box,
-  // and a later Free Tap replaces it only when it is higher.
-  var prevBPM=savedFreeBPM(currentPlayerName), newBest=freeBPM>prevBPM;
-  if(newBest){try{localStorage.setItem(freeKey(currentPlayerName),String(freeBPM))}catch(e){}}
-  BPM=freeBPM;PACE_MS=Math.round(60000/BPM);
-  freeStage='play';TOTAL=TOTAL_FREE;
-  idx=0;score=0;totalRT=0;rtCount=0;bestRT=0;hitCount=0;missCount=0;taps=[];   // the speed check's taps are not part of the game
-  $('hScore').textContent='0';$('hLeft').textContent=TOTAL;
-  msg('','go');
-  $('spBpm').textContent=freeBPM;
-  $('spSub').textContent=tx('taps')(secs.toFixed(1))+(newBest?(prevBPM?' · '+tx('newBest')(prevBPM):''):' · '+tx('yourBest')(prevBPM));
-  var n=5;$('spCount').textContent=n;
-  $('screen-speed').style.display='flex';
-  function tick(){
-    if(phase!=='running')return;
-    n--;
-    if(n<=0){$('screen-speed').style.display='none';nextTarget();return}
-    $('spCount').textContent=n;
-    timers.push(setTimeout(tick,1000));
-  }
-  timers.push(setTimeout(tick,1000));
-}
-
-function nextTarget(){
-  if(phase!=='running')return;
-  var size=Math.max(90,Math.min(150,Math.min(innerWidth,innerHeight)*0.20));
-  var extra=0;   // Big targets: 40% larger, kept a little further from the edges
-  if(bigT){extra=Math.round(size*0.2);size=Math.round(size*1.4)}
-  var pad=70+extra;
-  targetX=pad+Math.random()*(innerWidth-pad*2);
-  targetY=140+extra+Math.random()*(innerHeight-230-extra*2);
-  targetEl.style.left=targetX+'px';targetEl.style.top=targetY+'px';
-  targetEl.style.width=size+'px';targetEl.style.height=size+'px';
-  targetEl.classList.add('visible');
-  shownAt=performance.now();
-  if(freeStage==='check'){if(!freeStart)freeStart=shownAt;return}   // speed check: no deadline, no beat
-  beatClick();
-
-  // A target that isn't tapped within one beat at 100 BPM (600ms)
-  // genuinely times out — counted as a miss (no score, no
-  // reaction-time contribution) — and the next target flashes right
-  // after, keeping the pace honest instead of letting the player
-  // wait indefinitely for their own moment to react.
-  responseTimer=setTimeout(handleTimeout,PACE_MS);
-  timers.push(responseTimer);
-}
-targetEl.addEventListener('pointerdown',function(e){e.preventDefault();handleTap()});
-
-function handleTimeout(){
-  if(phase!=='running')return;
-  if(!targetEl.classList.contains('visible'))return; // a genuine tap already resolved this one
-  targetEl.classList.remove('visible');
-
-  idx++;
-  // A miss genuinely costs — real negative feedback, not just a
-  // withheld reward. Kept smaller than a successful tap's own range
-  // (150-300) so a couple of misses don't single-handedly sink an
-  // otherwise strong run, but it still stings enough to matter.
-  score-=100;
-  missCount++;taps.push(0);
-  $('hScore').textContent=score;
-  $('hLeft').textContent=Math.max(0,TOTAL-idx);
-  msg('MISSED — TOO SLOW · -100','watch');
-
-  if(idx>=TOTAL){
-    timers.push(setTimeout(endDrill,400));
-  }else{
-    timers.push(setTimeout(nextTarget,150));
-  }
-}
-
-function handleTap(){
-  if(phase!=='running')return;
-  if(!targetEl.classList.contains('visible'))return;
-  if(tapLocked)return;
-  tapLocked=true;setTimeout(function(){tapLocked=false},40);
-  if(responseTimer){clearTimeout(responseTimer);responseTimer=null}
-
-  var rt=performance.now()-shownAt;
-  targetEl.classList.remove('visible');
-  ripple(targetX,targetY);flash();
-
-  idx++;
-  totalRT+=rt;rtCount++;
-  if(!bestRT||rt<bestRT)bestRT=rt;
-  score+=100;
-  hitCount++;taps.push(Math.max(1,Math.round(rt)));
-
-  $('hScore').textContent=score;
-  $('hLeft').textContent=Math.max(0,TOTAL-idx);
-  msg(Math.round(rt)+' MS · +100','go');
-
-  if(idx>=TOTAL){
-    if(freeStage==='check'){timers.push(setTimeout(startFreeGame,300));return}
-    timers.push(setTimeout(endDrill,400));
-  }else{
-    timers.push(setTimeout(nextTarget,freeStage==='check'?0:PACE_MS));
-  }
-}
-
-// THE BEAT — a soft click each time a target appears at a set BPM, so the
-// player hears the rhythm, not only sees it. Silent during the Free Tap
-// speed check (no beat there). On/off on the start screen, remembered
-// on this device.
-var actx=null, beatOn=true;
-try{beatOn=localStorage.getItem('rv-beat')!=='off'}catch(e){}
-function initAudio(){
-  if(actx)return;
-  try{var A=window.AudioContext||window.webkitAudioContext;if(A)actx=new A()}catch(e){actx=null}
-}
-function beatClick(){
-  if(!beatOn||!actx)return;
-  try{
-    if(actx.state==='suspended')actx.resume();
-    var t=actx.currentTime, o=actx.createOscillator(), g=actx.createGain();
-    o.type='sine';o.frequency.setValueAtTime(880,t);o.frequency.exponentialRampToValueAtTime(440,t+0.06);
-    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.005);g.gain.exponentialRampToValueAtTime(0.0001,t+0.09);
-    o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+0.1);
-    window.__beats=(window.__beats||0)+1;
-  }catch(e){}
-}
-function showBeatSw(){
-  var b=$('beatSw');b.classList.toggle('on',beatOn);b.setAttribute('aria-pressed',beatOn?'true':'false');
-  $('beatTxt').textContent=tx(beatOn?'beatOn':'beatOff');
-}
-$('beatSw').addEventListener('click',function(){beatOn=!beatOn;try{localStorage.setItem('rv-beat',beatOn?'on':'off')}catch(e){}showBeatSw()});
-showBeatSw();   // the beat switch as this device left it
-
-// TARGET SIZE — Normal or Big (40% larger), for younger players. Only the
-// size of the target changes; the game screen stays as it is. Remembered
-// on this device; until it is chosen, Big for age groups up to 6.
-var bigT=false;
-(function(){
-  var v='';try{v=localStorage.getItem('rv-size')||''}catch(e){}
-  if(v)bigT=v==='big';
-  else{var a=parseInt(String(myAge).replace(/^\D+/,''),10);bigT=!isNaN(a)&&a<=6}
-})();
-function showSizeSw(){
-  var b=$('sizeSw');b.classList.toggle('on',!!bigT);b.setAttribute('aria-pressed',bigT?'true':'false');
-  $('sizeTxt').textContent=tx(bigT?'sizeB':'sizeN');
-}
-$('sizeSw').addEventListener('click',function(){bigT=!bigT;try{localStorage.setItem('rv-size',bigT?'big':'normal')}catch(e){}showSizeSw()});
-showSizeSw();
-
-// TAP BY TAP — on the final scoreboard, under Hits & Misses: every target
-// of the game in order, each hit with its own BPM, each miss as slower than the game's BPM.
-var taps=[];
-function renderTapLog(){
-  $('endTapLog').innerHTML=taps.map(function(t,i){
-    // a hit shows its own speed in BPM; a miss was slower than the game's BPM
-    return t?'<div class="tap-chip hit"><span class="tap-bpm">#'+(i+1)+'</span><span class="tap-pts">'+bpmFromMs(t)+' BPM</span></div>'
-            :'<div class="tap-chip miss"><span class="tap-bpm">#'+(i+1)+'</span><span class="tap-pts">&lt;'+BPM+' BPM</span></div>';
-  }).join('');
-}
-
-// MY PROGRESS — the player's Free Tap speed (BPM) over time, from every
-// Free Tap run saved to the board at this school, oldest first.
-var progReturn='screen-intro';
-function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function openProgress(from){
-  var n=String($('playerNameInputMain').value||currentPlayerName||'').trim();
-  progReturn=from;$(from).style.display='none';$('screen-prog').style.display='flex';
-  $('progTitle').innerHTML=tx('progTitle');$('closeProgBtn').textContent=tx('back');
-  $('progSub').textContent=tx('progSub')+(n?' · '+n:'');
-  if(!n){$('progBody').innerHTML='<div class="box-empty">'+tx('progNoName')+'</div>';return}
-  $('progBody').innerHTML='<div class="box-empty">'+tx('loading')+'</div>';
-  var school=sessionStorage.getItem('reaction-velocity-school')||'';
-  var base=SB_URL+'/rest/v1/vr_reaction_speed_standings?speed=like.free-*&hidden=is.false'+
-    '&school_name=eq.'+encodeURIComponent(school)+'&player_name=ilike.'+encodeURIComponent(n.replace(/[*%,()]/g,''));
-  var h={headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}};
-  fetch(base+'&select=speed,logged_at,admin_id&order=admin_id.asc',h)
-    .then(function(r){if(!r.ok)throw 0;return r.json()})
-    .catch(function(){return fetch(base+'&select=speed',h).then(function(r){return r.ok?r.json():[]})})
-    .then(function(rows){drawProgress(rows||[])})
-    .catch(function(){drawProgress([])});
-}
-function drawProgress(rows){
-  var pts=[];
-  rows.forEach(function(r){var v=parseInt(String(r.speed).split('-')[1],10);if(v>0)pts.push({b:v,at:r.logged_at||''})});
-  if(pts.length>40)pts=pts.slice(-40);   // the latest 40 runs
-  if(!pts.length){$('progBody').innerHTML='<div class="box-empty">'+tx('progNone')+'</div>';return}
-  var first=pts[0].b, last=pts[pts.length-1].b, top=0, topI=0;
-  pts.forEach(function(p,i){if(p.b>top){top=p.b;topI=i}});
-  var cell=function(v,l){return '<div class="hitmiss-cell hits"><div class="hitmiss-val">'+v+'</div><div class="hitmiss-lbl">'+l+' · BPM</div></div>'};
-  var html='<div class="prog-stats">'+cell(first,tx('first'))+cell(last,tx('latest'))+cell(top,tx('best'))+'</div>';
-  if(pts.length<2){$('progBody').innerHTML=html+'<div class="box-empty">'+tx('progOne')+'</div>';return}
-  html+='<div class="prog-change">'+tx('change')(last-first)+' · '+pts.length+' '+tx('runs')+'</div>';
-  // the chart
-  var W=560,H=240,L=44,R=16,T=16,B=34;
-  var lo=Math.floor((Math.min.apply(null,pts.map(function(p){return p.b}))-5)/10)*10, hi=Math.ceil((top+5)/10)*10;
-  if(hi-lo<20)hi=lo+20;
-  var X=function(i){return L+(W-L-R)*i/(pts.length-1)}, Y=function(v){return T+(H-T-B)*(hi-v)/(hi-lo)};
-  var svg='<svg class="prog-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+escH(tx('progSub'))+'">';
-  var step=(hi-lo)<=60?10:20;
-  for(var g=lo;g<=hi;g+=step){svg+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(g)+'" y2="'+Y(g)+'" stroke="rgba(255,255,255,.08)"/><text x="'+(L-8)+'" y="'+(Y(g)+4)+'" fill="#9fb3c8" font-size="12" text-anchor="end">'+g+'</text>'}
-  svg+='<polyline fill="none" stroke="#00e5ff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map(function(p,i){return X(i).toFixed(1)+','+Y(p.b).toFixed(1)}).join(' ')+'"/>';
-  pts.forEach(function(p,i){
-    var isTop=i===topI;
-    svg+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.b).toFixed(1)+'" r="'+(isTop?7:4.5)+'" fill="'+(isTop?'#ffd35a':'#00e5ff')+'" stroke="#000" stroke-width="1.5"><title>'+p.b+' BPM</title></circle>';
-  });
-  svg+='<text x="'+X(topI).toFixed(1)+'" y="'+(Y(top)-12).toFixed(1)+'" fill="#ffd35a" font-size="13" font-weight="900" text-anchor="middle">'+top+'</text>';
-  var day=function(p){if(!p.at)return tx('earlier');var d=new Date(p.at);return isNaN(d)?'':(d.getMonth()+1)+'/'+d.getDate()};
-  svg+='<text x="'+L+'" y="'+(H-10)+'" fill="#9fb3c8" font-size="12">'+day(pts[0])+'</text>';
-  svg+='<text x="'+(W-R)+'" y="'+(H-10)+'" fill="#9fb3c8" font-size="12" text-anchor="end">'+day(pts[pts.length-1])+'</text>';
-  svg+='</svg>';
-  $('progBody').innerHTML=html+svg;
-}
-$('progBtn').addEventListener('click',function(){openProgress('screen-intro')});
-$('endProgBtn').addEventListener('click',function(){openProgress('screen-end')});
-$('closeProgBtn').addEventListener('click',function(){$('screen-prog').style.display='none';$(progReturn).style.display='flex'});
-
-function endDrill(){
-  if(phase==='done')return;
-  phase='done';clrT();targetEl.classList.remove('visible');
-  var finalScore=score;
-  var avgRT=rtCount?Math.round(totalRT/rtCount):0;
-  if(SPEED==='free'){
-    // Free Tap: the 25-target game at the player's own measured speed,
-    // on the Free Tap board. The personal best in points is left alone.
-    // The final scoreboard: hits out of 25.
-    pbShow(freeBPM,function(r){var m=/^free-(\d+)$/.exec(r.speed||'');return m?+m[1]:null},'BPM');
-    recordScoreToStandings(currentPlayerName,finalScore,avgRT,hitCount,missCount);
-    $('endNum').textContent=hitCount+'/'+TOTAL_FREE;
-    $('endLabel').textContent=tx('endFree')(freeBPM,finalScore);
-    suggestNext(freeBPM,hitCount,TOTAL_FREE);
-    $('endHits').textContent=hitCount;
-    $('endMisses').textContent=missCount;renderTapLog();
-    $('screen-end').style.display='flex';
-    return;
-  }
-  $('endLabel').textContent=tx('endPts');
-  suggestNext(BPM,hitCount,TOTAL);
-  var isNewPts=finalScore>best;
-  var isNewMs=avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
-  if(isNewPts){best=finalScore;saveBest()}
-  if(isNewMs){bestAvgMs=avgRT;saveBestMs()}
-  pbShow(finalScore,function(r){return String(r.speed)===String(SPEED)?(+r.score||0):null},'points at '+SPEED+' BPM');
-  recordScoreToStandings(currentPlayerName,finalScore,avgRT,hitCount,missCount);
-
-  $('endNum').textContent=finalScore;
-  $('endHits').textContent=hitCount;
-  $('endMisses').textContent=missCount;renderTapLog();
-  $('screen-end').style.display='flex';
-}
-
-loadBest();
-
-var hitMissToggle=$('hitMissToggle');
-var hitMissDetail=$('hitMissDetail');
-hitMissToggle.addEventListener('click',function(){
-  hitMissToggle.classList.toggle('open');
-  hitMissDetail.classList.toggle('open');
-});
 </script>
 </body>
 </html>

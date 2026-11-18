@@ -1,9 +1,10 @@
 /* ══════════════════════════════════════════════════════════════════
-   HOME BASE and SWIPE IT — what the two games share.
+   REACTION SPEED (built as Home Base) and SWIPE IT — what they share.
+   Same file in reaction-velocity and cognitivo-gym-paradiso.
 
-   Two ways in:
-     • a Reaction Velocity code (vreaction.com sign-in): the games sit on
-       the Reaction Velocity hub, on any device — tablet or phone;
+   Ways in:
+     • a Reaction Velocity code (vreaction.com sign-in) or a Cognitivo Gym
+       code: the games sit on that hub, on any device — tablet or phone;
      • a Reaction Mobile code (mobile.html): phones only, upright only,
        with their own hub (mobile-hub.html).
    Every run records the device it was played on ('tablet' or 'phone'),
@@ -28,9 +29,10 @@
   M.SB_URL = SB_URL; M.SB_KEY = SB_KEY; M.TABLE = TABLE;
   function ss0(k){ try { return sessionStorage.getItem(k) || '' } catch(e){ return '' } }
   // Which sign-in: a Reaction Mobile code wins if both are present on this device.
-  M.mode = ss0('rm-gate-pass') === '1' ? 'mobile' : (ss0('reaction-velocity-gate-pass') === '1' ? 'rv' : '');
-  var K = M.mode === 'mobile' ? { hub: 'mobile-hub.html', school: 'rm-school', cat: 'rm-category', gate: 'mobile.html' }
-                              : { hub: 'reaction-velocity.html', school: 'reaction-velocity-school', cat: 'reaction-velocity-category', gate: 'index.html' };
+  M.mode = ss0('rm-gate-pass') === '1' ? 'mobile' : ss0('reaction-velocity-gate-pass') === '1' ? 'rv' : ss0('ritnome-gate-pass') === '1' ? 'gym' : '';
+  var K = M.mode === 'mobile' ? { hub: 'mobile-hub.html', school: 'rm-school', cat: 'rm-category' }
+        : M.mode === 'gym'    ? { hub: 'dynamic-hub.html', school: 'ritnome-school', cat: 'ritnome-category' }      // Cognitivo Gym
+        :                       { hub: 'reaction-velocity.html', school: 'reaction-velocity-school', cat: 'reaction-velocity-category' };
   M.HUB = K.hub;
 
   function ss(k){ try { return sessionStorage.getItem(k) || '' } catch(e){ return '' } }
