@@ -29,6 +29,9 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 .how div{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);font-size:.95rem;font-weight:700;line-height:1.3}
 .how b{flex:0 0 30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#00e5ff;color:#000;font-size:.95rem}
 .name-input{width:100%;max-width:320px;padding:14px;border-radius:14px;border:2px solid rgba(0,229,255,.4);background:rgba(255,255,255,.06);color:#fff;font-size:1.05rem;text-align:center}
+.lang{display:flex;gap:4px}
+.lg{padding:7px 11px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#9fb3c8;font:900 .72rem Arial,sans-serif;letter-spacing:.08em;cursor:pointer}
+.lg.on{background:#00e5ff;border-color:#00e5ff;color:#031018}
 .go{width:100%;max-width:320px;margin-top:14px;padding:18px;border:0;border-radius:16px;background:linear-gradient(135deg,#00e5ff,#0091ff);color:#031018;font:900 1.15rem Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
 /* play */
 #play{padding:0;touch-action:none}
@@ -73,16 +76,16 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 <body>
 
 <div class="screen" id="intro">
-  <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span></span></div>
+  <div class="top"><a class="pill" href="mobile-hub.html">← THE HUB</a><span class="lang"><button type="button" class="lg" data-l="es">ES</button><button type="button" class="lg" data-l="en">EN</button></span></div>
   <div class="t">REACTION <span>SPEED</span></div>
   <div class="sub" id="who">Reaction Velocity</div>
   <div class="how">
-    <div><b>1</b>Hold your thumb on HOME</div>
-    <div><b>2</b>Wait — a target lights up</div>
-    <div><b>3</b>Lift off and tap it, fast</div>
+    <div><b>1</b><span data-t="s1">Hold your thumb on HOME</span></div>
+    <div><b>2</b><span data-t="s2">Wait — a target lights up</span></div>
+    <div><b>3</b><span data-t="s3">Lift off and tap it, fast</span></div>
   </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
-  <button class="go" id="startBtn" type="button">Start · 10 rounds</button>
+  <button class="go" id="startBtn" type="button" data-t="start">Start · 10 rounds</button>
 </div>
 
 <div class="screen" id="play" hidden>
@@ -94,21 +97,45 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 
 <div class="screen" id="end" hidden>
   <div class="big" id="endBpm">0</div>
-  <div class="lab">Reaction Speed BPM</div>
+  <div class="lab" data-t="lab">Reaction Speed BPM</div>
   <div id="pbMsg"></div>
   <div class="hm" id="endHm"></div>
-  <div class="card"><h3>Tap by tap</h3><div class="taps" id="taps"></div></div>
-  <div class="card"><h3>My Progress · Reaction Speed</h3><div id="prog"></div></div>
+  <div class="card"><h3 data-t="taps">Tap by tap</h3><div class="taps" id="taps"></div></div>
+  <div class="card"><h3 data-t="prog">My Progress · Reaction Speed</h3><div id="prog"></div></div>
   <div class="btns">
-    <button class="go" id="againBtn" type="button">Play again</button>
-    <a class="btn2" id="nextGameBtn" href="vr-reactific.html">Next game: Reactific →</a>
-    <button class="btn2" id="nextPlayerBtn" type="button">Next Player</button>
+    <button class="go" id="againBtn" type="button" data-t="again">Play again</button>
+    <a class="btn2" id="nextGameBtn" href="vr-reactific.html" data-t="next">Next game: Reactific →</a>
+    <button class="btn2" id="nextPlayerBtn" type="button" data-t="nextp">Next Player</button>
     <a class="btn2" href="mobile-hub.html">← THE HUB</a>
   </div>
 </div>
 
 <script>
 var $=function(id){return document.getElementById(id)};
+/* ── language: opens in Spanish; EN / ES on the start screen (remembered on this device) ── */
+var TX={
+  es:{s1:'Mantén el pulgar en HOME',s2:'Espera: un objetivo se enciende',s3:'Suelta y tócalo, rápido',start:'Empezar · 10 rondas',name:'Tu nombre',hub:'← EL HUB',newp:'Nuevo jugador',
+      lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Reactific →',nextp:'Siguiente jugador',
+      hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',early:'muy temprano',
+      'Too early':'Muy temprano','Too slow':'Muy lento','Lift off HOME first':'Suelta HOME primero','Missed the target':'Fallaste el objetivo'},
+  en:{s1:'Hold your thumb on HOME',s2:'Wait — a target lights up',s3:'Lift off and tap it, fast',start:'Start · 10 rounds',name:'Your name',hub:'← THE HUB',newp:'New player',
+      lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Reactific →',nextp:'Next Player',
+      hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',early:'too early',
+      'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target'}
+};
+var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){}
+function T(k){return (TX[LANG]&&TX[LANG][k])||TX.en[k]||k}
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=T(el.getAttribute('data-t'))});
+  $('playerNameInputMain').placeholder=T('name');
+  document.querySelectorAll('a.pill,#end a.btn2:not(#nextGameBtn)').forEach(function(a){a.textContent=T('hub')});
+  var np=document.querySelector('.jg-como a'); if(np)np.textContent=T('newp');   // the player chip (jugador.js)
+  document.querySelectorAll('.lg').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-l')===LANG)});
+}
+document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
+applyLang();
+document.addEventListener('DOMContentLoaded',function(){setTimeout(applyLang,0)});   // after jugador.js adds the player chip
 var GUESS_MS=120;   // faster than any human reaction: a guess, counted as too early
 var ROUNDS=10, WAIT_MIN=1000, WAIT_MAX=3500, TOO_SLOW=1500;
 var state='idle', round=0, results=[], homeId=null, homeHeld=false, waitT=null, slowT=null, t0=0, playerName='';
@@ -116,7 +143,7 @@ var state='idle', round=0, results=[], homeId=null, homeHeld=false, waitT=null, 
 
 function show(id){['intro','play','end'].forEach(function(s){$(s).hidden=(s!==id)})}
 function msg(t,c){var m=$('msg');m.textContent=t||'';m.className=c||''}
-function bar(){$('rnd').textContent=Math.min(round+1,ROUNDS)+' / '+ROUNDS;var h=results.filter(function(r){return r.ok}).length;$('hits').textContent=h+(h===1?' hit':' hits')}
+function bar(){$('rnd').textContent=Math.min(round+1,ROUNDS)+' / '+ROUNDS;var h=results.filter(function(r){return r.ok}).length;$('hits').textContent=h+' '+(h===1?T('hit'):T('hits'))}
 
 $('startBtn').onclick=function(){
   if(!MOVIL.guard())return;
@@ -131,7 +158,7 @@ $('nextPlayerBtn').addEventListener('click',function(){show('intro')});
 function arm(){
   clearTimeout(waitT);clearTimeout(slowT);
   state='armed'; $('tgt').style.display='none'; $('home').className='ready'; bar();
-  msg(homeHeld?'Lift off, then hold HOME again':'Hold HOME');
+  msg(homeHeld?T('relift'):T('hold'));
 }
 function place(){
   var p=$('play').getBoundingClientRect(), r=parseFloat(getComputedStyle($('tgt')).width)/2||42, home=$('home').getBoundingClientRect();
@@ -150,7 +177,7 @@ function done(ok,ms,why){
   clearTimeout(waitT);clearTimeout(slowT);
   state='between'; $('tgt').style.display='none';
   results.push({ok:ok,ms:ms,why:why});
-  if(ok){MOVIL.hitSound();msg(MOVIL.bpm(ms)+' BPM','good')}else{MOVIL.missSound();MOVIL.vibrate(80);msg(why,'bad')}
+  if(ok){MOVIL.hitSound();msg(MOVIL.bpm(ms)+' BPM','good')}else{MOVIL.missSound();MOVIL.vibrate(80);msg(T(why),'bad')}
   round++; bar();
   setTimeout(function(){round>=ROUNDS?finish():arm()},750);
 }
@@ -159,13 +186,13 @@ function done(ok,ms,why){
 $('home').addEventListener('pointerdown',function(e){
   e.preventDefault();
   homeHeld=true; homeId=e.pointerId; $('home').className='held';
-  if(state==='armed'){state='holding';msg('Wait for it…');waitT=setTimeout(light,WAIT_MIN+Math.random()*(WAIT_MAX-WAIT_MIN))}
+  if(state==='armed'){state='holding';msg(T('wait'));waitT=setTimeout(light,WAIT_MIN+Math.random()*(WAIT_MAX-WAIT_MIN))}
 });
 function homeUp(e){
   if(e.pointerId!==homeId)return;
   homeHeld=false; homeId=null;
   if(state==='holding'){done(false,0,'Too early')}
-  else{ $('home').className=state==='armed'?'ready':''; if(state==='armed')msg('Hold HOME') }
+  else{ $('home').className=state==='armed'?'ready':''; if(state==='armed')msg(T('hold')) }
 }
 addEventListener('pointerup',homeUp); addEventListener('pointercancel',homeUp);
 
@@ -185,10 +212,10 @@ function finish(){
   var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0, bpm=MOVIL.bpm(avg);
   var early=results.filter(function(r){return r.why==='Too early'}).length;
   $('endBpm').textContent=bpm||'—';
-  $('endHm').textContent=hits.length+' / '+ROUNDS+' hits'+(early?' · '+early+' too early':'');
-  $('taps').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x"')+'>'+(i+1)+' · '+(r.ok?MOVIL.bpm(r.ms)+' BPM':MOVIL.esc(r.why))+'</div>'}).join('');
-  $('pbMsg').innerHTML=MOVIL.bestHtml(bpm);
-  $('prog').innerHTML=MOVIL.progressSvg(bpm);
+  $('endHm').textContent=hits.length+' / '+ROUNDS+' '+T('hits')+(early?' · '+early+' '+T('early'):'');
+  $('taps').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x"')+'>'+(i+1)+' · '+(r.ok?MOVIL.bpm(r.ms)+' BPM':MOVIL.esc(T(r.why)))+'</div>'}).join('');
+  $('pbMsg').innerHTML=MOVIL.bestHtml(bpm,LANG);
+  $('prog').innerHTML=MOVIL.progressSvg(bpm,LANG);
   if(hits.length)MOVIL.save(playerName,bpm,hits.length,misses,Math.round(avg));
   // Reactific and The Fortress start at this player's best Reaction Speed BPM
   if(bpm>0){try{var rk='rv-rs-bpm:'+playerName.trim().toLowerCase(),old=parseInt(localStorage.getItem(rk),10)||0;if(bpm>old)localStorage.setItem(rk,String(bpm))}catch(e){}}

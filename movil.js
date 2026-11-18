@@ -111,22 +111,24 @@
   };
 
   /* Personal best line for the end screen, from M.past */
-  M.bestHtml = function(now){
+  M.bestHtml = function(now, lang){
+    var es = lang === 'es';
     if (!M.past || !(now > 0)) return '';
     var prev = -1; M.past.forEach(function(r){ var v = +r.bpm || 0; if (v > prev) prev = v });
     var big = 'font-size:1.15rem;font-weight:900;letter-spacing:.06em;color:#ffd35a;text-shadow:0 0 18px rgba(255,211,90,.6)';
     var small = 'font-size:.82rem;color:#c8ccd4;margin-top:3px';
-    if (prev <= 0) return '<div style="' + big + '">⭐ FIRST MARK SET</div><div style="' + small + '">' + now + ' BPM — the one to beat next time</div>';
-    if (now > prev) return '<div style="' + big + '">⭐ NEW PERSONAL BEST!</div><div style="' + small + '">' + now + ' BPM · your best was ' + prev + '</div>';
-    return '<div style="' + small + '">Your best: ' + prev + ' BPM</div>';
+    if (prev <= 0) return '<div style="' + big + '">⭐ ' + (es ? 'PRIMERA MARCA' : 'FIRST MARK SET') + '</div><div style="' + small + '">' + now + ' BPM — ' + (es ? 'la que hay que superar la próxima vez' : 'the one to beat next time') + '</div>';
+    if (now > prev) return '<div style="' + big + '">⭐ ' + (es ? '¡NUEVO RÉCORD PERSONAL!' : 'NEW PERSONAL BEST!') + '</div><div style="' + small + '">' + now + ' BPM · ' + (es ? 'tu mejor era ' : 'your best was ') + prev + '</div>';
+    return '<div style="' + small + '">' + (es ? 'Tu mejor: ' : 'Your best: ') + prev + ' BPM</div>';
   };
 
   /* My Progress: this run added to the player's past runs, as a line */
-  M.progressSvg = function(now){
+  M.progressSvg = function(now, lang){
+    var es = lang === 'es';
     var pts = (M.past || []).filter(function(r){ return +r.bpm > 0 }).map(function(r){ return +r.bpm });
     if (now > 0) pts.push(now);
     pts = pts.slice(-20);
-    if (pts.length < 2) return '<div style="color:#8fa0b4;font-size:.82rem;text-align:center;padding:10px">Play again to start your progress line.</div>';
+    if (pts.length < 2) return '<div style="color:#8fa0b4;font-size:.82rem;text-align:center;padding:10px">' + (es ? 'Juega otra vez para empezar tu línea de progreso.' : 'Play again to start your progress line.') + '</div>';
     var mn = Math.min.apply(null, pts), mx = Math.max.apply(null, pts);
     var lo = Math.max(0, Math.floor((mn - 10) / 10) * 10), hi = Math.ceil((mx + 10) / 10) * 10;
     var W = 340, Hh = 160, L = 34, R = 10, T = 12, B = 20;
@@ -136,7 +138,7 @@
     for (var y = lo; y <= hi; y += step) s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(y) + '" y2="' + Y(y) + '" stroke="rgba(255,255,255,.08)"/><text x="' + (L - 6) + '" y="' + (Y(y) + 4) + '" fill="#8fa0b4" font-size="10" text-anchor="end">' + y + '</text>';
     s += '<polyline fill="none" stroke="#00e5ff" stroke-width="2.5" stroke-linejoin="round" points="' + pts.map(function(v, i){ return X(i).toFixed(1) + ',' + Y(v).toFixed(1) }).join(' ') + '"/>';
     pts.forEach(function(v, i){ var last = i === pts.length - 1; s += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="' + (last ? 5.5 : 3.5) + '" fill="' + (last ? '#ffd35a' : '#00e5ff') + '"/>' });
-    s += '<text x="' + L + '" y="' + (Hh - 4) + '" fill="#8fa0b4" font-size="10">first</text><text x="' + (W - R) + '" y="' + (Hh - 4) + '" fill="#8fa0b4" font-size="10" text-anchor="end">today</text>';
+    s += '<text x="' + L + '" y="' + (Hh - 4) + '" fill="#8fa0b4" font-size="10">' + (es ? 'inicio' : 'first') + '</text><text x="' + (W - R) + '" y="' + (Hh - 4) + '" fill="#8fa0b4" font-size="10" text-anchor="end">' + (es ? 'hoy' : 'today') + '</text>';
     return s + '</svg>';
   };
 
