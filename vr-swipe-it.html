@@ -4,14 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Swipe It | Reaction Velocity</title>
-<!-- SWIPE IT — plays like Reactific: at a set speed.
+<!-- SWIPE IT
      The BPM box opens on the player's best Reaction Speed BPM (− / + or
-     type any speed, 10–300). After a 5-4-3-2-1 countdown, one small arrow
-     flashes per beat in a random spot: swipe ON the arrow, the way it
-     points, before the next beat. The wrong way, off the arrow, too slow or
-     faster than a human can react (under 120 ms) = a miss.
+     type any speed, 10–300): that is how fast each arrow flashes.
+     After a 5-4-3-2-1 countdown, one small arrow at a time flashes ONCE, in
+     its own spot, for one beat at that BPM, then it is gone; the game waits
+     for the swipe where it was, the way it pointed — two beats from the
+     flash (at 120 BPM: 1 second), then it is too slow (a miss). Each swipe scores its BPM (first flash to
+     swipe, as in Reaction Speed); then the next arrow, in a new spot.
+     The wrong way, off the arrow, a tap, or under 120 ms (a guess) = a miss.
      25 arrows. Saves to vr_mobile_standings (game_key 'swipe-it'):
-     bpm = the speed played, hits / misses, and the device. -->
+     bpm = the Swipe It BPM (average of the hits), hits / misses, device. -->
 <script>try{if(sessionStorage.getItem('gym-plain')==='1')document.documentElement.classList.add('plain')}catch(e){}</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -63,12 +66,14 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 .btns{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
 .btns .go{max-width:none;margin:0}
 .btn2{padding:15px;border-radius:16px;border:2px solid rgba(0,229,255,.45);background:transparent;color:#fff;font:900 .95rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:center;text-decoration:none;cursor:pointer}
-.dots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.dots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .dots div{font-size:.72rem;font-weight:800;padding:6px 4px;border-radius:8px;text-align:center;background:rgba(61,220,132,.14);color:#3ddc84}
 .dots div.x{background:rgba(255,107,107,.12);color:#ff8a8a}
 .lang{display:flex;gap:4px}
 .lg{padding:7px 11px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#9fb3c8;font:900 .72rem Arial,sans-serif;letter-spacing:.08em;cursor:pointer}
 .lg.on{background:#00e5ff;border-color:#00e5ff;color:#031018}
+#flash{position:absolute;left:0;right:0;bottom:calc(40px + env(safe-area-inset-bottom));text-align:center;font-size:1.3rem;font-weight:900;letter-spacing:.05em;pointer-events:none}
+#flash.good{color:#3ddc84}#flash.bad{color:#ff6b6b}
 #suggest{font-size:.85rem;color:#c8ccd4;text-align:center;margin:-4px 0 12px}
 /* ── PHONES ONLY (600 px wide and narrower): tablets never see these rules ── */
 @media (max-width:600px){
@@ -103,9 +108,9 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
   <div class="t">SWIPE <span>IT</span></div>
   <div class="sub" id="who">Reaction Velocity</div>
   <div class="how">
-    <div><b>1</b><span data-t="s1">One arrow per beat, anywhere on the screen</span></div>
-    <div><b>2</b><span data-t="s2">Swipe on the arrow, the way it points</span></div>
-    <div><b>3</b><span data-t="s3">Before the next beat — 25 arrows</span></div>
+    <div><b>1</b><span data-t="s1">An arrow flashes once at your speed, in a new spot each time</span></div>
+    <div><b>2</b><span data-t="s2">Swipe where it was, the way it pointed</span></div>
+    <div><b>3</b><span data-t="s3">Fast — your swipe gives your BPM · 25 arrows</span></div>
   </div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
   <div class="bpm-row">
@@ -123,14 +128,15 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 
 <div class="screen" id="play" hidden>
   <div id="bar"><span id="rnd">1 / 25</span><span id="spd"></span><span id="hits">0 hits</span></div>
+  <div id="flash"></div>
   <div id="arrow"><svg viewBox="0 0 100 100"><path d="M50 8 L88 52 H62 V92 H38 V52 H12 Z" fill="#00e5ff"/></svg></div>
 </div>
 
 <div class="screen" id="end" hidden>
   <div class="big" id="endHits">0</div>
-  <div class="lab" id="endLab">of 25 · at 0 BPM</div>
+  <div class="lab" id="endLab">Swipe It BPM</div>
   <div id="pbMsg"></div>
-  <div id="suggest"></div>
+  <div class="hm" id="endHm"></div>
   <div class="card"><h3 data-t="dots">Arrow by arrow</h3><div class="dots" id="dots"></div></div>
   <div class="card"><h3 id="progH">My Progress · Swipe It</h3><div id="prog"></div></div>
   <div class="btns">
@@ -144,17 +150,17 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (same choice as Reaction Speed, remembered on this device) ── */
 var TX={
-  es:{s1:'Una flecha por pulso, en cualquier lugar de la pantalla',s2:'Desliza sobre la flecha, hacia donde apunta',s3:'Antes del siguiente pulso — 25 flechas',
+  es:{s1:'Una flecha destella una vez a tu velocidad, cada vez en otro lugar',s2:'Desliza donde estaba, hacia donde apuntaba',s3:'Rápido: tu deslizamiento da tu BPM · 25 flechas',lab:'BPM de Swipe It',flashAt:'parpadeo a',
       start:'Empezar · 25 flechas',name:'Tu nombre',hub:'← EL HUB',newp:'Nuevo jugador',goRS:'⚡ Juega Reaction Speed primero',
       noRS:'aún no hay Reaction Speed — juégalo primero',fromRS:'tu velocidad viene de Reaction Speed',mine:'tu velocidad · − / + o escribe cualquier velocidad',rsNote:'tu Reaction Speed · − / + o escribe cualquier velocidad',
-      hit:'acierto',hits:'aciertos',of:'de',at:'a',dots:'Flecha por flecha',prog:'Mi progreso',again:'Jugar otra vez',nextp:'Siguiente jugador',
+      hit:'acierto',hits:'aciertos',of:'de',at:'a',dots:'Flecha por flecha',prog:'Mi progreso · Swipe It',again:'Jugar otra vez',nextp:'Siguiente jugador',
       first:'PRIMERA MARCA',firstSub:'la que hay que superar la próxima vez',pb:'¡NUEVO RÉCORD PERSONAL!',was:'tu mejor era',best:'Tu mejor a',strong:'Muy bien — prueba',tryS:'Prueba',next:'la próxima vez',
       again1:'Juega otra vez a',again2:'para empezar tu línea de progreso.',
       'Too slow':'Muy lento','Off the arrow':'Fuera de la flecha','Wrong way':'Dirección equivocada','Too early':'Muy temprano','Swipe, don’t tap':'Desliza, no toques'},
-  en:{s1:'One arrow per beat, anywhere on the screen',s2:'Swipe on the arrow, the way it points',s3:'Before the next beat — 25 arrows',
+  en:{s1:'An arrow flashes once at your speed, in a new spot each time',s2:'Swipe where it was, the way it pointed',s3:'Fast — your swipe gives your BPM · 25 arrows',lab:'Swipe It BPM',flashAt:'flashing at',
       start:'Start · 25 arrows',name:'Your name',hub:'← THE HUB',newp:'New player',goRS:'⚡ Play Reaction Speed first',
       noRS:'no Reaction Speed yet — play it first',fromRS:'your speed comes from Reaction Speed',mine:'your speed · − / + or type any speed',rsNote:'your Reaction Speed · − / + or type any speed',
-      hit:'hit',hits:'hits',of:'of',at:'at',dots:'Arrow by arrow',prog:'My Progress',again:'Play again',nextp:'Next Player',
+      hit:'hit',hits:'hits',of:'of',at:'at',dots:'Arrow by arrow',prog:'My Progress · Swipe It',again:'Play again',nextp:'Next Player',
       first:'FIRST MARK SET',firstSub:'the one to beat next time',pb:'NEW PERSONAL BEST!',was:'your best was',best:'Your best at',strong:'Strong — try',tryS:'Try',next:'next',
       again1:'Play again at',again2:'to start your progress line.'}
 };
@@ -232,22 +238,31 @@ function place(){
   var x=left+Math.random()*(right-left), y=top+Math.random()*(bottom-top);
   a.style.left=(x-r)+'px'; a.style.top=(y-r)+'px'; a.dataset.cx=x; a.dataset.cy=y; a.dataset.r=r;
 }
+/* One arrow at a time: it flashes ONCE, in its own spot, for one beat at the
+   set BPM, then it is gone — and the game waits for the swipe where it was,
+   the way it pointed: two beats in all from the flash, then it is too slow. The swipe scores that arrow's BPM (time from the flash
+   to the swipe, as in Reaction Speed). Then the next arrow, in a new spot. */
+var blinkT=null, nextT=null, slowT=null;
 function beat(){
   if(state!=='run')return;
-  if(n>0&&!done1)result(false,0,'Too slow');      // the last arrow got no swipe in its beat
   if(n>=TOTAL){finish();return}
   var prev=want; do{want=NAMES[Math.floor(Math.random()*4)]}while(want===prev&&Math.random()<.5);
   var a=$('arrow'); a.className=''; a.querySelector('svg').style.transform='rotate('+DIRS[want]+'deg)';
-  a.style.display='flex'; place(); t0=performance.now(); start=null; done1=false; n++; bar();
-  beatT=setTimeout(beat,BEAT_MS);
+  a.style.display='flex'; a.style.visibility='visible'; place(); t0=performance.now(); start=null; done1=false; n++; bar();
+  clearTimeout(blinkT);
+  blinkT=setTimeout(function(){if(!done1)a.style.visibility='hidden'},BEAT_MS);   // shown for one beat, then gone
+  clearTimeout(slowT);
+  slowT=setTimeout(function(){result(false,0,'Too slow')},2*BEAT_MS);   // the swipe has two beats from the flash
 }
 function result(ok,ms,why){
-  if(done1)return; done1=true;
+  if(done1)return; done1=true; clearTimeout(blinkT); clearTimeout(slowT);
   results.push({ok:ok,ms:ms,why:why});
-  var a=$('arrow'); a.className=ok?'hit':'miss';
+  var a=$('arrow'); a.style.visibility='visible'; a.className=ok?'hit':'miss';   // shown again, green or red
   if(ok)MOVIL.hitSound(); else {MOVIL.missSound();MOVIL.vibrate(60)}
-  setTimeout(function(){if(done1)a.style.display='none'},Math.min(160,BEAT_MS/3));
+  $('flash').textContent=ok?MOVIL.bpm(ms)+' BPM':T(why); $('flash').className=ok?'good':'bad';
   bar();
+  clearTimeout(nextT);
+  nextT=setTimeout(function(){a.style.display='none';$('flash').textContent='';setTimeout(beat,Math.max(250,Math.min(700,BEAT_MS)))},450);   // a moment to see the score, then the next arrow
 }
 var play=$('play');
 play.addEventListener('pointerdown',function(e){
@@ -266,33 +281,19 @@ play.addEventListener('pointermove',function(e){
 });
 addEventListener('pointerup',function(e){if(state==='run'&&start&&!done1&&e.pointerId===start.id)result(false,0,'Swipe, don’t tap')});
 
-/* ── the end ── */
+/* ── the end: the Swipe It BPM (average of the hits), like Reaction Speed ── */
 function finish(){
-  state='idle'; clearTimeout(beatT); $('arrow').style.display='none';
-  var hits=results.filter(function(r){return r.ok}), misses=TOTAL-hits.length;
-  var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0;
-  $('endHits').textContent=hits.length; $('endLab').textContent=T('of')+' '+TOTAL+' · '+T('at')+' '+SPEED+' BPM';
-  $('dots').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x" title="'+MOVIL.esc(T(r.why))+'"')+'>'+(i+1)+(r.ok?' ✓':' ✗')+'</div>'}).join('');
-  // personal best: hits at this same speed, against the player's own runs only
-  var same=(MOVIL.past||[]).filter(function(r){return +r.bpm===SPEED}), prev=-1;
-  same.forEach(function(r){var v=+r.hits||0;if(v>prev)prev=v});
-  var big='font-size:1.15rem;font-weight:900;letter-spacing:.06em;color:#ffd35a;text-shadow:0 0 18px rgba(255,211,90,.6)', small='font-size:.82rem;color:#c8ccd4;margin-top:3px';
-  var hs=hits.length+' '+T('hits')+' '+T('at')+' '+SPEED+' BPM';
-  $('pbMsg').innerHTML=!MOVIL.past?'':prev<0?'<div style="'+big+'">⭐ '+T('first')+'</div><div style="'+small+'">'+hs+' — '+T('firstSub')+'</div>'
-    :hits.length>prev?'<div style="'+big+'">⭐ '+T('pb')+'</div><div style="'+small+'">'+hs+' · '+T('was')+' '+prev+'</div>'
-    :'<div style="'+small+'">'+T('best')+' '+SPEED+' BPM: '+prev+' '+T('hits')+'</div>';
-  $('suggest').textContent=hits.length>=22?T('strong')+' '+Math.min(BPM_MAX,SPEED+5)+' BPM '+T('next'):hits.length<=12?T('tryS')+' '+Math.max(BPM_MIN,SPEED-5)+' BPM '+T('next'):'';
-  // My Progress: hits at this speed, run by run
-  var pts=same.map(function(r){return +r.hits||0}); pts.push(hits.length); pts=pts.slice(-20);
-  $('progH').textContent=T('prog')+' · '+SPEED+' BPM';
-  $('prog').innerHTML=pts.length<2?'<div style="color:#8fa0b4;font-size:.82rem;text-align:center;padding:10px">'+T('again1')+' '+SPEED+' BPM '+T('again2')+'</div>':(function(){
-    var W=340,Hh=150,L=30,R=10,T=12,B=20,X=function(i){return L+(W-L-R)*i/(pts.length-1)},Y=function(v){return T+(Hh-T-B)*(TOTAL-v)/TOTAL};
-    var s='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto;display:block">';
-    [0,5,10,15,20,25].forEach(function(y){s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="rgba(255,255,255,.08)"/><text x="'+(L-6)+'" y="'+(Y(y)+4)+'" fill="#8fa0b4" font-size="10" text-anchor="end">'+y+'</text>'});
-    s+='<polyline fill="none" stroke="#00e5ff" stroke-width="2.5" points="'+pts.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1)}).join(' ')+'"/>';
-    pts.forEach(function(v,i){var l=i===pts.length-1;s+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="'+(l?5.5:3.5)+'" fill="'+(l?'#ffd35a':'#00e5ff')+'"/>'});
-    return s+'</svg>'})();
-  MOVIL.save(playerName,SPEED,hits.length,misses,hits.length?Math.round(avg):null);
+  state='idle'; clearTimeout(blinkT); clearTimeout(slowT); clearTimeout(nextT); $('arrow').style.display='none'; $('flash').textContent='';
+  var hits=results.filter(function(r){return r.ok}), misses=results.length-hits.length;
+  var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0, bpm=MOVIL.bpm(avg);
+  $('endHits').textContent=bpm||'—';
+  $('endLab').textContent=T('lab');
+  $('endHm').textContent=hits.length+' / '+results.length+' '+T('hits')+' · '+T('flashAt')+' '+SPEED+' BPM';
+  $('dots').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x"')+'>'+(i+1)+' · '+(r.ok?MOVIL.bpm(r.ms):MOVIL.esc(T(r.why)))+'</div>'}).join('');
+  $('pbMsg').innerHTML=MOVIL.bestHtml(bpm,LANG);
+  $('progH').textContent=T('prog');
+  $('prog').innerHTML=MOVIL.progressSvg(bpm,LANG);
+  if(hits.length)MOVIL.save(playerName,bpm,hits.length,misses,Math.round(avg));
   show('end');
 }
 applyLang();
