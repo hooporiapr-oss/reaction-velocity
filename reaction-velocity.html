@@ -167,6 +167,10 @@ footer{
   letter-spacing:.06em;cursor:pointer;backdrop-filter:blur(4px);
 }
 .lang-btn.active{border-color:#ff6b35;color:#ff6b35;background:rgba(255,107,53,.12)}
+/* ── PHONES ONLY (600 px wide and narrower): tablets never see these rules ── */
+@media (max-width:600px){
+  #stage{align-items:flex-start;padding:108px 14px 84px}
+}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
 <script>window.JUGADOR={modo:'hub',lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'},hub:'reaction-velocity.html',escuela:'reaction-velocity-school',categoria:'reaction-velocity-category',tablas:['vr_reactific_standings','vr_reaction_speed_standings','dynamic_memory_quarter_standings']};</script>

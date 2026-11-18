@@ -63,6 +63,22 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 .btns{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
 .btns .go{max-width:none;margin:0}
 .btn2{padding:15px;border-radius:16px;border:2px solid rgba(0,229,255,.45);background:transparent;color:#fff;font:900 .95rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:center;text-decoration:none;cursor:pointer}
+/* ── PHONES ONLY (600 px wide and narrower): tablets never see these rules ── */
+@media (max-width:600px){
+  .screen>*{flex-shrink:0}
+}
+@media (max-width:600px) and (max-height:760px){
+  .t{font-size:1.7rem;margin-top:10px}
+  .sub{margin:4px 0 12px}
+  .how{gap:7px;margin-bottom:12px}
+  .how div{padding:9px 12px;font-size:.88rem}
+  .how b{flex-basis:26px;height:26px;font-size:.85rem}
+  .go{padding:15px;margin-top:10px}
+  .jg-como{margin:6px auto}
+  .bpm-row{margin:8px 0 2px}
+  .bpm-step{width:46px;height:46px}
+  #bpmInput{padding:7px;font-size:1.4rem}
+}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
 <script>(function(){var g=function(k){try{return sessionStorage.getItem(k)==='1'}catch(e){return false}};

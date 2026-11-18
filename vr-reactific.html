@@ -190,6 +190,18 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .tap-log-total b{color:#00e5ff;font-size:1.1rem}
 .tap-log-empty{color:#7fa8c0;font-size:.75rem;font-style:italic;padding:8px}
 .next-player-btn{margin-top:28px;height:64px;padding:0 40px;border:none;border-radius:16px;background:linear-gradient(120deg,#00D9A5,#00b88d);color:#04121a;font-size:1.15rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 30px rgba(0,217,165,.6)}
+/* ── PHONES ONLY (600 px wide and narrower): tablets never see these rules ── */
+@media (max-width:600px){
+  #screen-intro{justify-content:flex-start;overflow-y:auto;overflow-x:hidden;padding:66px 16px 28px}
+  #screen-intro>*{flex-shrink:0}
+  #screen-intro .intro-back,#screen-intro .box-lang-toggle{position:absolute}
+  .vrr-logo{font-size:2rem;letter-spacing:.05em}
+  .vrr-sub{letter-spacing:.16em;margin-bottom:16px}
+  .rule-card{padding:16px;margin-bottom:16px}
+  .big-btn{height:auto;min-height:60px;padding:12px 14px;font-size:1.05rem;letter-spacing:.06em;line-height:1.2}
+  #screen-end{justify-content:flex-start;overflow-y:auto;padding:24px 16px 28px}
+  #screen-end>*{flex-shrink:0}
+}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
 <script>window.JUGADOR={modo:'juego',aqui:true,lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'},hub:'reaction-velocity.html',escuela:'reaction-velocity-school',categoria:'reaction-velocity-category',tablas:['vr_reactific_standings','vr_reaction_speed_standings','dynamic_memory_quarter_standings']};</script>
