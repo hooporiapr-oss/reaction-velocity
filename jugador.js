@@ -26,6 +26,8 @@
                tablas above (the names the standings already show)
    Names stay on this device only (localStorage) — nothing new is sent
    anywhere except the age group on each saved run.
+   Words: Spanish unless English was chosen with the games' ES / EN
+   buttons (localStorage 'rs-lang', shared by every game and the hub).
    ══════════════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -33,6 +35,16 @@
   var HUB = C.hub || 'index.html';
   function ls(k, v){ try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v) } catch(e){ return '' } }
   function ss(k, v){ try { if (v === undefined) return sessionStorage.getItem(k) || ''; sessionStorage.setItem(k, v) } catch(e){ return '' } }
+  /* the words, in the games' language (Spanish unless EN was chosen) */
+  var W = {
+    es: { title:'¿Quién juega?', every:'Todos los juegos usarán este nombre', same:'Mismo jugador: ', choose:'Escoge un jugador',
+          or:'— o un jugador nuevo —', ph:'Nombre del jugador nuevo', errBoth:'Escoge un jugador o escribe un nombre nuevo',
+          errName:'Escribe el nombre del jugador', cont:'Continuar →', newp:'Nuevo jugador' },
+    en: { title:'Who’s playing?', every:'Every game will use this name', same:'Same player: ', choose:'Choose a player',
+          or:'— or a new player —', ph:'New player name', errBoth:'Choose a player or type a new name',
+          errName:'Type the player’s name', cont:'Continue →', newp:'New player' }
+  };
+  function L(k){ var l = 'es'; try { if (localStorage.getItem('rs-lang') === 'en') l = 'en' } catch(e){} return W[l][k] }
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
 
   var nombre = ls('gym-player');
@@ -125,14 +137,14 @@
     var hay = !!nombre;
     var capa = document.createElement('div'); capa.id = 'jg-capa';
     capa.innerHTML = '<div id="jg-caja" role="dialog" aria-modal="true" aria-labelledby="jg-t">' +
-      '<h2 id="jg-t">Who’s playing?</h2>' +
-      '<div class="jg-sub">' + esc(grupo() || 'Every game will use this name') + '</div>' +
-      (hay ? '<label class="jg-si"><input type="checkbox" id="jg-mismo"' + (nuevo ? '' : ' checked') + '> Same player: ' + esc(nombre) + '</label>' : '') +
-      '<select class="jg-lista" id="jg-lista" aria-label="Choose a player" style="display:none"></select>' +
-      '<div class="jg-o" id="jg-o" style="display:none">— or a new player —</div>' +
-      '<input class="jg-nom" id="jg-nom" maxlength="20" autocomplete="off" placeholder="New player name">' +
+      '<h2 id="jg-t">' + L('title') + '</h2>' +
+      '<div class="jg-sub">' + esc(grupo() || L('every')) + '</div>' +
+      (hay ? '<label class="jg-si"><input type="checkbox" id="jg-mismo"' + (nuevo ? '' : ' checked') + '> ' + L('same') + esc(nombre) + '</label>' : '') +
+      '<select class="jg-lista" id="jg-lista" aria-label="' + L('choose') + '" style="display:none"></select>' +
+      '<div class="jg-o" id="jg-o" style="display:none">' + L('or') + '</div>' +
+      '<input class="jg-nom" id="jg-nom" maxlength="20" autocomplete="off" placeholder="' + L('ph') + '">' +
       '<div class="jg-err" id="jg-err"></div>' +
-      '<button type="button" id="jg-ok">Continue →</button></div>';
+      '<button type="button" id="jg-ok">' + L('cont') + '</button></div>';
     document.body.appendChild(capa);
     var mismo = document.getElementById('jg-mismo'), campo = document.getElementById('jg-nom');
     var sel = document.getElementById('jg-lista'), o = document.getElementById('jg-o'), hayLista = false;
@@ -146,7 +158,7 @@
     ver();
     lista(function(ns){
       if (!ns.length || !document.body.contains(capa)) return;
-      sel.innerHTML = '<option value="">Choose a player</option>' + ns.map(function(n){ return '<option value="' + esc(n) + '">' + esc(n) + '</option>' }).join('');
+      sel.innerHTML = '<option value="">' + L('choose') + '</option>' + ns.map(function(n){ return '<option value="' + esc(n) + '">' + esc(n) + '</option>' }).join('');
       hayLista = true; ver();
     });
     sel.addEventListener('change', function(){ if (sel.value) { campo.value = ''; document.getElementById('jg-err').textContent = '' } });
@@ -156,7 +168,7 @@
       else if (sel.value) { guardar(sel.value) }
       else {
         var n = campo.value.trim();
-        if (!n) { document.getElementById('jg-err').textContent = hayLista ? 'Choose a player or type a new name' : 'Type the player’s name'; campo.focus(); return }
+        if (!n) { document.getElementById('jg-err').textContent = hayLista ? L('errBoth') : L('errName'); campo.focus(); return }
         // a typed name already on the list keeps the list's spelling
         if (jugadores) jugadores.forEach(function(x){ if (x.toLowerCase() === n.toLowerCase()) n = x });
         guardar(n);
@@ -171,7 +183,7 @@
   function chip(){
     var c = document.getElementById('jg-chip');
     if (!c) { c = document.createElement('div'); c.id = 'jg-chip'; document.body.appendChild(c) }
-    c.innerHTML = '<span>👤 ' + esc(nombre) + (categoria ? ' · ' + esc(categoria) : '') + '</span><button type="button" id="jg-otro">New player</button>';
+    c.innerHTML = '<span>👤 ' + esc(nombre) + (categoria ? ' · ' + esc(categoria) : '') + '</span><button type="button" id="jg-otro">' + L('newp') + '</button>';
     document.getElementById('jg-otro').onclick = function(){ c.remove(); ss('gym-player-ok', ''); ss('gym-player-new', '1'); listo = false };
   }
 
@@ -188,7 +200,7 @@
     campo.value = nombre;
     campo.style.display = 'none';
     var como = document.createElement('div'); como.className = 'jg-como';
-    como.innerHTML = '<span>👤 ' + esc(nombre) + '</span><a href="' + esc(HUB) + '?nuevo=1">New player</a>';
+    como.innerHTML = '<span>👤 ' + esc(nombre) + '</span><a href="' + esc(HUB) + '?nuevo=1">' + L('newp') + '</a>';
     campo.parentNode.insertBefore(como, campo.nextSibling);
     // aqui: the next player's name is asked right here; the game then
     // opens on its start screen for them, as if just arrived from the hub.
