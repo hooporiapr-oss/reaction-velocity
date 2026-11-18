@@ -9,8 +9,9 @@
      type any speed, 10–300): that is how fast each arrow flashes.
      After a 5-4-3-2-1 countdown, one small arrow at a time flashes ONCE, in
      its own spot, for one beat at that BPM, then it is gone; the game waits
-     for the swipe where it was, the way it pointed — two beats from the
-     flash (at 120 BPM: 1 second), then it is too slow (a miss). Each swipe scores its BPM (first flash to
+     for the swipe where it was, the way it pointed. A tick on every beat:
+     five beats from the flash (at 120 BPM: 2.5 seconds); no swipe by the
+     fifth = too slow (a miss) and the next arrow flashes on the next beat. Each swipe scores its BPM (first flash to
      swipe, as in Reaction Speed); then the next arrow, in a new spot.
      The wrong way, off the arrow, a tap, or under 120 ms (a guess) = a miss.
      25 arrows. Saves to vr_mobile_standings (game_key 'swipe-it'):
@@ -177,6 +178,7 @@ function applyLang(){
 }
 document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
 document.addEventListener('DOMContentLoaded',function(){setTimeout(applyLang,0)});   // after jugador.js adds the player chip
+var SWIPE_BEATS=5;   // the swipe has five beats from the flash, each with a tick
 var TOTAL=25, GUESS_MS=120, BPM_MIN=10, BPM_MAX=300;
 var DIRS={up:0,right:90,down:180,left:270}, NAMES=['up','right','down','left'];
 var SPEED=0, BEAT_MS=0, state='idle', n=0, results=[], beatT=null, t0=0, want='', start=null, done1=false, playerName='';
@@ -240,7 +242,8 @@ function place(){
 }
 /* One arrow at a time: it flashes ONCE, in its own spot, for one beat at the
    set BPM, then it is gone — and the game waits for the swipe where it was,
-   the way it pointed: two beats in all from the flash, then it is too slow. The swipe scores that arrow's BPM (time from the flash
+   the way it pointed. A tick sounds on every beat: five beats from the flash;
+   no swipe by the fifth = too slow, and the next arrow flashes on the next beat. The swipe scores that arrow's BPM (time from the flash
    to the swipe, as in Reaction Speed). Then the next arrow, in a new spot. */
 var blinkT=null, nextT=null, slowT=null;
 function beat(){
@@ -251,17 +254,25 @@ function beat(){
   a.style.display='flex'; a.style.visibility='visible'; place(); t0=performance.now(); start=null; done1=false; n++; bar();
   clearTimeout(blinkT);
   blinkT=setTimeout(function(){if(!done1)a.style.visibility='hidden'},BEAT_MS);   // shown for one beat, then gone
-  clearTimeout(slowT);
-  slowT=setTimeout(function(){result(false,0,'Too slow')},2*BEAT_MS);   // the swipe has two beats from the flash
+  // the beat: a tick on the flash and on each beat after it; no swipe by the
+  // fifth beat = too slow, and the next arrow flashes on the very next beat
+  var beatN=1; MOVIL.tick(true); clearInterval(slowT);
+  slowT=setInterval(function(){
+    if(state!=='run'||done1){clearInterval(slowT);return}
+    beatN++;
+    if(beatN>SWIPE_BEATS){clearInterval(slowT);result(false,0,'Too slow',true);return}
+    MOVIL.tick(false);
+  },BEAT_MS);
 }
-function result(ok,ms,why){
-  if(done1)return; done1=true; clearTimeout(blinkT); clearTimeout(slowT);
+function result(ok,ms,why,onBeat){
+  if(done1)return; done1=true; clearTimeout(blinkT); clearInterval(slowT);
   results.push({ok:ok,ms:ms,why:why});
   var a=$('arrow'); a.style.visibility='visible'; a.className=ok?'hit':'miss';   // shown again, green or red
   if(ok)MOVIL.hitSound(); else {MOVIL.missSound();MOVIL.vibrate(60)}
   $('flash').textContent=ok?MOVIL.bpm(ms)+' BPM':T(why); $('flash').className=ok?'good':'bad';
   bar();
   clearTimeout(nextT);
+  if(onBeat){a.style.display='none';beat();setTimeout(function(){if($('flash').textContent===T(why))$('flash').textContent=''},450);return}   // too slow: the next arrow right on the beat
   nextT=setTimeout(function(){a.style.display='none';$('flash').textContent='';setTimeout(beat,Math.max(250,Math.min(700,BEAT_MS)))},450);   // a moment to see the score, then the next arrow
 }
 var play=$('play');
@@ -283,7 +294,7 @@ addEventListener('pointerup',function(e){if(state==='run'&&start&&!done1&&e.poin
 
 /* ── the end: the Swipe It BPM (average of the hits), like Reaction Speed ── */
 function finish(){
-  state='idle'; clearTimeout(blinkT); clearTimeout(slowT); clearTimeout(nextT); $('arrow').style.display='none'; $('flash').textContent='';
+  state='idle'; clearTimeout(blinkT); clearInterval(slowT); clearTimeout(nextT); $('arrow').style.display='none'; $('flash').textContent='';
   var hits=results.filter(function(r){return r.ok}), misses=results.length-hits.length;
   var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0, bpm=MOVIL.bpm(avg);
   $('endHits').textContent=bpm||'—';

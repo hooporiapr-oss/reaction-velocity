@@ -82,6 +82,7 @@
     } catch(e){}
   }
   M.hitSound = function(){ tone(660, 120, 'sine', .2) };
+  M.tick = function(accent){ tone(accent ? 1320 : 880, 45, 'square', accent ? .07 : .04) };   // the beat: a higher click on the first beat
   M.missSound = function(){ tone(110, 220, 'square', .08) };
   M.unlock = function(){ tone(1, 10, 'sine', .0001) };
   M.vibrate = function(ms){ try { navigator.vibrate && navigator.vibrate(ms) } catch(e){} };
