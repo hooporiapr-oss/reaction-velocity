@@ -171,6 +171,15 @@ footer{
 @media (max-width:600px){
   #stage{align-items:flex-start;padding:108px 14px 84px}
 }
+/* each game card in its game's color (as on its start screen): Reaction Speed gold, Reactific green, The Fortress purple, Swipe It red */
+.quarter-card.g-rs{border-color:rgba(255,196,0,.55);background:rgba(255,196,0,.09)}
+.quarter-card.g-rs .quarter-num{color:#ffc400}
+.quarter-card.g-rf{border-color:rgba(0,217,165,.55);background:rgba(0,217,165,.09)}
+.quarter-card.g-rf .quarter-num{color:#00D9A5}
+.quarter-card.g-ft{border-color:rgba(168,85,247,.55);background:rgba(168,85,247,.09)}
+.quarter-card.g-ft .quarter-num{color:#a855f7}
+.quarter-card.g-sw{border-color:rgba(255,43,61,.55);background:rgba(255,43,61,.09)}
+.quarter-card.g-sw .quarter-num{color:#ff2b3d}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
 <script>window.JUGADOR={modo:'hub',lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'},hub:'reaction-velocity.html',escuela:'reaction-velocity-school',categoria:'reaction-velocity-category',tablas:['vr_reactific_standings','vr_reaction_speed_standings','dynamic_memory_quarter_standings']};</script>
@@ -181,8 +190,8 @@ footer{
 <button id="switchProgramBtn" type="button">🔄 Switch Program</button>
 <a id="dynamicMemoryTab" href="https://memorybball.com">🧠 Cognitivo Gym</a>
 <div id="langToggle">
-  <button class="lang-btn active" id="langEN">EN</button>
   <button class="lang-btn" id="langES">ES</button>
+  <button class="lang-btn" id="langEN">EN</button>
 </div>
 
 <div id="stage">
@@ -192,22 +201,22 @@ footer{
 
     <div class="quarters-label" id="quartersLabel">Practice A Single Quarter</div>
     <div class="quarter-grid">
-      <a class="quarter-card" href="vr-reaction-speed.html">
+      <a class="quarter-card g-rs" href="vr-reaction-speed.html">
         <div class="quarter-num">Q1</div>
         <div class="quarter-name">Reaction Speed</div>
         <div class="quarter-desc" id="desc2">Hold HOME. When the target lights up, lift off and tap it. No rhythm to guess — a true reaction.</div>
       </a>
-      <a class="quarter-card" href="vr-reactific.html">
+      <a class="quarter-card g-rf" href="vr-reactific.html">
         <div class="quarter-num">Q2</div>
         <div class="quarter-name">Reactific</div>
         <div class="quarter-desc" id="desc1">Tap only on red — tap anything else and it costs you. Tests restraint as much as speed.</div>
       </a>
-      <a class="quarter-card" href="vr-fortress.html">
+      <a class="quarter-card g-ft" href="vr-fortress.html">
         <div class="quarter-num">Q3</div>
         <div class="quarter-name">The Fortress</div>
         <div class="quarter-desc" id="descF">Watch the chain light up in the 2-1-2 zone, then repeat it back. Every round adds one more ball.</div>
       </a>
-      <a class="quarter-card" href="vr-swipe-it.html">
+      <a class="quarter-card g-sw" href="vr-swipe-it.html">
         <div class="quarter-num">Q4</div>
         <div class="quarter-name">Swipe It</div>
         <div class="quarter-desc" id="descS">An arrow flashes once at your Reaction Speed BPM, in a new spot — swipe where it was, the way it pointed. Each swipe scores your BPM.</div>
@@ -250,7 +259,7 @@ document.getElementById('switchProgramBtn').addEventListener('click',function(){
 //  Digital product, so a preference set on one page carries over
 //  when a player moves between them.
 // ══════════════════════════════════════════════════════
-var currentLang='en';
+var currentLang='es';   // opens in Spanish, like every game
 var translations={
   en:{
     arenaSub:'The Gap Between Seeing And Doing',
@@ -290,13 +299,13 @@ function updateUILanguage(){
 }
 function setLang(l){
   currentLang=l;
-  try{localStorage.setItem('lc-lang',l)}catch(e){}
+  try{localStorage.setItem('lc-lang',l);localStorage.setItem('rs-lang',l)}catch(e){}   // rs-lang: the same choice as the games
   updateUILanguage();
 }
 document.getElementById('langEN').addEventListener('click',function(){setLang('en')});
 document.getElementById('langES').addEventListener('click',function(){setLang('es')});
 var savedLang;
-try{savedLang=localStorage.getItem('lc-lang')}catch(e){}
+try{savedLang=localStorage.getItem('rs-lang')}catch(e){}   // the games' choice; Spanish until EN is chosen
 if(savedLang)currentLang=savedLang;
 updateUILanguage();
 })();
