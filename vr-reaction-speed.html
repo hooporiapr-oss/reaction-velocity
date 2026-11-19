@@ -88,6 +88,7 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 <script src="jugador.js"></script>
 <script>window.MOVIL={game:'home-base',title:'Reaction Speed'};</script>
 <script src="movil.js"></script>
+<script src="ritnome.js"></script>
 <link rel="stylesheet" href="inicio.css">
 </head>
 <body>
@@ -119,6 +120,8 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   <div class="lab" data-t="lab">Reaction Speed BPM</div>
   <div id="pbMsg"></div>
   <div class="hm" id="endHm"></div>
+  <!-- Ritnome: our congas play the speed the kid just got — touch to play -->
+  <div class="card" id="ritCard" hidden><h3 id="ritTitle">🥁 Ritnome</h3><div id="ritnome"></div></div>
   <div class="card"><h3 data-t="taps">Tap by tap</h3><div class="taps" id="taps"></div></div>
   <div class="card"><h3 data-t="prog">My Progress · Reaction Speed</h3><div id="prog"></div></div>
   <div class="btns">
@@ -134,11 +137,11 @@ var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (remembered on this device) ── */
 var TX={
   es:{s1:'Mantén el pulgar en HOME',s2:'Espera: un objetivo se enciende',s3:'Suelta y tócalo, rápido',start:'▶ Empezar · 10 rondas',hint:'Mantén el pulgar en HOME. Cuando un objetivo se encienda, suelta y tócalo — rápido. 10 rondas.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
-      lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Reactific →',nextp:'Siguiente jugador',
+      rit:function(b){return '🥁 Tu Ritnome · '+b+' BPM'},lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Reactific →',nextp:'Siguiente jugador',
       hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',early:'muy temprano',
       'Too early':'Muy temprano','Too slow':'Muy lento','Lift off HOME first':'Suelta HOME primero','Missed the target':'Fallaste el objetivo'},
   en:{s1:'Hold your thumb on HOME',s2:'Wait — a target lights up',s3:'Lift off and tap it, fast',start:'▶ Start · 10 rounds',hint:'Hold your thumb on HOME. When a target lights up, lift off and tap it — fast. 10 rounds.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
-      lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Reactific →',nextp:'Next Player',
+      rit:function(b){return '🥁 Your Ritnome · '+b+' BPM'},lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Reactific →',nextp:'Next Player',
       hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',early:'too early',
       'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target'}
 };
@@ -239,8 +242,13 @@ function finish(){
   if(hits.length)MOVIL.save(playerName,bpm,hits.length,misses,Math.round(avg));
   // Reactific and Swipe It start at this player's best Reaction Speed BPM
   if(bpm>0){try{var rk='rv-rs-bpm:'+playerName.trim().toLowerCase(),old=parseInt(localStorage.getItem(rk),10)||0;if(bpm>old)localStorage.setItem(rk,String(bpm))}catch(e){}}
+  // Ritnome: the congas at the BPM the kid just got (touch to play)
+  if(bpm>0&&window.RITNOME){RITNOME.stop();RITNOME.mount($('ritnome'),{bpm:bpm,lang:LANG});$('ritTitle').textContent=TX[LANG].rit(RITNOME.bpm);$('ritCard').hidden=false}
+  else $('ritCard').hidden=true;
   show('end');
 }
+// leaving the end screen (Play again, next game, next player, the hub) stops the congas
+$('end').addEventListener('click',function(e){if(window.RITNOME&&e.target.closest('a,button')&&!e.target.closest('#ritnome'))RITNOME.stop()},true);
 </script>
 </body>
 </html>
