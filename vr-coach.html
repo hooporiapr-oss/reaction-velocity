@@ -188,7 +188,7 @@ function loadAll(){
   var o='&order=admin_id.asc';
   Promise.all([
     readAll('vr_reaction_speed_standings',sc+'&speed=like.free-*',['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
-    readAll('vr_reactific_standings',sc,['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
+    readAll('vr_reactific_standings',sc+'&mode=eq.swipe',['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
     readAll('vr_mobile_standings',sc,['select=player_name,game_key,device,bpm,hits,category,logged_at,admin_id'+o,'select=player_name,game_key,device,bpm,category,logged_at,admin_id'+o,'select=player_name,game_key,bpm,category,logged_at,admin_id'+o])
   ]).then(function(res){
     players={};

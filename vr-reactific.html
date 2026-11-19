@@ -336,12 +336,12 @@ var API='https://api.reactificgaming.com';
 var SB_URL='https://sdaphocueugzfvjovuxd.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
 var SB_TABLE='vr_reactific_standings';
+// Saved as mode 'swipe' (vreaction.com swipes; Cognitivo Gym taps), so the two
+// never mix on a progress chart or in the Coach View. Without the column yet: saved as before.
 function recordScoreToStandings(name,finalScore,avgMs){
-  return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{
-    method:'POST',
-    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({player_name:name,score:finalScore,avg_ms:avgMs,speed:speedKey(SPEED),school_name:sessionStorage.getItem('reaction-velocity-school')||null})
-  }).catch(function(){});
+  var row={player_name:name,score:finalScore,avg_ms:avgMs,speed:speedKey(SPEED),school_name:sessionStorage.getItem('reaction-velocity-school')||null,mode:'swipe'};
+  function post(r){return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(r)})}
+  return post(row).then(function(res){if(!res.ok){delete row.mode;return post(row)}}).catch(function(){});
 }
 
 // ── Personal best: this run against the player's OWN past runs only
@@ -352,7 +352,7 @@ function pbLoad(){
   pbRows=null;var el=document.getElementById('pbMsg');if(el)el.hidden=true;
   var n=String(currentPlayerName||'').trim();if(!n)return;
   var sc=sessionStorage.getItem('reaction-velocity-school')||'';
-  fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?select=speed,score&hidden=is.false&school_name=eq.'+encodeURIComponent(sc)+'&player_name=ilike.'+encodeURIComponent(n.replace(/[*%,()]/g,'')),
+  fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?select=speed,score&hidden=is.false&mode=eq.swipe&school_name=eq.'+encodeURIComponent(sc)+'&player_name=ilike.'+encodeURIComponent(n.replace(/[*%,()]/g,'')),
     {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){return r.ok?r.json():null}).then(function(x){pbRows=Array.isArray(x)?x:null}).catch(function(){});
 }
@@ -1160,7 +1160,7 @@ function openProgress(from){
   if(!n){$('progBody').innerHTML='<div class="box-empty">Type the player\'s name first.</div>';return}
   $('progBody').innerHTML='<div class="box-empty">Loading…</div>';
   var school=sessionStorage.getItem('reaction-velocity-school')||'';
-  var base=SB_URL+'/rest/v1/vr_reactific_standings?hidden=is.false'+
+  var base=SB_URL+'/rest/v1/vr_reactific_standings?hidden=is.false&mode=eq.swipe'+
     '&school_name=eq.'+encodeURIComponent(school)+'&player_name=ilike.'+encodeURIComponent(n.replace(/[*%,()]/g,''));
   var h={headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}};
   fetch(base+'&select=speed,score,logged_at,admin_id&order=admin_id.asc',h)
