@@ -8,6 +8,12 @@
    RITNOME.mount(el, {bpm, lang})  draws the drums + a "touch to play" button in el
    RITNOME.set(bpm)                plays at another speed (lands on the next note)
    RITNOME.stop()                  stops the drums (call it when leaving the screen)
+   RITNOME.warm()                  gets the sound ready (call it from a tap, e.g. a Start button)
+   RITNOME.phrase({bpm, beats, delay, drums})
+                                   plays the groove by itself for a set number of beats and
+                                   ends on a roll and a final hit on the last beat — the
+                                   "Tu BPM Ritnome" moment after Free Tap. drums: the page's
+                                   own three drum elements, which get the class 'hit'.
    ══════════════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -64,11 +70,14 @@
   }
 
   var bpm = 90, running = false, step = 0, nextTime = 0, timer = null, bar = [], ui = null;
+  var srcs = [], phraseDrums = null, phraseTimers = [];
   function play(d, kind, vel, when){
     var s = actx.createBufferSource(), g = actx.createGain();
     s.buffer = BUF[kind][d][rnd() < .5 ? 0 : 1]; g.gain.value = vel*(.93 + rnd()*.12);
     s.connect(g); g.connect(master); s.start(when);
-    setTimeout(function(){ flash(d, kind) }, Math.max(0, (when - actx.currentTime)*1000));
+    srcs.push(s); if (srcs.length > 200) srcs.splice(0, 100);
+    var id = setTimeout(function(){ flash(d, kind) }, Math.max(0, (when - actx.currentTime)*1000));
+    if (phraseDrums) phraseTimers.push(id);
   }
   function schedule(){
     while (nextTime < actx.currentTime + .12){
@@ -84,7 +93,30 @@
     if (actx.state === 'suspended') actx.resume();
     running = true; step = 0; nextTime = actx.currentTime + .08; schedule(); timer = setInterval(schedule, 25); paint();
   }
-  function stop(){ running = false; clearInterval(timer); timer = null; dot(-1); paint() }
+  function stop(){
+    running = false; clearInterval(timer); timer = null; dot(-1); paint();
+    if (phraseDrums || srcs.length){ srcs.forEach(function(s){ try { s.stop() } catch(e){} }); srcs = [] }
+    phraseTimers.forEach(clearTimeout); phraseTimers = []; phraseDrums = null;
+  }
+  // The groove by itself for a set number of beats: whole bars, then the last two
+  // beats become a roll across the three drums (small to big) and a final hit
+  // of all three on the last beat. 10 beats = two bars, the roll, the hit.
+  function phrase(o){
+    if (!audio()) return false;
+    stop(); if (actx.state === 'suspended') actx.resume();
+    var b = Math.max(40, Math.min(200, Math.round(+o.bpm || 90))), beats = o.beats || 10, st = 60/b/4;
+    var t0 = actx.currentTime + (o.delay || 0), endPos = (beats - 1)*4, rollPos = endPos - 4;
+    phraseDrums = o.drums || null;
+    var ev = [];
+    for (var k = 0; k*16 < rollPos; k++) barEvents(k).forEach(function(e){ var p = k*16 + e[0]; if (p < rollPos) ev.push([p, e[1], e[2], e[3]]) });
+    ev.push([rollPos, 0, 'open', .9]);
+    for (var i = 0; i < 8; i++) ev.push([rollPos + i*.5, [2,2,2,1,1,1,0,0][i], i % 2 ? 'slap' : 'open', .4 + .55*i/7]);
+    ev.push([endPos, 0, 'open', 1]); ev.push([endPos, 1, 'slap', .95]); ev.push([endPos, 2, 'slap', .9]);
+    ev.forEach(function(e){ play(e[1], e[2], e[3], t0 + e[0]*st) });
+    window.__ritPhrase = { bpm: b, beats: beats, hits: ev.length };
+    return true;
+  }
+  function warm(){ if (audio() && actx.state === 'suspended') actx.resume() }
 
   // ── What the page shows ──
   var SVG = '<svg viewBox="0 0 200 250" aria-hidden="true"><ellipse class="rn-ring" cx="100" cy="40" rx="62" ry="16" fill="none" stroke="#ffcc33" stroke-width="4"/>' +
@@ -107,8 +139,8 @@
   var W = { es:{ play:'▶ Toca para tocar', stop:'■ Parar' }, en:{ play:'▶ Touch to play', stop:'■ Stop' } };
   var lang = 'es';
   function flash(d, kind){
-    if (!running || !ui || kind === 'tip') return;
-    var c = ui.drums[d]; c.classList.remove('hit','slap'); void c.offsetWidth; c.classList.add('hit'); if (kind === 'slap') c.classList.add('slap');
+    if (kind === 'tip') return;
+    var c = phraseDrums ? phraseDrums[d] : (running && ui ? ui.drums[d] : null); if (!c) return; c.classList.remove('hit','slap'); void c.offsetWidth; c.classList.add('hit'); if (kind === 'slap') c.classList.add('slap');
     setTimeout(function(){ c.classList.remove('hit','slap') }, 90);
   }
   function dot(b){ if (!ui) return; for (var i = 0; i < 4; i++) ui.dots[i].classList.toggle('on', i === b) }
@@ -124,6 +156,6 @@
     paint();
   }
   function set(v){ bpm = Math.max(40, Math.min(200, Math.round(+v || 90))) }
-  window.RITNOME = { mount: mount, set: set, stop: stop, get running(){ return running }, get bpm(){ return bpm } };
+  window.RITNOME = { mount: mount, set: set, stop: stop, phrase: phrase, warm: warm, get running(){ return running }, get bpm(){ return bpm } };
   document.addEventListener('visibilitychange', function(){ if (document.hidden && running) stop() });   // never drums in a hidden tab
 })();
