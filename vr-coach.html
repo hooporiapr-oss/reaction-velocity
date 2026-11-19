@@ -51,6 +51,11 @@ body{min-height:100vh;padding:20px 16px 40px;display:flex;flex-direction:column;
 .up{color:#3ddc84}.dn{color:#ff6b6b}.eq{color:#a7adba}
 .last{font-size:.72rem;color:#a7adba}
 .empty{color:#a7adba;text-align:center;padding:24px}
+.avgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:14px}
+.avg{border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);padding:10px 12px;text-align:center}
+.avg i{display:block;font-style:normal;font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#a7adba;margin-bottom:4px}
+.avg b{display:block;font-size:1.35rem;font-weight:900}
+.avg small{display:block;font-size:.62rem;color:#7d8696;margin-top:3px;line-height:1.35}
 .count{font-size:.7rem;color:#7d8696;text-align:center;margin-top:10px}
 /* player */
 #player{width:100%;max-width:640px}
@@ -97,6 +102,7 @@ svg.chart{width:100%;height:auto;display:block}
 
 <div id="view" hidden>
   <div class="tabs" id="ages"></div>
+  <div class="avgs" id="avgs" hidden></div>
   <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Swipe It</span><span>Last</span></div>
   <div id="list"></div>
   <div class="count" id="count"></div>
@@ -157,7 +163,7 @@ $('open').onclick=openView;
 $('code').addEventListener('keydown',function(e){if(e.key==='Enter')openView()});
 function lock(){school='';coachCat='';players={};loaded=false;
   $('view').hidden=true;$('player').hidden=true;$('gate').hidden=false;$('lockBtn').hidden=true;
-  $('sub').textContent='Coaches only';$('list').innerHTML='';$('ages').innerHTML=''}
+  $('sub').textContent='Coaches only';$('list').innerHTML='';$('ages').innerHTML='';$('avgs').innerHTML='';$('avgs').hidden=true}
 $('lockBtn').onclick=lock;
 
 // ── Reading the three boards (page by page, 1000 rows at a time) ──
@@ -226,6 +232,20 @@ function cellRS(p){   // the new Reaction Speed; the old tap game only when ther
   return '<span class="dash">—</span>';
 }
 function day(at){if(!at)return '—';var d=new Date(at);return isNaN(d)?'—':(d.getMonth()+1)+'/'+d.getDate()}
+// ── Group average (coaches only): one number per game for the kids on this tab,
+//    never a comparison between kids. "Now" = the average of each kid's latest run;
+//    "started at" = the average of each kid's first run, so the change is the group's. ──
+function groupAvg(keys,games){
+  var out=games.map(function(g){
+    var n=0,now=0,first=0,multi=0;
+    keys.forEach(function(k){var a=g.pick(players[k]);if(!a||!a.length)return;n++;now+=a[a.length-1].v;first+=a[0].v;if(a.length>1)multi++});
+    if(!n)return '';
+    now/=n;first/=n;var f=function(x){return g.lv?x.toFixed(1):Math.round(x)},d=Math.round((now-first)*(g.lv?10:1))/(g.lv?10:1);
+    return '<div class="avg"><i>'+g.name+'</i><b style="color:'+g.c+'">'+(g.lv?'Level ':'')+f(now)+(g.lv?'':' <span style="font-size:.7rem">BPM</span>')+'</b>'+
+      '<small>group average · '+n+' kid'+(n>1?'s':'')+(multi?'<br>started at '+f(first)+' ('+(d>0?'+':'')+d+')':'')+'</small></div>';
+  }).join('');
+  $('avgs').innerHTML=out; $('avgs').hidden=!out;
+}
 function inAge(p){return !currentAge||p.cats[currentAge]||!Object.keys(p.cats).length}
 function render(){
   var ages={};Object.keys(players).forEach(function(k){Object.keys(players[k].cats).forEach(function(c){ages[c]=1})});
@@ -236,6 +256,7 @@ function render(){
   $('list').innerHTML=keys.length?keys.map(function(k){var p=players[k];
     return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellTP(p.sw,p.swP)+'</span><span class="last">'+day(p.last)+'</span></button>';
   }).join(''):'<div class="empty">No players yet'+(currentAge?' in '+esc(currentAge):'')+(school?' at '+esc(school):'')+'.</div>';
+  groupAvg(keys,[{name:'⚡ Reaction Speed',c:'#FFD700',pick:function(p){return p.hb.length?p.hb:p.hbP.length?p.hbP:p.rs}},{name:'🔴 Reactific',c:'#00D9A5',pick:function(p){return p.rf}},{name:'👆 Swipe It',c:'#ff4757',pick:function(p){return p.sw.length?p.sw:p.swP}}]);
   $('count').textContent=keys.length?keys.length+' player'+(keys.length>1?'s':'')+' · listed A–Z, not ranked':'';
   $('list').querySelectorAll('.row').forEach(function(b){b.onclick=function(){showPlayer(b.dataset.k)}});
 }
