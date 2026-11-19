@@ -32,6 +32,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 #target{position:fixed;z-index:15;border-radius:50%;cursor:pointer;transform:translate(-50%,-50%) scale(0);transition:transform .12s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;justify-content:center;pointer-events:none;padding:22px;box-sizing:content-box}
 #target.visible{transform:translate(-50%,-50%) scale(1);pointer-events:all}
 #target-inner{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center}
+/* the target is a Swipe It arrow (same size), in the color of the moment: swipe it the way it points, only on RED */
+#target-inner{box-sizing:border-box;border:3px solid currentColor}
+html.swiping,html.swiping body,#target{touch-action:none}   /* while playing, a swipe is a swipe, never a page scroll */
+#target-inner svg{width:68%;height:68%;pointer-events:none;transition:none}
 #gng-score-num{display:none;font-size:4.5rem;font-weight:900;color:#fff;line-height:1;text-shadow:0 0 24px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.6);pointer-events:none;transition:transform .12s,color .12s}
 #gng-score-num.on{display:block}
 .ripple{position:fixed;border-radius:50%;border:3px solid #00D9A5;transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:14;animation:rippleOut .5s ease-out forwards}
@@ -226,7 +230,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 </div>
 
 <div id="msg" class="watch"></div>
-<div id="target"><div id="target-inner"><span id="gng-score-num">0</span></div></div>
+<div id="target"><div id="target-inner"><svg viewBox="0 0 100 100"><path d="M50 8 L88 52 H62 V92 H38 V52 H12 Z" fill="currentColor"/></svg><span id="gng-score-num">0</span></div></div>
 
 <div id="controls">
   <a class="ctrl-btn" href="reaction-velocity.html">← Exit</a>
@@ -243,13 +247,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   </div>
   <div class="vrr-logo">REACT<span>IFIC</span></div>
   <div class="vrr-sub">Reaction Velocity · To The Beat of the Ritnome</div>
-  <div class="tempo-hint" id="tempoHint">Moving target, colors flash to the Ritnome — tap ONLY on RED. 25 reds.</div>
+  <div class="tempo-hint" id="tempoHint">Moving arrow, colors flash to the Ritnome — swipe ONLY the RED, the way it points. 25 reds.</div>
   <div class="speed-label">Speed</div>
   <div class="speed-row" id="speedRow">
     <a class="speed-btn free" id="goRS" href="vr-reaction-speed.html" style="display:none;text-decoration:none;line-height:50px">⚡ Play Reaction Speed first</a>
     <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" disabled aria-label="Slower">−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" step="1" value="" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" disabled aria-label="Faster">+</button><span>BPM</span><small id="bpmNote">your speed comes from Reaction Speed's Free Tap</small></label>
   </div>
-  <button type="button" class="size-sw" id="sizeSw" aria-pressed="false">🎯 <span id="sizeTxt">Targets: normal</span></button>
+  <button type="button" class="size-sw" id="sizeSw" aria-pressed="false" hidden>🎯 <span id="sizeTxt">Targets: normal</span></button>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
   <button hidden class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
@@ -614,6 +618,7 @@ var targetEl=$('target'),targetInner=$('target-inner');
 var BALL_SEAMS="url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22c%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2249%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg%20clip-path%3D%22url%28%23c%29%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C0%2C0%2C.4%29%22%20stroke-width%3D%223.4%22%3E%3Cline%20x1%3D%2250%22%20y1%3D%22-4%22%20x2%3D%2250%22%20y2%3D%22104%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20-4%20104%2050%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20104%20104%2050%22/%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2250%22%20rx%3D%2224%22%20ry%3D%2249%22/%3E%3C/g%3E%3C/svg%3E')";
 if(document.documentElement.classList.contains('plain'))BALL_SEAMS='linear-gradient(transparent,transparent)';   // school codes: plain circles
 var targetX=0,targetY=0,tapLocked=false;
+var ARROW_DIRS={up:0,right:90,down:180,left:270}, ARROW_NAMES=['up','right','down','left'], arrowDir='up', swipeStart=null, showingRed=false;
 
 var currentPlayerName='';
 function handleStartClick(){
@@ -657,12 +662,12 @@ $('playerNameInputMain').addEventListener('keydown',function(e){
 var INTRO_I18N={
   en:{
     fullscreen:'⛶ Fullscreen',
-    start:'🔴 START · TAP ONLY ON RED',
+    start:'🔴 START · SWIPE ONLY THE RED',
     standingsBtn:'🏆 THE STANDINGS'
   },
   es:{
     fullscreen:'⛶ Pantalla Completa',
-    start:'🔴 EMPEZAR · TOCA SOLO EN ROJO',
+    start:'🔴 EMPEZAR · DESLIZA SOLO EL ROJO',
     standingsBtn:'🏆 LA CLASIFICACIÓN'
   }
 };
@@ -709,7 +714,7 @@ function loadBestForTempo(){
 /* Fixed at 100 BPM — the tempo selector (80/100) is gone, this game
    is now single-speed by design. */
 var HINTS={
-  '100':'Moving target, colors flash to the Ritnome — tap ONLY on RED. 25 reds.'
+  '100':'Moving arrow, colors flash to the Ritnome — swipe ONLY the RED, the way it points. 25 reds.'
 };
 function refreshIntro(){
   $('tempoHint').textContent=(typeof SPEED!=='undefined'&&SPEED==='free')?HINT_FREE:(HINTS[tempo]||'');
@@ -732,7 +737,7 @@ function setSpeed(v){
   SPEED=v;
   if(v!=='free'){BEAT_BPM=v;FLASH_MS=Math.round(60000/v)}
 }
-var HINT_FREE='Free Tap — first a speed check: 10 red targets with no beat, each waits for you. That measures your BPM. Then the game opens at your speed: tap ONLY on RED, 25 reds.';
+var HINT_FREE='Free Tap — first a speed check: 10 red arrows with no beat, each waits for you to swipe it. That measures your BPM. Then the game opens at your speed: swipe ONLY the RED, 25 reds.';
 // ══════════════════════════════════════════════════════
 //  THE SPEED: any BPM in the box (10 to 300). No Free Tap here — the
 //  box opens on the player's best Free Tap speed from REACTION SPEED
@@ -858,8 +863,9 @@ function startDrill(){
 }
 
 function runDrill(){
+  document.documentElement.classList.add('swiping');
   phase='running';taps=0;$('hTaps').textContent='0';misses=0;totalRT=0;rtCount=0;
-  var startMsg = CENTERED ? 'TAP ONLY ON RED!' : 'MOVE & TAP ONLY ON RED!';
+  var startMsg = introLang==='es' ? '¡DESLIZA SOLO EL ROJO!' : 'SWIPE ONLY THE RED!';
   msg(startMsg,'go');
   timers.push(setTimeout(function(){msg('','go')},1600));
   goNoGoStart();
@@ -882,7 +888,38 @@ function showTarget(){
   targetEl.classList.add('visible');
 }
 function hideTarget(){targetEl.classList.remove('visible')}
-targetEl.addEventListener('pointerdown',function(e){e.preventDefault();handleTap()});
+// SWIPE: touch the arrow and swipe the way it points. What counts is the color
+// when the finger touched it: red + the right way = a hit (its time is from the
+// red to the swipe); any touch on a color that isn't red = "NOT RED".
+document.addEventListener('pointerdown',function(e){
+  if(phase!=='running'||swipeStart||!targetEl.classList.contains('visible'))return;
+  var r=parseFloat(targetEl.style.width)/2||40, dx=e.clientX-targetX, dy=e.clientY-targetY;
+  if(Math.sqrt(dx*dx+dy*dy)>r*1.8)return;                 // a little extra room for a finger
+  e.preventDefault();
+  if(showingRed&&redUsedOnset===redOnsetAt)return;           // this red was already swiped: touching it again does nothing
+  var li=-1;for(var i=tapLog.length-1;i>=0;i--){if(!tapLog[i].w){li=i;break}}
+  swipeStart={x:e.clientX,y:e.clientY,id:e.pointerId,red:showingRed,dir:arrowDir,onset:redOnsetAt,logIdx:li};
+},{passive:false});
+document.addEventListener('pointermove',function(e){
+  var s=swipeStart;if(!s||e.pointerId!==s.id||phase!=='running')return;
+  var dx=e.clientX-s.x, dy=e.clientY-s.y;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<30)return;
+  swipeStart=null;
+  var got=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up');
+  if(!s.red){scoreWrong();return}
+  if(got!==s.dir){redGone(s);msg(introLang==='es'?'✗ DIRECCIÓN EQUIVOCADA':'✗ WRONG WAY','miss');timers.push(setTimeout(function(){if(phase==='running')msg('','go')},500));return}
+  scoreRed(performance.now()-s.onset,s);
+});
+function swipeEnd(e){
+  var s=swipeStart;if(!s||e.pointerId!==s.id)return;
+  swipeStart=null;if(phase!=='running')return;
+  if(!s.red){scoreWrong();return}                            // touched a color that wasn't red
+  msg(introLang==='es'?'¡DESLIZA, NO TOQUES!':'SWIPE, DON’T TAP','miss');
+  timers.push(setTimeout(function(){if(phase==='running')msg('','go')},500));
+}
+document.addEventListener('pointerup',swipeEnd);document.addEventListener('pointercancel',function(e){if(swipeStart&&e.pointerId===swipeStart.id)swipeStart=null});
+var redUsedOnset=-1;
+function redGone(s){redUsedOnset=s.onset;if(s.onset===redOnsetAt)gngIsRed=false}   // a red can only be used once — judged as the red they touched, even if the color has just changed
 
 // beat-driven (80/100): each beat places a fresh target to tap in time
 function spawnOnBeat(){
@@ -921,24 +958,22 @@ function gngPickColor(){
 }
 
 function gngRender(col){
-  var big;
-  if(CENTERED){
-    big=Math.min(innerWidth,innerHeight)*0.42;big=Math.max(160,Math.min(320,big));
-    targetX=innerWidth/2;targetY=innerHeight/2;
-  }else{
-    // moving target: coordination — random position each color change
-    big=Math.max(90,Math.min(150,Math.min(innerWidth,innerHeight)*0.20));
-    var extra=0;   // Big targets: 40% larger, kept a little further from the edges (as in Reaction Speed)
-    if(bigT){extra=Math.round(big*0.2);big=Math.round(big*1.4)}
-    var pad=big/2+20;
+  // the Swipe It arrow: the same size as in Swipe It (64–100 px), pointing a new way each flash
+  var big=Math.max(64,Math.min(100,Math.min(innerWidth,innerHeight)*0.10));
+  if(CENTERED){targetX=innerWidth/2;targetY=innerHeight/2}
+  else{
+    var pad=big/2+30;
     targetX=pad+Math.random()*(innerWidth-pad*2);
-    targetY=150+extra+Math.random()*(innerHeight-230-extra*2);
+    targetY=150+Math.random()*(innerHeight-260);
   }
+  arrowDir=ARROW_NAMES[Math.floor(Math.random()*4)]; showingRed=!!col.red;
   targetEl.style.left=targetX+'px';targetEl.style.top=targetY+'px';
   targetEl.style.width=big+'px';targetEl.style.height=big+'px';
-  targetInner.style.background=BALL_SEAMS+', radial-gradient(circle at 38% 35%,'+col.c+','+col.c+'aa)';
-  targetInner.style.backgroundSize='100% 100%, 100% 100%';
-  targetInner.style.boxShadow='0 0 50px '+col.g+',0 0 100px '+col.g.replace('1)','0.4)');
+  targetInner.style.color=col.c;
+  targetInner.style.background=col.g.replace('1)','.16)');
+  targetInner.style.backgroundSize='';
+  targetInner.style.boxShadow='0 0 30px '+col.g.replace('1)','.6)');
+  targetInner.querySelector('svg').style.transform='rotate('+ARROW_DIRS[arrowDir]+'deg)';
   targetEl.classList.add('visible');
 }
 
@@ -1040,60 +1075,41 @@ function freeNextRed(){
 }
 function stopGoNoGo(){if(gngTimer){clearInterval(gngTimer);gngTimer=null}}
 
-function handleTap(){
+// A red swiped the right way: its time is from the red to the swipe.
+function scoreRed(rt,s){
   if(phase!=='running')return;
-  if(!targetEl.classList.contains('visible'))return;
-  if(tapLocked)return;
-  tapLocked=true;setTimeout(function(){tapLocked=false},60);
-
-  if(GO_NO_GO){
-    var sn=$('gng-score-num');
-    if(gngIsRed){
-      // GO — correct hit on red. Any red tap clears a hidden negative back to 0 first.
-      var rt=performance.now()-redOnsetAt;
-      totalRT+=rt;rtCount++;
-      for(var li=tapLog.length-1;li>=0;li--){if(!tapLog[li].w){if(!tapLog[li].ms)tapLog[li].ms=Math.max(1,Math.round(rt));break}}
-      if(taps<0)taps=0;
-      taps+=100;
-      $('hTaps').textContent=Math.max(0,taps);
-      sn.textContent=Math.max(0,taps);
-      sn.style.transform='scale(1.35)';sn.style.color='#eafff6';
-      setTimeout(function(){sn.style.transform='scale(1)';sn.style.color='#fff'},140);
-      ripple(targetX,targetY);flash();
-      gngIsRed=false;               // consume this red so you can't double-tap the same flash
-      msg(Math.round(rt)+' MS · '+bpmFromMs(rt)+' BPM','go');
-      timers.push(setTimeout(function(){if(phase==='running')msg('','go')},450));
-      if(freeStage==='check'){
-        freeHits++;
-        if(freeHits>=CHECK_TAPS)timers.push(setTimeout(function(){if(phase==='running')startFreeGame()},300));
-        else freeNextRed();
-      }
-    }else{
-      // NO-GO violation — tapped a non-red → penalty
-      misses++;tapLog.push({w:1});
-      penaltyFlash();
-      if(BUST_ON){
-        taps=taps-100;                // -300 ends the game (3 wrong taps at -100 each)
-        if(taps<=-300){
-          $('hTaps').textContent=Math.max(0,taps);
-          msg('✗ NOT RED!','miss');
-          endDrill();
-          return;
-        }
-      }else{
-        taps=Math.max(0,taps-100);    // just lose the points, floored at 0
-      }
-      $('hTaps').textContent=Math.max(0,taps);
-      sn.textContent=Math.max(0,taps);
-      sn.style.transform='scale(.8)';sn.style.color='#ffd0d8';
-      setTimeout(function(){sn.style.transform='scale(1)';sn.style.color='#fff'},200);
-      msg('✗ NOT RED!','miss');
-      timers.push(setTimeout(function(){if(phase==='running')msg('','go')},500));
-    }
-    return;
+  if(redUsedOnset===s.onset)return;                          // this red was already used
+  redGone(s);
+  var sn=$('gng-score-num');
+  totalRT+=rt;rtCount++;
+  if(s.logIdx>=0&&tapLog[s.logIdx]&&!tapLog[s.logIdx].ms)tapLog[s.logIdx].ms=Math.max(1,Math.round(rt));
+  if(taps<0)taps=0;
+  taps+=100;
+  $('hTaps').textContent=Math.max(0,taps);
+  sn.textContent=Math.max(0,taps);
+  ripple(targetX,targetY);flash();
+  msg(Math.round(rt)+' MS · '+bpmFromMs(rt)+' BPM','go');
+  timers.push(setTimeout(function(){if(phase==='running')msg('','go')},450));
+  if(freeStage==='check'){
+    freeHits++;
+    if(freeHits>=CHECK_TAPS)timers.push(setTimeout(function(){if(phase==='running')startFreeGame()},300));
+    else freeNextRed();
   }
-
-  // (coord and go/no-go both return above; no other tap path)
+}
+// NO-GO: touched a color that wasn't red → penalty (three ends the game).
+function scoreWrong(){
+  if(phase!=='running')return;
+  var sn=$('gng-score-num');
+  misses++;tapLog.push({w:1});
+  penaltyFlash();
+  if(BUST_ON){
+    taps=taps-100;
+    if(taps<=-300){$('hTaps').textContent=Math.max(0,taps);msg('✗ NOT RED!','miss');endDrill();return}
+  }else taps=Math.max(0,taps-100);
+  $('hTaps').textContent=Math.max(0,taps);
+  sn.textContent=Math.max(0,taps);
+  msg('✗ NOT RED!','miss');
+  timers.push(setTimeout(function(){if(phase==='running')msg('','go')},500));
 }
 function penaltyFlash(){var f=$('flash');f.style.background='rgba(255,20,90,.28)';f.style.opacity='1';setTimeout(function(){f.style.opacity='0'},160)}
 
@@ -1192,6 +1208,7 @@ $('endProgBtn').addEventListener('click',function(){openProgress('screen-end')})
 $('closeProgBtn').addEventListener('click',function(){$('screen-prog').style.display='none';$(progReturn).style.display='flex'});
 
 function endDrill(){
+  document.documentElement.classList.remove('swiping');swipeStart=null;
   if(phase==='done')return;
   phase='done';clrT();stopBeat();stopReaction();stopGoNoGo();hideTarget();$('screen-speed').style.display='none';
   var gs=$('gng-score-num');if(gs)gs.classList.remove('on');
