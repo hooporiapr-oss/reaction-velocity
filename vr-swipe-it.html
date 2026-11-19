@@ -10,8 +10,8 @@
      After a 5-4-3-2-1 countdown, one small arrow at a time flashes ONCE, in
      its own spot, for one beat at that BPM, then it is gone; the game waits
      for the swipe where it was, the way it pointed. A tick on every beat:
-     five beats from the flash (at 120 BPM: 2.5 seconds); no swipe by the
-     fifth = too slow (a miss) and the next arrow flashes on the next beat. Each swipe scores its BPM (first flash to
+     three beats from the flash (at 120 BPM: 1.5 seconds); no swipe by the
+     third = too slow (a miss) and the next arrow flashes on the next beat. Each swipe scores its BPM (first flash to
      swipe, as in Reaction Speed); then the next arrow, in a new spot.
      The wrong way, off the arrow, a tap, or under 120 ms (a guess) = a miss.
      25 arrows. Saves to vr_mobile_standings (game_key 'swipe-it'):
@@ -180,7 +180,7 @@ function applyLang(){
 }
 document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
 document.addEventListener('DOMContentLoaded',function(){setTimeout(applyLang,0)});   // after jugador.js adds the player chip
-var SWIPE_BEATS=5;   // the swipe has five beats from the flash, each with a tick
+var SWIPE_BEATS=3;   // the swipe has three beats from the flash, each with a tick
 var TOTAL=25, GUESS_MS=120, BPM_MIN=10, BPM_MAX=300;
 var DIRS={up:0,right:90,down:180,left:270}, NAMES=['up','right','down','left'];
 var SPEED=0, BEAT_MS=0, state='idle', n=0, results=[], beatT=null, t0=0, want='', start=null, done1=false, playerName='';
@@ -246,7 +246,7 @@ function place(){
 }
 /* One arrow at a time: it flashes ONCE, in its own spot, for one beat at the
    set BPM, then it is gone — and the game waits for the swipe where it was,
-   the way it pointed. A tick sounds on every beat: five beats from the flash;
+   the way it pointed. A tick sounds on every beat: three beats from the flash;
    no swipe by the fifth = too slow, and the next arrow flashes on the next beat. The swipe scores that arrow's BPM (time from the flash
    to the swipe, as in Reaction Speed). Then the next arrow, in a new spot. */
 var blinkT=null, nextT=null, slowT=null;
@@ -259,7 +259,7 @@ function beat(){
   clearTimeout(blinkT);
   blinkT=setTimeout(function(){if(!done1)a.style.visibility='hidden'},BEAT_MS);   // shown for one beat, then gone
   // the beat: a tick on the flash and on each beat after it; no swipe by the
-  // fifth beat = too slow, and the next arrow flashes on the very next beat
+  // third beat = too slow, and the next arrow flashes on the very next beat
   var beatN=1; MOVIL.tick(true); clearInterval(slowT);
   slowT=setInterval(function(){
     if(state!=='run'||done1){clearInterval(slowT);return}
