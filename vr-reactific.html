@@ -759,7 +759,7 @@ function pickBox(){
   $('bpmBox').classList.add('active');
   $('tempoHint').textContent=HINTS['100'];
 }
-// The start speed is the player's best Reaction Speed BPM (vr-reaction-speed.html,
+// The start speed is the player's current (latest) Reaction Speed BPM (vr-reaction-speed.html,
 // saved as 'home-base'); the old tap game's Free Tap is only a fallback.
 function rsKey(n){return 'rv-rs-bpm:'+String(n||'').trim().toLowerCase()}       // Reaction Speed
 function freeKey(n){return 'rv-free-bpm:'+String(n||'').trim().toLowerCase()}   // the old tap game's Free Tap
@@ -776,12 +776,13 @@ function askBestFree(n){
   var H={headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}};
   function get(u){return fetch(SB_URL+u,H).then(function(r){return r.ok?r.json():[]}).catch(function(){return []})}
   Promise.all([
-    get('/rest/v1/vr_mobile_standings?select=bpm&game_key=eq.home-base'+who),
-    get('/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*'+who)
+    get('/rest/v1/vr_mobile_standings?select=bpm&game_key=eq.home-base'+who+'&order=admin_id.desc&limit=1'),
+    get('/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*'+who+'&order=admin_id.desc&limit=1')
   ]).then(function(res){
-    function keep(key,top){try{if(top>(parseInt(localStorage.getItem(key),10)||0))localStorage.setItem(key,String(top))}catch(e){}}
-    var rs=0;(res[0]||[]).forEach(function(r){var v=parseInt(r.bpm,10);if(v>rs)rs=v});
-    var free=0;(res[1]||[]).forEach(function(r){var v=parseInt(String(r.speed).split('-')[1],10);if(v>free)free=v});
+    // the player's latest run (the current BPM), used only when this device has none yet — this device's own last run comes first
+    function keep(key,v){try{if(v>0&&!(parseInt(localStorage.getItem(key),10)>0))localStorage.setItem(key,String(v))}catch(e){}}
+    var rs=(res[0]&&res[0][0])?parseInt(res[0][0].bpm,10)||0:0;
+    var free=(res[1]&&res[1][0])?parseInt(String(res[1][0].speed).split('-')[1],10)||0:0;
     keep(rsKey(n),rs);keep(freeKey(n),free);
     if(String($('playerNameInputMain').value).trim().toLowerCase()===k&&$('screen-intro').style.display!=='none')refreshBox(true);
   });

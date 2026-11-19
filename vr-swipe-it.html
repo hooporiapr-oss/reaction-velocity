@@ -187,7 +187,7 @@ var SPEED=0, BEAT_MS=0, state='idle', n=0, results=[], beatT=null, t0=0, want=''
 (function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)$('who').textContent=w})();
 function show(id){['intro','play','end'].forEach(function(s){$(s).hidden=(s!==id)})}
 
-/* ── the speed box: opens on the player's best Reaction Speed BPM ── */
+/* ── the speed box: opens on the player's current (latest) Reaction Speed BPM ── */
 function rsKey(x){return 'rv-rs-bpm:'+String(x||'').trim().toLowerCase()}
 function freeKey(x){return 'rv-free-bpm:'+String(x||'').trim().toLowerCase()}
 // Cognitivo Gym keeps the tap Reaction Speed: its Free Tap comes first there; vreaction.com: the new Reaction Speed first
@@ -198,10 +198,11 @@ function askBest(x){
   var who='&hidden=is.false&school_name=eq.'+encodeURIComponent(MOVIL.school())+'&player_name=ilike.'+encodeURIComponent(String(x).trim().replace(/[*%,()]/g,''));
   var H={headers:{apikey:MOVIL.SB_KEY,Authorization:'Bearer '+MOVIL.SB_KEY}};
   function get(u){return fetch(MOVIL.SB_URL+u,H).then(function(r){return r.ok?r.json():[]}).catch(function(){return []})}
-  Promise.all([get('/rest/v1/vr_mobile_standings?select=bpm&game_key=eq.home-base'+who),get('/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*'+who)]).then(function(res){
-    function keep(key,top){try{if(top>(parseInt(localStorage.getItem(key),10)||0))localStorage.setItem(key,String(top))}catch(e){}}
-    var rs=0;(res[0]||[]).forEach(function(r){var v=parseInt(r.bpm,10);if(v>rs)rs=v});
-    var fr=0;(res[1]||[]).forEach(function(r){var v=parseInt(String(r.speed).split('-')[1],10);if(v>fr)fr=v});
+  Promise.all([get('/rest/v1/vr_mobile_standings?select=bpm&game_key=eq.home-base'+who+'&order=admin_id.desc&limit=1'),get('/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*'+who+'&order=admin_id.desc&limit=1')]).then(function(res){
+    // the player's latest run (the current BPM), used only when this device has none yet — this device's own last run comes first
+    function keep(key,v){try{if(v>0&&!(parseInt(localStorage.getItem(key),10)>0))localStorage.setItem(key,String(v))}catch(e){}}
+    var rs=(res[0]&&res[0][0])?parseInt(res[0][0].bpm,10)||0:0;
+    var fr=(res[1]&&res[1][0])?parseInt(String(res[1][0].speed).split('-')[1],10)||0:0;
     keep(rsKey(x),rs);keep(freeKey(x),fr);
     if($('playerNameInputMain').value.trim().toLowerCase()===k&&!$('intro').hidden)refreshBox(true);
   });
