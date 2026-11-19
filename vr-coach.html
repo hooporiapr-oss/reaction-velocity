@@ -7,12 +7,14 @@
 <!-- Coach View — for coaches only. Opens with a Coach code (License Admin → Coach tab);
      a game code never opens it, so no kid sees a ranking.
      Every player of the coach's school, A–Z (never ranked), per age group:
-     Reaction Speed (Free Tap BPM), Reactific (speed), The Fortress (longest chain),
+     Reaction Speed, Reactific and Swipe It (BPM),
      a trend arrow (latest run against the one before) and the last day played.
-     Tap a player for their progress in all three games.
+     Tap a player for their progress in each game.
+     The Fortress is no longer a Reaction Velocity game (it lives in the gym);
+     its runs stay in the database.
      Reaction Speed is the hold-lift-tap game (saved as 'home-base'); a
      player with only the old tap game's Free Tap shows it as "classic".
-     Swipe It (its BPM, like Reaction Speed) gets its own column once the school has runs of it. Tablet and
+     Tablet and
      phone runs are kept apart: the tablet number leads, a phone number shows
      as 📱, and the player page has a block each.
      The code is kept in memory only: reload, Lock or ← THE HUB closes the view. -->
@@ -95,7 +97,7 @@ svg.chart{width:100%;height:auto;display:block}
 
 <div id="view" hidden>
   <div class="tabs" id="ages"></div>
-  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Fortress</span><span class="mcol">Swipe It</span><span>Last</span></div>
+  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Swipe It</span><span>Last</span></div>
   <div id="list"></div>
   <div class="count" id="count"></div>
 </div>
@@ -181,7 +183,6 @@ function loadAll(){
   Promise.all([
     readAll('vr_reaction_speed_standings',sc+'&speed=like.free-*',['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
     readAll('vr_reactific_standings',sc,['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
-    readAll('dynamic_memory_quarter_standings',sc+'&game_key=eq.fortress',['select=player_name,level_achieved,time_seconds,speed,category,logged_at,admin_id'+o,'select=player_name,level_achieved,time_seconds,category','select=player_name,level_achieved,time_seconds']),
     readAll('vr_mobile_standings',sc,['select=player_name,game_key,device,bpm,hits,category,logged_at,admin_id'+o,'select=player_name,game_key,device,bpm,category,logged_at,admin_id'+o,'select=player_name,game_key,bpm,category,logged_at,admin_id'+o])
   ]).then(function(res){
     players={};
@@ -194,9 +195,7 @@ function loadAll(){
     }
     res[0].forEach(function(r){add('rs',r,rsBpm(r))});
     res[1].forEach(function(r){add('rf',r,rfBpm(r))});
-    res[2].forEach(function(r){var lv=parseInt(r.level_achieved,10);add('ft',r,lv)});
-    res[3].forEach(function(r){var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g+(r.device==='phone'?'P':''),r,+r.bpm||0)});
-    hasMobile=res[3].some(function(r){return r.game_key==='swipe-it'}); $('view').classList.toggle('m',hasMobile);   // Swipe It column
+    res[2].forEach(function(r){var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g+(r.device==='phone'?'P':''),r,+r.bpm||0)});
     loaded=true; render();
   }).catch(function(){$('list').innerHTML='<div class="empty">Could not load the boards.</div>'});
 }
@@ -235,13 +234,13 @@ function render(){
   $('ages').querySelectorAll('.tab').forEach(function(b){b.onclick=function(){currentAge=b.dataset.a;render()}});
   var keys=Object.keys(players).filter(function(k){return inAge(players[k])}).sort(function(a,b){return players[a].name.localeCompare(players[b].name,undefined,{sensitivity:'base'})});
   $('list').innerHTML=keys.length?keys.map(function(k){var p=players[k];
-    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellFt(p.ft)+'</span><span class="v mcol">'+cellTP(p.sw,p.swP)+'</span><span class="last">'+day(p.last)+'</span></button>';
+    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellTP(p.sw,p.swP)+'</span><span class="last">'+day(p.last)+'</span></button>';
   }).join(''):'<div class="empty">No players yet'+(currentAge?' in '+esc(currentAge):'')+(school?' at '+esc(school):'')+'.</div>';
   $('count').textContent=keys.length?keys.length+' player'+(keys.length>1?'s':'')+' · listed A–Z, not ranked':'';
   $('list').querySelectorAll('.row').forEach(function(b){b.onclick=function(){showPlayer(b.dataset.k)}});
 }
 
-// ── One player: progress in all three games ──
+// ── One player: progress in each game ──
 function chart(pts,color,unit){
   if(pts.length<2)return '';
   var vals=pts.map(function(p){return p.v}),mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),topI=vals.indexOf(mx);
@@ -278,9 +277,8 @@ function showPlayer(k){
     (p.hbP.length?block('📱 Reaction Speed · phone','#00e5ff',p.hbP,'BPM','Fastest',''):'')+
     (p.rs.length?block('⚡ Reaction Speed · classic tap (before)','#5a8fa0',p.rs,'BPM','Fastest',''):'')+
     block('🔴 Reactific · speed','#00D9A5',p.rf,'BPM','Fastest','No Reactific games yet.')+
-    block('🏰 The Fortress · chain','#a855f7',p.ft,'level','Longest','No Fortress games yet.')+
-    (hasMobile?block('👆 Swipe It · tablet','#ffd35a',p.sw,'BPM','Fastest','No Swipe It on a tablet yet.')+
-               (p.swP.length?block('📱 Swipe It · phone','#ffd35a',p.swP,'BPM','Fastest',''):''):'');
+    block('👆 Swipe It · tablet','#ffd35a',p.sw,'BPM','Fastest','No Swipe It on a tablet yet.')+
+    (p.swP.length?block('📱 Swipe It · phone','#ffd35a',p.swP,'BPM','Fastest',''):'');
 }
 $('backList').onclick=function(){$('player').hidden=true;$('view').hidden=false};
 </script>

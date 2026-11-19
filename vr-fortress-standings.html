@@ -1,75 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<script>
-if (sessionStorage.getItem('reaction-velocity-gate-pass') !== '1') { window.location.replace('index.html'); }
-</script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>THE FORTRESS · Standings | Reaction Velocity</title>
-<!-- The Fortress board on vreaction.com: the same shared board as Cognitivo Gym's
-     (dynamic_memory_quarter_standings, game_key fortress), for this school.
-     Best run per player: longest chain, then the faster time; each with its chain speed. -->
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{background:#000;color:#fff;font-family:Arial,sans-serif}
-body{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px}
-.back{align-self:flex-start;padding:8px 16px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;text-decoration:none;margin-bottom:18px}
-.t{font-size:2rem;font-weight:900;font-style:italic;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 0 30px rgba(124,58,237,.7);text-align:center}
-.t span{color:#a855f7}
-.sub{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:#a7adba;margin:6px 0 16px;text-align:center}
-.tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px}
-.tab{padding:7px 14px;border-radius:999px;border:1.5px solid rgba(168,85,247,.4);background:rgba(124,58,237,.08);color:#c9a3fa;font:900 .72rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-.tab.on{background:rgba(124,58,237,.35);border-color:#a855f7;color:#fff}
-#list{width:100%;max-width:520px}
-.row{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.25);margin-bottom:8px}
-.rk{width:26px;font-weight:900;color:#c9a3fa;text-align:center}
-.nm{flex:1;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lv{font-weight:900;color:#fff;text-align:right}
-.lv small{display:block;font-size:.62rem;color:#a7adba;font-weight:700;letter-spacing:.06em}
-.empty{color:#a7adba;text-align:center;padding:24px}
-</style>
-</head>
-<body>
-<a class="back" href="vr-fortress.html">← The Fortress</a>
-<div class="t">THE <span>FORTRESS</span></div>
-<div class="sub" id="sub">Standings · longest chain</div>
-<div class="tabs" id="ages"></div>
-<div id="list"><div class="empty">Loading…</div></div>
-<script>
-var SB_URL='https://sdaphocueugzfvjovuxd.supabase.co';
-var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
-var school=sessionStorage.getItem('reaction-velocity-school')||'';
-var myAge=sessionStorage.getItem('reaction-velocity-category')||'';
-var currentAge=myAge, rowsAll=[];
-document.getElementById('sub').textContent='Standings · longest chain'+(school?' · '+school:'');
-function esc(x){return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function ageSort(a,b){var x=parseInt(a,10),y=parseInt(b,10);if(!isNaN(x)&&!isNaN(y)&&x!==y)return x-y;return a.localeCompare(b)}
-function render(){
-  var ages={};rowsAll.forEach(function(r){var a=(r.category||'').trim();if(a)ages[a]=1});
-  var list=Object.keys(ages);if(currentAge&&list.indexOf(currentAge)===-1)list.push(currentAge);list.sort(ageSort);
-  var tabs=document.getElementById('ages');
-  tabs.innerHTML=list.length?[''].concat(list).map(function(a){return '<button class="tab'+(a===currentAge?' on':'')+'" data-a="'+esc(a)+'">'+(a?esc(a):'All')+'</button>'}).join(''):'';
-  tabs.querySelectorAll('.tab').forEach(function(b){b.onclick=function(){currentAge=b.dataset.a;render()}});
-  var best={};
-  rowsAll.forEach(function(r){
-    if(currentAge&&(r.category||'').trim()!==currentAge)return;
-    var k=String(r.player_name||'').trim().toLowerCase(); if(!k)return;
-    var e=best[k], t=r.time_seconds;
-    if(!e||r.level_achieved>e.level||(r.level_achieved===e.level&&t!=null&&(e.time==null||t<e.time)))best[k]={name:r.player_name,level:r.level_achieved,time:t,speed:r.speed};
-  });
-  var out=Object.keys(best).map(function(k){return best[k]}).sort(function(a,b){if(b.level!==a.level)return b.level-a.level;return (a.time==null?1e9:a.time)-(b.time==null?1e9:b.time)});
-  document.getElementById('list').innerHTML=out.length?out.map(function(p,i){
-    return '<div class="row"><span class="rk">'+(i+1)+'</span><span class="nm">'+esc(p.name)+'</span><span class="lv">Level '+p.level+(p.speed&&/^\d+$/.test(p.speed)?' · '+esc(p.speed)+' BPM':'')+'<small>'+(p.time==null?'—':p.time.toFixed(2)+' s')+'</small></span></div>';
-  }).join(''):'<div class="empty">No Fortress games yet'+(currentAge?' in '+esc(currentAge):'')+'.</div>';
-}
-var base=SB_URL+'/rest/v1/dynamic_memory_quarter_standings?game_key=eq.fortress&hidden=is.false&school_name=eq.'+encodeURIComponent(school);
-var h={headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}};
-fetch(base+'&select=player_name,level_achieved,time_seconds,speed,category',h)
-  .then(function(r){if(!r.ok)throw 0;return r.json()})
-  .catch(function(){return fetch(base+'&select=player_name,level_achieved,time_seconds',h).then(function(r){return r.ok?r.json():[]})})
-  .then(function(rows){rowsAll=rows||[];render()})
-  .catch(function(){document.getElementById('list').innerHTML='<div class="empty">Could not load the board.</div>'});
-</script>
-</body>
-</html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reaction Velocity</title>
+<!-- The Fortress is no longer a Reaction Velocity game: it is a memory game and lives
+     in the gym (hooporia.mobi and Cognitivo Gym). Old links land on the hub.
+     Its runs stay in the database (dynamic_memory_quarter_standings). -->
+<script>location.replace('reaction-velocity.html')</script>
+</head><body style="background:#000"></body></html>

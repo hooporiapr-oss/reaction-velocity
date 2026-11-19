@@ -13,7 +13,7 @@
      guess, not a reaction) = too early (a miss); tapping
      while still on HOME, missing the target or waiting too long = a miss.
      10 rounds. Saves to vr_mobile_standings (game_key 'home-base', with the
-     device). Its BPM is what Reactific and The Fortress start from. -->
+     device). Its BPM is what Reactific and Swipe It start from. -->
 <script>try{if(sessionStorage.getItem('gym-plain')==='1')document.documentElement.classList.add('plain')}catch(e){}</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -103,7 +103,6 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   <div class="game-switcher">
     <span class="switcher-btn game-current">Reaction<br>Speed</span>
     <a class="switcher-btn game-active" href="vr-reactific.html">Reactific</a>
-    <a class="switcher-btn game-active" href="vr-fortress.html">The<br>Fortress</a>
     <a class="switcher-btn game-active" href="vr-swipe-it.html">Swipe<br>It</a>
   </div>
 </div>
@@ -238,7 +237,7 @@ function finish(){
   $('pbMsg').innerHTML=MOVIL.bestHtml(bpm,LANG);
   $('prog').innerHTML=MOVIL.progressSvg(bpm,LANG);
   if(hits.length)MOVIL.save(playerName,bpm,hits.length,misses,Math.round(avg));
-  // Reactific and The Fortress start at this player's best Reaction Speed BPM
+  // Reactific and Swipe It start at this player's best Reaction Speed BPM
   if(bpm>0){try{var rk='rv-rs-bpm:'+playerName.trim().toLowerCase(),old=parseInt(localStorage.getItem(rk),10)||0;if(bpm>old)localStorage.setItem(rk,String(bpm))}catch(e){}}
   show('end');
 }
