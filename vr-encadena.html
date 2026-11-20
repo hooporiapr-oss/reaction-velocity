@@ -13,8 +13,12 @@
      One wrong swipe (wrong spot, wrong way, a tap, too slow) ends the run.
      Touches while the chain plays are ignored.
      Score: the longest chain repeated, plus the BPM of the swipes.
-     Saves to vr_mobile_standings (game_key 'encadena'): level = the longest
-     chain, hits = chains repeated, bpm, avg_ms, device. vreaction.com only. -->
+     Two modes, picked with the tabs on the start screen (remembered on this device;
+     until picked, Easy for age groups up to 6):
+       Easy (Fácil): the spots light up red, no arrows — tap them back in order.
+       Full (Completo): red arrows — swipe each spot the way its arrow pointed.
+     Saves to vr_mobile_standings: game_key 'encadena' (Full) or 'encadena-facil'
+     (Easy), level = the longest chain, hits = chains repeated, bpm, avg_ms, device. -->
 <script>try{if(sessionStorage.getItem('gym-plain')==='1')document.documentElement.classList.add('plain')}catch(e){}</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -92,6 +96,10 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
   #bpmInput{padding:7px;font-size:1.4rem}
 }
 /* ENCADENA: orchid, like its card. The five spots of the 2-1-2 zone */
+.modeTabs{display:inline-flex;gap:0;margin:0 auto 12px;border:1.5px solid rgba(232,121,249,.45);border-radius:999px;overflow:hidden}
+.modeTabs button{padding:9px 16px;border:0;background:transparent;color:#d8b4fe;font:900 .78rem Arial,sans-serif;letter-spacing:.06em;cursor:pointer}
+.modeTabs button.on{background:#e879f9;color:#1a0420}
+.modeNote{font-size:.74rem;color:#9fb3c8;margin:-6px 0 18px;text-align:center}
 .spotE{position:absolute;border-radius:50%;border:2px dashed rgba(232,121,249,.35);background:rgba(232,121,249,.05);pointer-events:none}
 .mr-now{position:absolute;left:0;right:0;top:calc(62px + env(safe-area-inset-top));text-align:center;font-size:2rem;font-weight:900;letter-spacing:.08em;color:#ffd35a;text-shadow:0 0 24px rgba(255,211,90,.6);pointer-events:none}
 .mr-level{position:absolute;left:0;right:0;top:calc(34px + env(safe-area-inset-top));text-align:center;font-size:.8rem;font-weight:900;letter-spacing:.14em;color:#f0abfc;pointer-events:none}
@@ -117,7 +125,9 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
   <div class="box-lang-toggle"><button type="button" class="box-lang-btn lg" data-l="es">ES</button><button type="button" class="box-lang-btn lg" data-l="en">EN</button></div>
   <div class="vrr-logo">ENCA<span>DENA</span></div>
   <div class="vrr-sub" id="who">Reaction Velocity</div>
-  <div class="tempo-hint" data-t="hint">The chain lights up in the 2-1-2 zone, one red arrow per beat at your speed. Then swipe it back in order — each spot, the way its arrow pointed. Every round adds one more. One mistake ends it.</div>
+  <div class="tempo-hint" data-t="hint">The chain lights up in the 2-1-2 zone, one red spot per beat at your speed. Then repeat it back in order. Every round adds one more. One mistake ends it.</div>
+  <div class="modeTabs" role="tablist"><button type="button" id="modeEasy" role="tab" data-t="easy">Easy</button><button type="button" id="modeFull" role="tab" data-t="full">Full</button></div>
+  <div class="modeNote" id="modeNote"></div>
   <div class="speed-label" data-t="speedLbl">Speed</div>
   <div class="speed-row">
     <a class="speed-btn free" id="goRS" href="vr-reaction-speed.html" data-t="goRS" style="display:none">⚡ Play Reaction Speed first</a>
@@ -162,17 +172,19 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 <script>
 var $=function(id){return document.getElementById(id)};
 var TX={
-  es:{hint:'La cadena se enciende en la zona 2-1-2, una flecha roja por pulso a tu velocidad. Luego deslízala en orden — cada lugar, hacia donde apuntaba su flecha. Cada ronda suma una más. Un error y se acaba.',
+  es:{hint:'La cadena se enciende en la zona 2-1-2, un lugar rojo por pulso a tu velocidad. Luego repítela en orden. Cada ronda suma uno más. Un error y se acaba.',
       start:'▶ Empezar · la cadena',speedLbl:'Velocidad',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',goRS:'⚡ Juega Reaction Speed primero',
       noRS:'aún no hay Reaction Speed — juégalo primero',fromRS:'tu velocidad viene de Reaction Speed',mine:'tu velocidad · − / + o escribe cualquier velocidad',rsNote:'tu Reaction Speed · − / + o escribe cualquier velocidad',
+      easy:'Fácil',full:'Completo',easyNote:'toca los lugares en orden',fullNote:'desliza cada lugar hacia donde apunta su flecha',modeEasy:'fácil',
       chain:'Cadena',watch:'MIRA LA CADENA…',now:'¡AHORA!',stepOf:function(i,n){return i+' de '+n},lab:'Cadena más larga',
       dots:'Ronda por ronda',prog:'Mi progreso · Encadena',again:'Jugar otra vez',nextp:'Siguiente jugador',at:'a',bpmHits:'BPM de los deslizamientos',
       first:'PRIMERA MARCA',firstSub:'la que hay que superar la próxima vez',pb:'¡NUEVO RÉCORD PERSONAL!',was:'tu mejor era',best:'Tu mejor cadena:',
       againLine:'Juega otra vez para empezar tu línea de progreso.',ended:'se acabó en el paso',
       'Too slow':'Muy lento','Wrong spot':'Ese no era el lugar','Wrong way':'Dirección equivocada','Too early':'Muy temprano','Swipe, don’t tap':'Desliza, no toques'},
-  en:{hint:'The chain lights up in the 2-1-2 zone, one red arrow per beat at your speed. Then swipe it back in order — each spot, the way its arrow pointed. Every round adds one more. One mistake ends it.',
+  en:{hint:'The chain lights up in the 2-1-2 zone, one red spot per beat at your speed. Then repeat it back in order. Every round adds one more. One mistake ends it.',
       start:'▶ Start · the chain',speedLbl:'Speed',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',goRS:'⚡ Play Reaction Speed first',
       noRS:'no Reaction Speed yet — play it first',fromRS:'your speed comes from Reaction Speed',mine:'your speed · − / + or type any speed',rsNote:'your Reaction Speed · − / + or type any speed',
+      easy:'Easy',full:'Full',easyNote:'tap the spots in order',fullNote:'swipe each spot the way its arrow points',modeEasy:'easy',
       chain:'Chain',watch:'WATCH THE CHAIN…',now:'NOW!',stepOf:function(i,n){return i+' of '+n},lab:'Longest chain',
       dots:'Round by round',prog:'My Progress · Encadena',again:'Play again',nextp:'Next Player',at:'at',bpmHits:'BPM of the swipes',
       first:'FIRST MARK SET',firstSub:'the one to beat next time',pb:'NEW PERSONAL BEST!',was:'your best was',best:'Your best chain:',
@@ -190,12 +202,21 @@ function applyLang(){
   var np=document.querySelector('.jg-como a'); if(np)np.textContent=T('newp');
   document.querySelectorAll('.lg').forEach(function(b){var on=b.getAttribute('data-l')===LANG;b.classList.toggle('on',on);b.classList.toggle('active',on)});
   if(typeof refreshBox==='function'&&!$('intro').hidden)refreshBox(true);
+  if(typeof showMode==='function')showMode();
 }
 document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
 document.addEventListener('DOMContentLoaded',function(){setTimeout(applyLang,0)});
 var BPM_MIN=10, BPM_MAX=300, START_LEN=2, MAX_LEN=30, ANSWER_BEATS=5, GUESS_MS=120;
 var SPEED=0, BEAT_MS=0, state='idle', chain=[], stepIdx=0, rounds=[], times=[], t0=0, start=null, playerName='', timers=[], answerT=[], SPOTS=[];
 var DIRS={up:0,right:90,down:180,left:270}, NAMES=['up','right','down','left'], RED='#ff1e3c';
+// EASY (tap the spots, no arrows) or FULL (swipe each spot its arrow's way)
+var EASY=false;
+(function(){var v='';try{v=localStorage.getItem('rv-enc-mode')||''}catch(e){}
+  if(v)EASY=v==='easy'; else {var a=parseInt(String(MOVIL.category()).replace(/^\D+/,''),10);EASY=!isNaN(a)&&a<=6}})();
+function GAME(){return EASY?'encadena-facil':'encadena'}
+function showMode(){$('modeEasy').classList.toggle('on',EASY);$('modeFull').classList.toggle('on',!EASY);$('modeEasy').setAttribute('aria-selected',EASY);$('modeFull').setAttribute('aria-selected',!EASY);$('modeNote').textContent=T(EASY?'easyNote':'fullNote')}
+function setMode(e){EASY=e;try{localStorage.setItem('rv-enc-mode',e?'easy':'full')}catch(x){}showMode()}
+$('modeEasy').onclick=function(){setMode(true)}; $('modeFull').onclick=function(){setMode(false)};
 (function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)$('who').textContent=w})();
 function show(id){['intro','play','end'].forEach(function(s){$(s).hidden=(s!==id)})}
 function later(f,ms){var id=setTimeout(f,ms);timers.push(id);return id}
@@ -242,10 +263,11 @@ function loadPast(x){
   past=null;
   var url=MOVIL.SB_URL+'/rest/v1/vr_mobile_standings?select=level,bpm,logged_at&hidden=is.false&game_key=eq.encadena&school_name=eq.'+encodeURIComponent(MOVIL.school())+
     '&player_name=ilike.'+encodeURIComponent(String(x).trim().replace(/[*%,()]/g,''))+'&order=admin_id.asc';
+  url=url.replace('game_key=eq.encadena','game_key=eq.'+GAME());   // each mode has its own line
   fetch(url,{headers:{apikey:MOVIL.SB_KEY,Authorization:'Bearer '+MOVIL.SB_KEY}}).then(function(r){return r.ok?r.json():null}).then(function(d){past=Array.isArray(d)?d:null}).catch(function(){});
 }
 function save(name,top,bpm,hits,misses,avg){
-  var row={game_key:'encadena',device:MOVIL.device(),player_name:String(name).trim().slice(0,20),school_name:MOVIL.school()||null,bpm:bpm,hits:hits,misses:misses,avg_ms:avg||null,level:top};
+  var row={game_key:GAME(),device:MOVIL.device(),player_name:String(name).trim().slice(0,20),school_name:MOVIL.school()||null,bpm:bpm,hits:hits,misses:misses,avg_ms:avg||null,level:top};
   function post(r){return fetch(MOVIL.SB_URL+'/rest/v1/vr_mobile_standings',{method:'POST',headers:{'Content-Type':'application/json',Prefer:'return=minimal',apikey:MOVIL.SB_KEY,Authorization:'Bearer '+MOVIL.SB_KEY},body:JSON.stringify(r)})}
   post(row).then(function(res){if(!res.ok){delete row.level;return post(row)}}).catch(function(){});
 }
@@ -263,6 +285,8 @@ function drawArrow(s,dir,color,cls){
   a.style.left=(s.x-s.r)+'px'; a.style.top=(s.y-s.r)+'px';
   a.style.color=color; a.style.borderColor=color; a.style.background=color+'26'; a.style.boxShadow='0 0 30px '+color+'99';
   a.querySelector('svg').style.transform='rotate('+DIRS[dir]+'deg)';
+  a.querySelector('svg').style.visibility=EASY?'hidden':'visible';   // Easy: a red spot, no arrow
+  if(EASY){a.style.background=color+'cc'}
   a.style.display='flex'; a.style.visibility='visible';
 }
 function hideArrow(){$('arrow').style.display='none'}
@@ -296,7 +320,7 @@ function nextRound(){
   addLink(); bar(); hideArrow(); $('flash').textContent='';
   stepIdx=0; start=null; state='watch'; $('now').textContent=T('watch'); $('lvl').textContent='';
   chain.forEach(function(c,i){
-    later(function(){ if(state!=='watch')return; if(i===0)$('now').textContent=''; drawArrow(SPOTS[c.s],c.dir,RED); MOVIL.tick(i===0) }, 700+i*BEAT_MS);
+    later(function(){ if(state!=='watch')return; if(i===0)$('now').textContent=''; drawArrow(SPOTS[c.s],c.dir,RED,EASY?'dot':''); MOVIL.tick(i===0) }, 700+i*BEAT_MS);
     later(function(){ if(state==='watch')hideArrow() }, 700+i*BEAT_MS+BEAT_MS*0.8);   // a short gap, so the same beat twice is never one long light
   });
   later(function(){ if(state!=='watch')return; hideArrow(); $('now').textContent=T('now'); askStep() }, 700+chain.length*BEAT_MS);
@@ -340,6 +364,7 @@ play.addEventListener('pointerdown',function(e){
   SPOTS.forEach(function(s,i){var d=Math.hypot(x-s.x,y-s.y);if(d<bd){bd=d;best=i}});
   if(bd>SPOTS[0].r*2.2)return;                         // not near any spot: nothing happens
   if(best!==chain[stepIdx].s){wrong('Wrong spot');return}
+  if(EASY){var ms=performance.now()-t0; if(ms<GUESS_MS)wrong('Too early'); else goodStep(ms); return}   // Easy: the touch is the step
   start={x:e.clientX,y:e.clientY,id:e.pointerId};
 });
 play.addEventListener('pointermove',function(e){
@@ -377,7 +402,7 @@ function finish(){
   var won=rounds.filter(function(r){return r.ok}), top=0; won.forEach(function(r){if(r.len>top)top=r.len});
   var avg=times.length?times.reduce(function(a,b){return a+b},0)/times.length:0, bpm=MOVIL.bpm(avg);
   $('endBig').textContent=top||'—';
-  $('endLab').textContent=T('lab');
+  $('endLab').textContent=T('lab')+(EASY?' · '+T('modeEasy'):'');
   var lb='';for(var i=1;i<=Math.max(10,top);i++)lb+='<i'+(i<=top?' class="on"':'')+'></i>';$('lvbar').innerHTML=lb;
   var lost=rounds.filter(function(r){return !r.ok})[0];
   $('endHm').textContent=(bpm?bpm+' '+T('bpmHits')+' · ':'')+T('at')+' '+SPEED+' BPM'+(lost?' · '+T('chain')+' '+lost.len+' '+T('ended')+' '+lost.at+' ('+T(lost.why)+')':'');
@@ -387,7 +412,7 @@ function finish(){
   save(playerName,top,bpm,won.length,rounds.length-won.length,Math.round(avg));
   show('end');
 }
-applyLang();
+applyLang(); showMode();
 </script>
 </body>
 </html>

@@ -194,14 +194,14 @@ function loadAll(){
     players={};
     function add(game,r,v){
       var k=String(r.player_name||'').trim().toLowerCase(); if(!k||!(v>0))return;
-      var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],hb:[],sw:[],hbP:[],swP:[],mr:[],last:''});
+      var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],hb:[],sw:[],hbP:[],swP:[],mr:[],mrE:[],last:''});
       var c=(r.category||'').trim(); if(c)p.cats[c]=1;
       p[game].push({v:v,at:r.logged_at||'',spd:r.speed,h:r.hits});
       if(r.logged_at&&r.logged_at>p.last){p.last=r.logged_at;p.name=String(r.player_name).trim()}
     }
     res[0].forEach(function(r){add('rs',r,rsBpm(r))});
     res[1].forEach(function(r){add('rf',r,rfBpm(r))});
-    res[2].forEach(function(r){if(r.game_key==='encadena'){add('mr',r,parseInt(r.level,10)||0);return}var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g+(r.device==='phone'?'P':''),r,+r.bpm||0)});   // Encadena: its longest chain
+    res[2].forEach(function(r){if(r.game_key==='encadena'||r.game_key==='encadena-facil'){add(r.game_key==='encadena'?'mr':'mrE',r,parseInt(r.level,10)||0);return}var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g+(r.device==='phone'?'P':''),r,+r.bpm||0)});   // Encadena: its longest chain
     loaded=true; render();
   }).catch(function(){$('list').innerHTML='<div class="empty">Could not load the boards.</div>'});
 }
@@ -215,6 +215,10 @@ function trend(arr){
 function cellBpm(arr){if(!arr.length)return '<span class="dash">—</span>';var l=arr[arr.length-1].v;return l+trend(arr)+'<small>BPM · '+arr.length+' run'+(arr.length>1?'s':'')+'</small>'}
 function cellFt(arr){if(!arr.length)return '<span class="dash">—</span>';var top=0;arr.forEach(function(x){if(x.v>top)top=x.v});
   return 'Level '+top+'<small>longest · latest '+arr[arr.length-1].v+trend(arr)+'</small>'}
+function cellEnc(full,easy){   // Full leads; Easy shows marked "easy" — never mixed
+  if(!full.length&&easy.length){var t=0;easy.forEach(function(x){if(x.v>t)t=x.v});return 'Level '+t+'<small>easy · latest '+easy[easy.length-1].v+trend(easy)+'</small>'}
+  return cellFt(full);
+}
 function cellTP(t,ph){   // tablet leads; a phone number shows as 📱 — never mixed
   if(!t.length&&!ph.length)return '<span class="dash">—</span>';
   if(!t.length)return '📱 '+cellBpm(ph);
@@ -254,9 +258,9 @@ function render(){
   $('ages').querySelectorAll('.tab').forEach(function(b){b.onclick=function(){currentAge=b.dataset.a;render()}});
   var keys=Object.keys(players).filter(function(k){return inAge(players[k])}).sort(function(a,b){return players[a].name.localeCompare(players[b].name,undefined,{sensitivity:'base'})});
   $('list').innerHTML=keys.length?keys.map(function(k){var p=players[k];
-    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellTP(p.sw,p.swP)+'</span><span class="v">'+cellFt(p.mr)+'</span><span class="last">'+day(p.last)+'</span></button>';
+    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellTP(p.sw,p.swP)+'</span><span class="v">'+cellEnc(p.mr,p.mrE)+'</span><span class="last">'+day(p.last)+'</span></button>';
   }).join(''):'<div class="empty">No players yet'+(currentAge?' in '+esc(currentAge):'')+(school?' at '+esc(school):'')+'.</div>';
-  groupAvg(keys,[{name:'⚡ Reaction Speed',c:'#FFD700',pick:function(p){return p.hb.length?p.hb:p.hbP.length?p.hbP:p.rs}},{name:'🔴 Reactific',c:'#00D9A5',pick:function(p){return p.rf}},{name:'👆 Swipe It',c:'#ff4757',pick:function(p){return p.sw.length?p.sw:p.swP}},{name:'⛓️ Encadena',c:'#e879f9',lv:1,pick:function(p){return p.mr}}]);
+  groupAvg(keys,[{name:'⚡ Reaction Speed',c:'#FFD700',pick:function(p){return p.hb.length?p.hb:p.hbP.length?p.hbP:p.rs}},{name:'🔴 Reactific',c:'#00D9A5',pick:function(p){return p.rf}},{name:'👆 Swipe It',c:'#ff4757',pick:function(p){return p.sw.length?p.sw:p.swP}},{name:'⛓️ Encadena',c:'#e879f9',lv:1,pick:function(p){return p.mr}},{name:'⛓️ Encadena · easy',c:'#d8b4fe',lv:1,pick:function(p){return p.mrE}}]);
   $('count').textContent=keys.length?keys.length+' player'+(keys.length>1?'s':'')+' · listed A–Z, not ranked':'';
   $('list').querySelectorAll('.row').forEach(function(b){b.onclick=function(){showPlayer(b.dataset.k)}});
 }
@@ -301,6 +305,7 @@ function showPlayer(k){
     block('👆 Swipe It · tablet','#ffd35a',p.sw,'BPM','Fastest','No Swipe It on a tablet yet.')+
     (p.swP.length?block('📱 Swipe It · phone','#ffd35a',p.swP,'BPM','Fastest',''):'')+
     block('⛓️ Encadena · chain','#e879f9',p.mr,'level','Longest','No Encadena yet.');
+    if(p.mrE.length)block('⛓️ Encadena easy · chain','#d8b4fe',p.mrE,'level','Longest','');
 }
 $('backList').onclick=function(){$('player').hidden=true;$('view').hidden=false};
 </script>
