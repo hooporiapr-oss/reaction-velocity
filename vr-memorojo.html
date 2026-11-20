@@ -6,10 +6,12 @@
 <title>Memorojo | Reaction Velocity</title>
 <!-- MEMOROJO — remember the red. Same file in reaction-velocity and cognitivo-gym-paradiso.
      A sequence of arrows flashes, one per beat at the player's BPM, each in its own
-     spot, each pointing its own way, each its own color. ONE of them is red.
+     spot, each pointing its own way, each its own color. Some are red: 1 red at
+     levels 2–3, 2 at 4–6, 3 at 7–9, 4 at level 10.
      No touching while the sequence plays (a touch then = too early, a miss).
-     When it ends ("¡Ahora!"), the player has five beats (a tick on each) to swipe
-     where the red was, the way it pointed. Hit = the next sequence is one arrow
+     When it ends ("¡Ahora!"), the player swipes EVERY red, in the order they
+     appeared, each where it was and the way it pointed — five beats (a tick on
+     each) for each red. Any mistake ends the round. Hit = the next sequence is one arrow
      longer (up to 10); miss = one shorter (never under 2). Starts at 2. 10 rounds.
      Score: the highest level hit (the longest sequence remembered), plus the
      BPM of the hits (end of the sequence to the swipe).
@@ -116,7 +118,7 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
   <div class="box-lang-toggle"><button type="button" class="box-lang-btn lg" data-l="es">ES</button><button type="button" class="box-lang-btn lg" data-l="en">EN</button></div>
   <div class="vrr-logo">MEMO<span>ROJO</span></div>
   <div class="vrr-sub" id="who">Reaction Velocity</div>
-  <div class="tempo-hint" data-t="hint">Arrows flash one by one at your speed. Remember the RED one — where it was and which way it pointed. When the sequence ends, swipe it. Starts with 2 arrows, up to 10.</div>
+  <div class="tempo-hint" data-t="hint">Arrows flash one by one at your speed. Remember the RED ones — where they were, which way they pointed, and in what order. When the sequence ends, swipe them in order. Starts with 2 arrows, up to 10.</div>
   <div class="speed-label" data-t="speedLbl">Speed</div>
   <div class="speed-row">
     <a class="speed-btn free" id="goRS" href="vr-reaction-speed.html" data-t="goRS" style="display:none">⚡ Play Reaction Speed first</a>
@@ -161,18 +163,18 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 <script>
 var $=function(id){return document.getElementById(id)};
 var TX={
-  es:{hint:'Las flechas destellan una a una a tu velocidad. Recuerda la ROJA — dónde estaba y hacia dónde apuntaba. Cuando termine la secuencia, deslízala. Empieza con 2 flechas, hasta 10.',
+  es:{hint:'Las flechas destellan una a una a tu velocidad. Recuerda las ROJAS — dónde estaban, hacia dónde apuntaban y en qué orden. Cuando termine la secuencia, deslízalas en orden. Empieza con 2 flechas, hasta 10.',
       start:'▶ Empezar · 10 rondas',speedLbl:'Velocidad',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',goRS:'⚡ Juega Reaction Speed primero',
       noRS:'aún no hay Reaction Speed — juégalo primero',fromRS:'tu velocidad viene de Reaction Speed',mine:'tu velocidad · − / + o escribe cualquier velocidad',rsNote:'tu Reaction Speed · − / + o escribe cualquier velocidad',
-      hit:'acierto',hits:'aciertos',level:'Nivel',lab:'Nivel Memorojo',watch:'MIRA… RECUERDA LA ROJA',now:'¡AHORA!',arrows:'flechas',
+      hit:'acierto',hits:'aciertos',level:'Nivel',redsN:function(n){return n===1?'1 roja':n+' rojas'},redOf:function(i,n){return 'Roja '+i+' de '+n},lab:'Nivel Memorojo',watch:'MIRA… RECUERDA LAS ROJAS',now:'¡AHORA!',arrows:'flechas',
       dots:'Ronda por ronda',prog:'Mi progreso · Memorojo',again:'Jugar otra vez',nextp:'Siguiente jugador',at:'a',bpmHits:'BPM de los aciertos',
       first:'PRIMERA MARCA',firstSub:'la que hay que superar la próxima vez',pb:'¡NUEVO RÉCORD PERSONAL!',was:'tu mejor era nivel',best:'Tu mejor: nivel',
       againLine:'Juega otra vez para empezar tu línea de progreso.',
       'Too slow':'Muy lento','Too early':'Espera a que termine','Off the arrow':'Esa no era la roja','Wrong way':'Dirección equivocada','Swipe, don’t tap':'Desliza, no toques'},
-  en:{hint:'Arrows flash one by one at your speed. Remember the RED one — where it was and which way it pointed. When the sequence ends, swipe it. Starts with 2 arrows, up to 10.',
+  en:{hint:'Arrows flash one by one at your speed. Remember the RED ones — where they were, which way they pointed, and in what order. When the sequence ends, swipe them in order. Starts with 2 arrows, up to 10.',
       start:'▶ Start · 10 rounds',speedLbl:'Speed',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',goRS:'⚡ Play Reaction Speed first',
       noRS:'no Reaction Speed yet — play it first',fromRS:'your speed comes from Reaction Speed',mine:'your speed · − / + or type any speed',rsNote:'your Reaction Speed · − / + or type any speed',
-      hit:'hit',hits:'hits',level:'Level',lab:'Memorojo level',watch:'WATCH… REMEMBER THE RED',now:'NOW!',arrows:'arrows',
+      hit:'hit',hits:'hits',level:'Level',redsN:function(n){return n===1?'1 red':n+' reds'},redOf:function(i,n){return 'Red '+i+' of '+n},lab:'Memorojo level',watch:'WATCH… REMEMBER THE REDS',now:'NOW!',arrows:'arrows',
       dots:'Round by round',prog:'My Progress · Memorojo',again:'Play again',nextp:'Next Player',at:'at',bpmHits:'BPM of the hits',
       first:'FIRST MARK SET',firstSub:'the one to beat next time',pb:'NEW PERSONAL BEST!',was:'your best was level',best:'Your best: level',
       againLine:'Play again to start your progress line.',
@@ -193,7 +195,8 @@ function applyLang(){
 document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
 document.addEventListener('DOMContentLoaded',function(){setTimeout(applyLang,0)});
 var BPM_MIN=10, BPM_MAX=300, ROUNDS=10, START_LEVEL=2, MAX_LEVEL=10, ANSWER_BEATS=5, GUESS_MS=120;
-var SPEED=0, BEAT_MS=0, state='idle', round=0, level=START_LEVEL, results=[], t0=0, want='', target=null, start=null, done1=false, playerName='', timers=[];
+var SPEED=0, BEAT_MS=0, state='idle', round=0, level=START_LEVEL, results=[], t0=0, want='', target=null, reds=[], redIdx=0, times=[], start=null, done1=false, playerName='', timers=[];
+function redsFor(L){return L<=3?1:L<=6?2:L<=9?3:4}   // how many reds to remember at each level
 var DIRS={up:0,right:90,down:180,left:270}, NAMES=['up','right','down','left'];
 var RED='#ff1e3c', OTHERS=['#2f7bff','#00D9A5','#ff9500','#ffd60a','#a855f7'];
 (function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)$('who').textContent=w})();
@@ -284,33 +287,57 @@ function nextRound(){
   if(state!=='run')return;
   if(round>=ROUNDS){finish();return}
   round++; bar(); hideArrow(); $('flash').textContent=''; $('now').textContent='';
-  $('lvl').textContent=T('level')+' '+level+' · '+level+' '+T('arrows');
-  var redAt=Math.floor(Math.random()*level), spots=[], last=null;
-  target=null; start=null; done1=false; state='watch';
+  var nR=redsFor(level);
+  $('lvl').textContent=T('level')+' '+level+' · '+level+' '+T('arrows')+' · '+T('redsN')(nR);
+  // which arrows are red (nR of them, never more than the arrows), the rest other colors
+  var pick=[],i;for(i=0;i<level;i++)pick.push(i);
+  for(i=pick.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=pick[i];pick[i]=pick[j];pick[j]=t}
+  var isRed={};pick.slice(0,nR).forEach(function(k){isRed[k]=1});
+  reds=[]; redIdx=0; times=[]; target=null; start=null; done1=false; state='watch';
   $('now').textContent=T('watch');
-  for(var i=0;i<level;i++){
-    var s, tries=0; do{s=spot();tries++}while(last&&Math.hypot(s.x-last.x,s.y-last.y)<s.r*3&&tries<20); last=s;
-    var dir=NAMES[Math.floor(Math.random()*4)], red=i===redAt, col=red?RED:OTHERS[Math.floor(Math.random()*OTHERS.length)];
-    if(red)target={x:s.x,y:s.y,r:s.r,dir:dir};
+  var placed=[];
+  for(i=0;i<level;i++){
+    var s, tries=0;
+    do{s=spot();tries++}while(placed.some(function(q){return Math.hypot(s.x-q.x,s.y-q.y)<s.r*2.6})&&tries<40);   // the reds never sit on top of each other
+    placed.push(s);
+    var dir=NAMES[Math.floor(Math.random()*4)], red=!!isRed[i], col=red?RED:OTHERS[Math.floor(Math.random()*OTHERS.length)];
+    if(red)reds.push({x:s.x,y:s.y,r:s.r,dir:dir});
     (function(s,dir,col,i){
       later(function(){ if(state!=='watch')return; if(i===0)$('now').textContent=''; drawArrow(s,dir,col); MOVIL.tick(i===0) }, 600+i*BEAT_MS);
       later(function(){ if(state==='watch')hideArrow() }, 600+i*BEAT_MS+BEAT_MS*0.8);   // a short gap between arrows, so two in a row are two
     })(s,dir,col,i);
   }
-  // the sequence is over: NOW — five beats, a tick on each
+  target=reds[0];
+  // the sequence is over: NOW — swipe every red in order, five beats for each
   later(function(){
     if(state!=='watch')return;
-    state='answer'; t0=performance.now(); hideArrow(); $('now').textContent=T('now'); MOVIL.tick(true);
-    for(var b=1;b<=ANSWER_BEATS;b++)(function(b){
-      later(function(){ if(state!=='answer')return; if(b===ANSWER_BEATS){result(false,0,'Too slow');return} MOVIL.tick(false) }, b*BEAT_MS);
-    })(b);
+    hideArrow(); $('now').textContent=T('now'); askRed();
   }, 600+level*BEAT_MS);
 }
+var answerT=[];
+function askRed(){
+  answerT.forEach(clearTimeout); answerT=[];
+  state='answer'; start=null; target=reds[redIdx]; t0=performance.now(); MOVIL.tick(true);
+  if(reds.length>1)$('lvl').textContent=T('redOf')(redIdx+1,reds.length);
+  for(var b=1;b<=ANSWER_BEATS;b++)(function(b){
+    var id=setTimeout(function(){ if(state!=='answer')return; if(b===ANSWER_BEATS){result(false,0,'Too slow');return} MOVIL.tick(false) }, b*BEAT_MS);
+    answerT.push(id); timers.push(id);
+  })(b);
+}
+// one red swiped right: the next red, or the round is won
+function goodSwipe(ms){
+  times.push(ms); answerT.forEach(clearTimeout); answerT=[];
+  drawArrow(target,target.dir,'#3ddc84','hit'); MOVIL.hitSound();
+  redIdx++;
+  if(redIdx>=reds.length){result(true,times.reduce(function(a,b){return a+b},0)/times.length,'');return}
+  state='between';
+  later(function(){hideArrow();askRed()},Math.max(250,Math.min(450,BEAT_MS*0.6)));
+}
 function result(ok,ms,why){
-  if(done1)return; done1=true; state='result'; clearAll();
-  results.push({ok:ok,ms:ms,why:why,level:level});
-  // show where the red was: green if swiped, red outline if missed
-  drawArrow(target,target.dir,ok?'#3ddc84':RED,ok?'hit':'miss');
+  if(done1)return; done1=true; state='result'; clearAll(); answerT=[];
+  results.push({ok:ok,ms:ms,why:why,level:level,reds:reds.length});
+  // show where the red to swipe was: green if the whole chain was swiped, red outline where it went wrong
+  if(target)drawArrow(target,target.dir,ok?'#3ddc84':RED,ok?'hit':'miss');
   if(ok)MOVIL.hitSound(); else {MOVIL.missSound();MOVIL.vibrate(60)}
   $('now').textContent='';
   $('flash').textContent=ok?MOVIL.bpm(ms)+' BPM':T(why); $('flash').className=ok?'good':'bad';
@@ -334,7 +361,8 @@ play.addEventListener('pointermove',function(e){
   var dx=e.clientX-start.x, dy=e.clientY-start.y;
   if(Math.max(Math.abs(dx),Math.abs(dy))<30)return;
   var got=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'), ms=performance.now()-t0;
-  if(got!==target.dir)result(false,0,'Wrong way'); else if(ms<GUESS_MS)result(false,0,'Too early'); else result(true,ms,'');
+  start=null;
+  if(got!==target.dir)result(false,0,'Wrong way'); else if(ms<GUESS_MS)result(false,0,'Too early'); else goodSwipe(ms);
 });
 addEventListener('pointerup',function(e){if(state==='answer'&&start&&!done1&&e.pointerId===start.id)result(false,0,'Swipe, don’t tap')});
 
@@ -368,7 +396,7 @@ function finish(){
   $('endLab').textContent=T('lab');
   var lb='';for(var i=1;i<=MAX_LEVEL;i++)lb+='<i'+(i<=top?' class="on"':'')+'></i>';$('lvbar').innerHTML=lb;
   $('endHm').textContent=hits.length+' / '+results.length+' '+T('hits')+(bpm?' · '+bpm+' '+T('bpmHits'):'')+' · '+T('at')+' '+SPEED+' BPM';
-  $('dots').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x"')+'>'+(i+1)+' · '+T('level')+' '+r.level+(r.ok?' ✓':' ✗')+'</div>'}).join('');
+  $('dots').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x"')+'>'+(i+1)+' · '+T('level')+' '+r.level+' · '+r.reds+'🔴'+(r.ok?' ✓':' ✗')+'</div>'}).join('');
   $('pbMsg').innerHTML=bestLine(top);
   $('prog').innerHTML=levelSvg(top);
   save(playerName,top,bpm,hits.length,misses,Math.round(avg));
