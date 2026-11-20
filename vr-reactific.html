@@ -224,7 +224,7 @@ html.swiping,html.swiping body,#target{touch-action:none}   /* while playing, a 
 </div>
 
 <div id="hud">
-  <div class="hud-box"><div class="hud-label" id="hRedLabel">Reds</div><div class="hud-val"><span id="hReds">0</span><span style="font-size:.7rem;color:#5a6472"> / <span id="hRedTotal">25</span></span></div></div>
+  <div class="hud-box"><div class="hud-label" id="hRedLabel">Reds</div><div class="hud-val"><span id="hReds">0</span><span style="font-size:.7rem;color:#5a6472"> / <span id="hRedTotal">10</span></span></div></div>
   <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="hTaps">0</div></div>
   <div class="hud-box"><div class="hud-label">Best</div><div class="hud-val" id="hBest">0</div></div>
 </div>
@@ -247,7 +247,7 @@ html.swiping,html.swiping body,#target{touch-action:none}   /* while playing, a 
   </div>
   <div class="vrr-logo">REACT<span>IFIC</span></div>
   <div class="vrr-sub">Reaction Velocity · To The Beat of the Ritnome</div>
-  <div class="tempo-hint" id="tempoHint">Moving arrow, colors flash to the Ritnome — swipe ONLY the RED, the way it points. 25 reds.</div>
+  <div class="tempo-hint" id="tempoHint">Moving arrow, colors flash to the Ritnome — swipe ONLY the RED, the way it points. 10 reds.</div>
   <div class="speed-label">Speed</div>
   <div class="speed-row" id="speedRow">
     <a class="speed-btn free" id="goRS" href="vr-reaction-speed.html" style="display:none;text-decoration:none;line-height:50px">⚡ Play Reaction Speed first</a>
@@ -299,14 +299,14 @@ html.swiping,html.swiping body,#target{touch-action:none}   /* while playing, a 
   <div class="final-num" id="spBpm">0</div>
   <div class="final-label">BPM</div>
   <div class="sp-sub" id="spSub"></div>
-  <div class="sp-go">25 reds at your speed · starting in</div>
+  <div class="sp-go">10 reds at your speed · starting in</div>
   <div id="spCount">5</div>
 </div>
 
 <!-- END -->
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
-  <div class="final-label" id="endLabel">Total Points</div>
+  <div class="final-label" id="endLabel">Score</div>
   <div id="pbMsg" hidden style="text-align:center;margin:4px 0 10px"></div>
   <button class="hitmiss-toggle" id="hitMissToggle" type="button">📊 Hits & Misses <span class="arrow">▼</span></button>
   <div class="hitmiss-detail" id="hitMissDetail">
@@ -585,10 +585,10 @@ $('nextPlayerBtn').addEventListener('click',function(){
 // GO/NO-GO — colors cycle, tap ONLY on red. Both tiers move (coordination +
 // reaction). Differ by movement speed and flash speed.
 var TIERS={
-  '100':{bpm:100, color:'#00D9A5', glow:'rgba(0,217,165,1)', gid:'drill100', bestKey:'rct-drill100-best', centered:false, flashMs:600}
+  '100':{bpm:100, color:'#00D9A5', glow:'rgba(0,217,165,1)', gid:'drill100', bestKey:'rct-drill100-best10', centered:false, flashMs:600}
 };
-var TOTAL_REDS=25;             // ends after 25 reds have appeared
-var TOTAL_TARGETS=25;
+var TOTAL_REDS=10;             // ends after 10 reds have appeared
+var TOTAL_TARGETS=10;
 var tempo='100';
 var BEAT_BPM=80,COLOR='#00D9A5',GLOW='rgba(0,217,165,1)',SIZE=72,GAME_ID='drill',BEST_KEY='rct-drill-best';
 var GO_NO_GO=true,FLASH_MS=500,BUST_ON=true,CENTERED=true;
@@ -703,19 +703,19 @@ function loadBestForTempo(){
   try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0}catch(e){}
   try{bestAvgMs=parseInt(localStorage.getItem(BEST_KEY+'-ms')||'0',10)||0}catch(e){bestAvgMs=0}
   $('hBest').textContent=best;
-  $('bestLine').innerHTML=best>0?('Your best on the '+BEAT_BPM+' Ritnome: <b>'+best+' taps</b>'):'';
+  $('bestLine').innerHTML=best>0?('Your best on the '+BEAT_BPM+' Ritnome: <b>'+best+'/'+TOTAL_REDS+'</b>'):'';
   var token=localStorage.getItem('rct-token');
   if(!token)return;
   fetch(API+'/api/scores/personal-best/'+GAME_ID,{headers:{'Authorization':'Bearer '+token}})
     .then(function(r){return r.json()}).then(function(d){
-      if(d&&d.score&&d.score>best){best=d.score;$('hBest').textContent=best;$('bestLine').innerHTML='Your best on the '+BEAT_BPM+' Ritnome: <b>'+best+' taps</b>'}
+      if(d&&d.score&&d.score<=TOTAL_REDS&&d.score>best){best=d.score;$('hBest').textContent=best;$('bestLine').innerHTML='Your best on the '+BEAT_BPM+' Ritnome: <b>'+best+'/'+TOTAL_REDS+'</b>'}
     }).catch(function(){});
 }
 
 /* Fixed at 100 BPM — the tempo selector (80/100) is gone, this game
    is now single-speed by design. */
 var HINTS={
-  '100':'Moving arrow, colors flash to the Ritnome — swipe ONLY the RED, the way it points. 25 reds.'
+  '100':'Moving arrow, colors flash to the Ritnome — swipe ONLY the RED, the way it points. 10 reds.'
 };
 function refreshIntro(){
   $('tempoHint').textContent=(typeof SPEED!=='undefined'&&SPEED==='free')?HINT_FREE:(HINTS[tempo]||'');
@@ -728,7 +728,7 @@ applyTempo('100');refreshIntro();
 // 'free' (Free Tap) runs in two steps:
 //   1. speed check — 10 red targets with no beat: each waits until it
 //      is tapped, then moves; those 10 taps measure the player's BPM;
-//   2. the game — the usual go/no-go at that measured BPM, 25 reds.
+//   2. the game — the usual go/no-go at that measured BPM, 10 reds.
 // Only the pace changes; the game screen is the same.
 var SPEED=100;   // set from the BPM box
 var CHECK_TAPS=10, freeStage='', freeBPM=0;
@@ -738,7 +738,7 @@ function setSpeed(v){
   SPEED=v;
   if(v!=='free'){BEAT_BPM=v;FLASH_MS=Math.round(60000/v)}
 }
-var HINT_FREE='Free Tap — first a speed check: 10 red arrows with no beat, each waits for you to swipe it. That measures your BPM. Then the game opens at your speed: swipe ONLY the RED, 25 reds.';
+var HINT_FREE='Free Tap — first a speed check: 10 red arrows with no beat, each waits for you to swipe it. That measures your BPM. Then the game opens at your speed: swipe ONLY the RED, 10 reds.';
 // ══════════════════════════════════════════════════════
 //  THE SPEED: any BPM in the box (10 to 300). No Free Tap here — the
 //  box opens on the player's best Free Tap speed from REACTION SPEED
@@ -940,7 +940,7 @@ function stopReaction(){if(reactionTimer){clearTimeout(reactionTimer);reactionTi
    RED is one of the colors. Tap on RED = score. Tap non-red = penalty.
    80/100: target MOVES each color change (coordination + reaction).
    120: target stays CENTERED (pure reaction).
-   Game ends after TOTAL_REDS (25) reds have appeared. ── */
+   Game ends after TOTAL_REDS (10) reds have appeared. ── */
 var GNG_NONRED=[
   {name:'blue',  c:'#2f7bff', g:'rgba(47,123,255,1)'},
   {name:'green', c:'#00D9A5', g:'rgba(0,217,165,1)'},
@@ -1035,13 +1035,13 @@ function gngCycle(){
     redOnsetAt=performance.now();
     redsSeen++;tapLog.push({ms:0});
     $('hReds')&&($('hReds').textContent=redsSeen);
-    if(redsSeen>=TOTAL_REDS){        // 25 reds have appeared — end after this one shows briefly
+    if(redsSeen>=TOTAL_REDS){        // 10 reds have appeared — end after this one shows briefly
       timers.push(setTimeout(function(){if(phase==='running')endDrill()},FLASH_MS));
     }
   }
 }
 // Free Tap step 2: the speed check is done — the usual game opens at the
-// measured BPM, scored from zero, 25 reds.
+// measured BPM, scored from zero, 10 reds.
 function startFreeGame(){
   clrT();                      // drop the last hit's message clear, so "YOUR SPEED" stays up
   var secs=Math.max(0.001,(performance.now()-freeStart)/1000);
@@ -1052,7 +1052,7 @@ function startFreeGame(){
   taps=0;$('hTaps').textContent='0';$('gng-score-num').textContent='0';
   misses=0;totalRT=0;rtCount=0;redsSeen=0;gngIsRed=false;tapLog=[];
   $('hReds')&&($('hReds').textContent='0');
-  // the scoreboard with the player's BPM, then 5-4-3-2-1 on it, then the 25 reds
+  // the scoreboard with the player's BPM, then 5-4-3-2-1 on it, then the 10 reds
   msg('','go');
   $('spBpm').textContent=freeBPM;
   $('spSub').textContent=CHECK_TAPS+' taps in '+secs.toFixed(1)+'s';
@@ -1086,7 +1086,7 @@ function scoreRed(rt,s){
   totalRT+=rt;rtCount++;
   if(s.logIdx>=0&&tapLog[s.logIdx]&&!tapLog[s.logIdx].ms)tapLog[s.logIdx].ms=Math.max(1,Math.round(rt));
   if(taps<0)taps=0;
-  taps+=100;
+  taps+=1;                                                   // 1 point per red: the score is out of 10
   $('hTaps').textContent=Math.max(0,taps);
   sn.textContent=Math.max(0,taps);
   ripple(targetX,targetY);flash();
@@ -1105,9 +1105,9 @@ function scoreWrong(){
   misses++;tapLog.push({w:1});
   penaltyFlash();
   if(BUST_ON){
-    taps=taps-100;
-    if(taps<=-300){$('hTaps').textContent=Math.max(0,taps);msg('✗ NOT RED!','miss');endDrill();return}
-  }else taps=Math.max(0,taps-100);
+    taps=taps-1;                                             // 1 point off per wrong touch
+    if(taps<=-3){$('hTaps').textContent=Math.max(0,taps);msg('✗ NOT RED!','miss');endDrill();return}
+  }else taps=Math.max(0,taps-1);
   $('hTaps').textContent=Math.max(0,taps);
   sn.textContent=Math.max(0,taps);
   msg('✗ NOT RED!','miss');
@@ -1128,16 +1128,16 @@ function startBeat(){beatTick();beatTimer=setInterval(beatTick,60000/BEAT_BPM)}
 function stopBeat(){if(beatTimer){clearInterval(beatTimer);beatTimer=null}var bp=$('beat-pulse');if(bp)bp.style.opacity='0'}
 
 // NEXT SPEED — after each game, a suggestion for the next one, from the
-// reds hit out of 25 and the wrong taps (as in Reaction Speed):
-//   22+ reds hit and at most 1 wrong tap  → 10 BPM faster
-//   under 15 reds hit, or out on 3 wrong taps → 10 BPM slower
+// reds hit out of 10 and the wrong taps (as in Reaction Speed):
+//   9+ reds hit and at most 1 wrong tap   → 10 BPM faster
+//   under 6 reds hit, or out on 3 wrong taps → 10 BPM slower
 //   otherwise                              → same speed again
 // The button starts the next game at that speed; the player's default
 // (their best Free Tap) does not change.
 function suggestNext(bpm,hits,wrong,busted){
   var next=bpm, txt;
-  if(busted||hits<15){next=bpm-10;txt=hits+'/'+TOTAL_REDS+' reds'+(busted?' · out on 3 wrong taps':'')+' — try '}
-  else if(hits>=22&&wrong<=1){next=bpm+10;txt=hits+'/'+TOTAL_REDS+' reds — ready for '}
+  if(busted||hits<6){next=bpm-10;txt=hits+'/'+TOTAL_REDS+' reds'+(busted?' · out on 3 wrong taps':'')+' — try '}
+  else if(hits>=9&&wrong<=1){next=bpm+10;txt=hits+'/'+TOTAL_REDS+' reds — ready for '}
   else{txt=hits+'/'+TOTAL_REDS+' reds'+(wrong?' · '+wrong+' wrong tap'+(wrong>1?'s':''):'')+' — stay at '}
   next=Math.max(BPM_MIN,Math.min(BPM_MAX,next));
   $('nsTxt').textContent=txt+next+' BPM'+(next>bpm?'?':next<bpm?' next':' and go again');
@@ -1215,7 +1215,7 @@ function endDrill(){
   phase='done';clrT();stopBeat();stopReaction();stopGoNoGo();hideTarget();$('screen-speed').style.display='none';
   var gs=$('gng-score-num');if(gs)gs.classList.remove('on');
   var finalScore=Math.max(0,taps);        // never save or show a negative
-  var playedBPM=SPEED==='free'?freeBPM:SPEED, busted=taps<=-300;
+  var playedBPM=SPEED==='free'?freeBPM:SPEED, busted=taps<=-3;
   renderTapByTap();closeHitMiss();
   if(playedBPM&&!(SPEED==='free'&&freeStage!=='play'))suggestNext(playedBPM,rtCount,misses,busted);else $('nextSpeed').style.display='none';
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
@@ -1226,19 +1226,19 @@ function endDrill(){
   if(SPEED==='free'){
     // Free Tap: the game at the player's own measured speed, on the Free
     // Tap board. The personal best in points is left alone.
-    pbShow(finalScore,function(r){return /^free/.test(r.speed||'')?(+r.score||0):null},'points');
+    pbShow(finalScore,function(r){return /^free/.test(r.speed||'')&&(+r.score||0)<=TOTAL_REDS?(+r.score||0):null},'out of '+TOTAL_REDS);   // runs from the 100-a-red days are left out
     recordScoreToStandings(currentPlayerName,finalScore,avgRT);
-    $('endNum').textContent=finalScore;
-    $('endLabel').textContent='Total Points · at your speed, '+freeBPM+' BPM';
+    $('endNum').textContent=finalScore+'/'+TOTAL_REDS;
+    $('endLabel').textContent='Score · at your speed, '+freeBPM+' BPM';
     $('screen-end').style.display='flex';
     return;
   }
-  $('endLabel').textContent='Total Points';
+  $('endLabel').textContent='Score';
   submitScore(finalScore);
-  pbShow(finalScore,function(r){return String(r.speed)===String(SPEED)?(+r.score||0):null},'points at '+SPEED+' BPM');
+  pbShow(finalScore,function(r){return String(r.speed)===String(SPEED)&&(+r.score||0)<=TOTAL_REDS?(+r.score||0):null},'out of '+TOTAL_REDS+' at '+SPEED+' BPM');
   recordScoreToStandings(currentPlayerName,finalScore,avgRT);
 
-  $('endNum').textContent=finalScore;
+  $('endNum').textContent=finalScore+'/'+TOTAL_REDS;
   $('screen-end').style.display='flex';
 }
 

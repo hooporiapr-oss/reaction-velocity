@@ -26,8 +26,8 @@
     '🔴 START · SWIPE ONLY THE RED':'🔴 EMPEZAR · DESLIZA SOLO EL ROJO',
     '📈 MY PROGRESS':'📈 MI PROGRESO', '🏆 THE STANDINGS':'🏆 LA CLASIFICACIÓN',
     'Reaction Velocity · To The Beat of the Ritnome':'Reaction Velocity · Al ritmo del Ritnome',
-    'Moving target, colors flash to the Ritnome — tap ONLY on RED. 25 reds.':'Objetivo en movimiento, los colores cambian al ritmo del Ritnome — toca SOLO el ROJO. 25 rojos.',
-    'Moving arrow, colors flash to the Ritnome — swipe ONLY the RED, the way it points. 25 reds.':'Flecha en movimiento, los colores cambian al ritmo del Ritnome — desliza SOLO la ROJA, hacia donde apunta. 25 rojos.',
+    'Moving target, colors flash to the Ritnome — tap ONLY on RED. 10 reds.':'Objetivo en movimiento, los colores cambian al ritmo del Ritnome — toca SOLO el ROJO. 10 rojos.',
+    'Moving arrow, colors flash to the Ritnome — swipe ONLY the RED, the way it points. 10 reds.':'Flecha en movimiento, los colores cambian al ritmo del Ritnome — desliza SOLO la ROJA, hacia donde apunta. 10 rojos.',
     'Reaction Velocity · The 2-1-2 Zone':'Reaction Velocity · La zona 2-1-2',
     'Cognitivo Gym · The 2-1-2 Zone':'Cognitivo Gym · La zona 2-1-2',
     'Watch the chain light up inside the key — one ball per beat, at your speed — then repeat it back. Every round adds one more ball; one wrong tap ends the run.':
