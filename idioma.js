@@ -15,6 +15,7 @@
     '← Exit':'← Salir', '⛶ Fullscreen':'⛶ Pantalla completa', 'New player':'Nuevo jugador',
     'Speed':'Velocidad', 'Chain speed':'Velocidad de la cadena',
     '⚡ Play Reaction Speed first':'⚡ Juega Reaction Speed primero',
+    '⚡ Play Ritnome BPM first':'⚡ Juega Ritnome BPM primero',
     'your Reaction Speed · − / + or type any speed':'tu Reaction Speed · − / + o escribe cualquier velocidad',
     'no Reaction Speed yet — play it first':'aún no hay Reaction Speed — juégalo primero',
     'your speed comes from Reaction Speed':'tu velocidad viene de Reaction Speed',

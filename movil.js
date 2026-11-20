@@ -150,6 +150,8 @@
     document.querySelectorAll('a[href="mobile-hub.html"]').forEach(function(a){ a.setAttribute('href', M.HUB) });
     // Encadena replaced The Fortress on both sites: no Fortress button anywhere
     document.querySelectorAll('a[href="vr-fortress.html"]').forEach(function(a){ a.remove() });
+    // Cognitivo Gym calls its tap test Ritnome BPM
+    if (M.mode === 'gym') document.querySelectorAll('a.switcher-btn[href="vr-reaction-speed.html"]').forEach(function(a){ a.innerHTML = 'Ritnome<br>BPM' });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hubLinks); else hubLinks();
 })();

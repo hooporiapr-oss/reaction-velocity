@@ -168,6 +168,8 @@ var TX={
       again1:'Play again at',again2:'to start your progress line.'}
 };
 var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){}
+// Cognitivo Gym calls its tap test Ritnome BPM
+if(MOVIL.mode==='gym'){TX.en.goRS='⚡ Play Ritnome BPM first';TX.es.goRS='⚡ Juega Ritnome BPM primero'}
 function T(k){return (TX[LANG]&&TX[LANG][k])||TX.en[k]||k}
 function applyLang(){
   document.documentElement.lang=LANG;
