@@ -235,5 +235,16 @@
       enJuego();
     }
   }
+
+  // Always the newest page: a link to another page of this site opens with a fresh
+  // ?r= stamp, so a phone or tablet never shows an old saved copy after an update.
+  document.addEventListener('click', function(e){
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a || a.target === '_blank') return;
+    var h = a.getAttribute('href') || '';
+    if (!/^[\w.\-\/]+\.html$/.test(h)) return;   // this site's pages only, with no ?query or #part
+    a.setAttribute('href', h + '?r=' + Date.now().toString(36));
+    setTimeout(function(){ a.setAttribute('href', h) }, 0);
+  }, true);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar); else arrancar();
 })();
