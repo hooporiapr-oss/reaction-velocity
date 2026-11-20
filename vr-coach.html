@@ -39,7 +39,7 @@ body{min-height:100vh;padding:20px 16px 40px;display:flex;flex-direction:column;
 .tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px}
 .tab{padding:7px 14px;border-radius:999px;border:1.5px solid rgba(0,229,255,.35);background:rgba(0,229,255,.06);color:#9fe9f5;font:900 .72rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
 .tab.on{background:rgba(0,229,255,.28);border-color:#00e5ff;color:#fff}
-.head,.row{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr)) 54px;gap:6px;align-items:center}
+.head,.row{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(4,minmax(0,1fr)) 54px;gap:6px;align-items:center}
 .head{font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#7d8696;padding:0 12px 6px}
 .head span:not(:first-child),.row span:not(:first-child){text-align:center}
 .row{padding:12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);margin-bottom:7px;cursor:pointer;width:100%;color:#fff;font:inherit;text-align:left}
@@ -79,7 +79,7 @@ svg.chart{width:100%;height:auto;display:block}
   #view.m .head{font-size:.5rem}
 }
 @media(max-width:520px){
-  .head,.row{grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));}
+  .head,.row{grid-template-columns:minmax(0,1.2fr) repeat(4,minmax(0,1fr));gap:4px}
   .head span:last-child,.row .last{display:none}
   .v{font-size:.85rem}
 }
@@ -103,7 +103,7 @@ svg.chart{width:100%;height:auto;display:block}
 <div id="view" hidden>
   <div class="tabs" id="ages"></div>
   <div class="avgs" id="avgs" hidden></div>
-  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Swipe It</span><span>Last</span></div>
+  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Swipe It</span><span>Memorojo</span><span>Last</span></div>
   <div id="list"></div>
   <div class="count" id="count"></div>
 </div>
@@ -189,19 +189,19 @@ function loadAll(){
   Promise.all([
     readAll('vr_reaction_speed_standings',sc+'&speed=like.free-*',['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
     readAll('vr_reactific_standings',sc+'&mode=eq.swipe',['select=player_name,speed,category,logged_at,admin_id'+o,'select=player_name,speed,category','select=player_name,speed']),
-    readAll('vr_mobile_standings',sc,['select=player_name,game_key,device,bpm,hits,category,logged_at,admin_id'+o,'select=player_name,game_key,device,bpm,category,logged_at,admin_id'+o,'select=player_name,game_key,bpm,category,logged_at,admin_id'+o])
+    readAll('vr_mobile_standings',sc,['select=player_name,game_key,device,bpm,hits,level,category,logged_at,admin_id'+o,'select=player_name,game_key,device,bpm,hits,category,logged_at,admin_id'+o,'select=player_name,game_key,device,bpm,category,logged_at,admin_id'+o,'select=player_name,game_key,bpm,category,logged_at,admin_id'+o])
   ]).then(function(res){
     players={};
     function add(game,r,v){
       var k=String(r.player_name||'').trim().toLowerCase(); if(!k||!(v>0))return;
-      var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],hb:[],sw:[],hbP:[],swP:[],last:''});
+      var p=players[k]||(players[k]={name:String(r.player_name).trim(),cats:{},rs:[],rf:[],ft:[],hb:[],sw:[],hbP:[],swP:[],mr:[],last:''});
       var c=(r.category||'').trim(); if(c)p.cats[c]=1;
       p[game].push({v:v,at:r.logged_at||'',spd:r.speed,h:r.hits});
       if(r.logged_at&&r.logged_at>p.last){p.last=r.logged_at;p.name=String(r.player_name).trim()}
     }
     res[0].forEach(function(r){add('rs',r,rsBpm(r))});
     res[1].forEach(function(r){add('rf',r,rfBpm(r))});
-    res[2].forEach(function(r){var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g+(r.device==='phone'?'P':''),r,+r.bpm||0)});
+    res[2].forEach(function(r){if(r.game_key==='memorojo'){add('mr',r,parseInt(r.level,10)||0);return}var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g+(r.device==='phone'?'P':''),r,+r.bpm||0)});   // Memorojo: its level
     loaded=true; render();
   }).catch(function(){$('list').innerHTML='<div class="empty">Could not load the boards.</div>'});
 }
@@ -254,9 +254,9 @@ function render(){
   $('ages').querySelectorAll('.tab').forEach(function(b){b.onclick=function(){currentAge=b.dataset.a;render()}});
   var keys=Object.keys(players).filter(function(k){return inAge(players[k])}).sort(function(a,b){return players[a].name.localeCompare(players[b].name,undefined,{sensitivity:'base'})});
   $('list').innerHTML=keys.length?keys.map(function(k){var p=players[k];
-    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellTP(p.sw,p.swP)+'</span><span class="last">'+day(p.last)+'</span></button>';
+    return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellTP(p.sw,p.swP)+'</span><span class="v">'+cellFt(p.mr)+'</span><span class="last">'+day(p.last)+'</span></button>';
   }).join(''):'<div class="empty">No players yet'+(currentAge?' in '+esc(currentAge):'')+(school?' at '+esc(school):'')+'.</div>';
-  groupAvg(keys,[{name:'⚡ Reaction Speed',c:'#FFD700',pick:function(p){return p.hb.length?p.hb:p.hbP.length?p.hbP:p.rs}},{name:'🔴 Reactific',c:'#00D9A5',pick:function(p){return p.rf}},{name:'👆 Swipe It',c:'#ff4757',pick:function(p){return p.sw.length?p.sw:p.swP}}]);
+  groupAvg(keys,[{name:'⚡ Reaction Speed',c:'#FFD700',pick:function(p){return p.hb.length?p.hb:p.hbP.length?p.hbP:p.rs}},{name:'🔴 Reactific',c:'#00D9A5',pick:function(p){return p.rf}},{name:'👆 Swipe It',c:'#ff4757',pick:function(p){return p.sw.length?p.sw:p.swP}},{name:'🧠 Memorojo',c:'#e879f9',lv:1,pick:function(p){return p.mr}}]);
   $('count').textContent=keys.length?keys.length+' player'+(keys.length>1?'s':'')+' · listed A–Z, not ranked':'';
   $('list').querySelectorAll('.row').forEach(function(b){b.onclick=function(){showPlayer(b.dataset.k)}});
 }
@@ -299,7 +299,8 @@ function showPlayer(k){
     (p.rs.length?block('⚡ Reaction Speed · classic tap (before)','#5a8fa0',p.rs,'BPM','Fastest',''):'')+
     block('🔴 Reactific · speed','#00D9A5',p.rf,'BPM','Fastest','No Reactific games yet.')+
     block('👆 Swipe It · tablet','#ffd35a',p.sw,'BPM','Fastest','No Swipe It on a tablet yet.')+
-    (p.swP.length?block('📱 Swipe It · phone','#ffd35a',p.swP,'BPM','Fastest',''):'');
+    (p.swP.length?block('📱 Swipe It · phone','#ffd35a',p.swP,'BPM','Fastest',''):'')+
+    block('🧠 Memorojo · level','#e879f9',p.mr,'level','Highest','No Memorojo yet.');
 }
 $('backList').onclick=function(){$('player').hidden=true;$('view').hidden=false};
 </script>

@@ -178,6 +178,8 @@ footer{
 .quarter-card.g-rf .quarter-num{color:#00D9A5}
 .quarter-card.g-ft{border-color:rgba(168,85,247,.55);background:rgba(168,85,247,.09)}
 .quarter-card.g-ft .quarter-num{color:#a855f7}
+.quarter-card.g-mr{border-color:rgba(232,121,249,.6);background:rgba(232,121,249,.09)}
+.quarter-card.g-mr .quarter-num{color:#e879f9}
 .quarter-card.g-sw{border-color:rgba(255,43,61,.55);background:rgba(255,43,61,.09)}
 .quarter-card.g-sw .quarter-num{color:#ff2b3d}
 </style>
@@ -204,17 +206,22 @@ footer{
       <a class="quarter-card g-rs" href="vr-reaction-speed.html">
         <div class="quarter-num">Q1</div>
         <div class="quarter-name">Reaction Speed</div>
-        <div class="quarter-desc" id="desc2">Hold HOME. When the target lights up, lift off and tap it. No rhythm to guess — a true reaction.</div>
+        <div class="quarter-desc" id="desc2">Hold HOME. When the arrow appears, lift off and swipe it the way it points. No rhythm to guess — a true reaction.</div>
       </a>
       <a class="quarter-card g-rf" href="vr-reactific.html">
         <div class="quarter-num">Q2</div>
         <div class="quarter-name">Reactific</div>
-        <div class="quarter-desc" id="desc1">Tap only on red — tap anything else and it costs you. Tests restraint as much as speed.</div>
+        <div class="quarter-desc" id="desc1">Swipe only the red — touch anything else and it costs you. Tests restraint as much as speed.</div>
       </a>
       <a class="quarter-card g-sw" href="vr-swipe-it.html">
         <div class="quarter-num">Q3</div>
         <div class="quarter-name">Swipe It</div>
         <div class="quarter-desc" id="descS">An arrow flashes once at your Reaction Speed BPM, in a new spot — swipe where it was, the way it pointed. Each swipe scores your BPM.</div>
+      </a>
+      <a class="quarter-card g-mr" href="vr-memorojo.html">
+        <div class="quarter-num">Q4</div>
+        <div class="quarter-name">Memorojo</div>
+        <div class="quarter-desc" id="descM">Arrows flash one by one — remember the red one, then swipe it. Starts with 2, up to 10.</div>
       </a>
     </div>
 
@@ -259,8 +266,9 @@ var translations={
   en:{
     arenaSub:'The Gap Between Seeing And Doing',
     quartersLabel:'Practice A Single Quarter',
-    desc1:'Tap only on red — tap anything else and it costs you. Tests restraint as much as speed.',
-    desc2:'Hold HOME. When the target lights up, lift off and tap it. No rhythm to guess — a true reaction.',
+    desc1:'Swipe only the red — touch anything else and it costs you. Tests restraint as much as speed.',
+    desc2:'Hold HOME. When the arrow appears, lift off and swipe it the way it points. No rhythm to guess — a true reaction.',
+    descM:'Arrows flash one by one — remember the red one, then swipe it. Starts with 2, up to 10.',
     descF:'Watch the chain light up in the 2-1-2 zone, then repeat it back. Every round adds one more ball.',
     descS:'An arrow flashes once at your Reaction Speed BPM, in a new spot — swipe where it was, the way it pointed. Each swipe scores your BPM.',
     desc3:'An arrow flashes once, then it\'s gone — the four buttons reshuffle every round.',
@@ -271,8 +279,9 @@ var translations={
   es:{
     arenaSub:'La Brecha Entre Ver Y Actuar',
     quartersLabel:'Practica Un Solo Cuarto',
-    desc1:'Toca solo en rojo — tocar cualquier otra cosa te cuesta. Pone a prueba el control tanto como la velocidad.',
-    desc2:'Mantén el dedo en HOME. Cuando el objetivo se encienda, suelta y tócalo. Sin ritmo que adivinar: una reacción real.',
+    desc1:'Desliza solo el rojo — tocar cualquier otra cosa te cuesta. Pone a prueba el control tanto como la velocidad.',
+    desc2:'Mantén el dedo en HOME. Cuando aparezca la flecha, suelta y deslízala hacia donde apunta. Sin ritmo que adivinar: una reacción real.',
+    descM:'Las flechas destellan una a una — recuerda la roja y deslízala. Empieza con 2, hasta 10.',
     descF:'Mira la cadena encenderse en la zona 2-1-2 y repítela. Cada ronda añade una bola más.',
     descS:'Una flecha destella una vez a tu BPM de Reaction Speed, en otro lugar: desliza donde estaba, hacia donde apuntaba. Cada deslizamiento da tu BPM.',
     desc3:'Una flecha destella una vez y desaparece — los cuatro botones se reorganizan cada ronda.',
@@ -288,6 +297,7 @@ function updateUILanguage(){
   document.getElementById('desc1').textContent=t('desc1');
   document.getElementById('desc2').textContent=t('desc2');
   document.getElementById('descS').textContent=t('descS');
+  document.getElementById('descM').textContent=t('descM');
   document.getElementById('langEN').classList.toggle('active',currentLang==='en');
   document.getElementById('langES').classList.toggle('active',currentLang==='es');
 }

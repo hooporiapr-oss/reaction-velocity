@@ -4,13 +4,14 @@
    scoped to .rx-intro, the start-screen container (#screen-intro or
    #intro), so nothing else on a page changes. Same file in reaction-velocity and cognitivo-gym-paradiso.
    Each game has its own color (the same as in the Coach View):
-     Reaction Speed gold · Reactific green · The Fortress purple · Swipe It red
-   set by a class on the container (rx-rs, rx-rf, rx-ft, rx-sw).
+     Reaction Speed gold · Reactific green · The Fortress purple · Swipe It red · Memorojo orchid
+   set by a class on the container (rx-rs, rx-rf, rx-ft, rx-sw, rx-mr).
    ══════════════════════════════════════════════════════════════════ */
 .rx-intro{--g:#00D9A5;--g2:#00b88d;--g-rgb:0,217,165}
 .rx-intro.rx-rs{--g:#ffc400;--g2:#f0a500;--g-rgb:255,196,0}
 .rx-intro.rx-ft{--g:#a855f7;--g2:#7c3aed;--g-rgb:168,85,247}
 .rx-intro.rx-sw{--g:#ff2b3d;--g2:#c8102e;--g-rgb:255,43,61}
+.rx-intro.rx-mr{--g:#e879f9;--g2:#c026d3;--g-rgb:232,121,249}
 #screen-intro.rx-intro,#intro.rx-intro{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a1a2e 0%,#000 70%);padding:20px;text-align:center}
 .rx-intro .vrr-logo{font-size:2.8rem;font-weight:900;font-style:italic;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 60px rgba(var(--g-rgb),1);margin-bottom:6px}
 .rx-intro .vrr-logo span{color:var(--g)}
