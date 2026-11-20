@@ -103,7 +103,7 @@ svg.chart{width:100%;height:auto;display:block}
 <div id="view" hidden>
   <div class="tabs" id="ages"></div>
   <div class="avgs" id="avgs" hidden></div>
-  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Swipe It</span><span>Memorojo</span><span>Last</span></div>
+  <div class="head"><span>Player · A–Z</span><span>Reaction Speed</span><span>Reactific</span><span>Swipe It</span><span>Encadena</span><span>Last</span></div>
   <div id="list"></div>
   <div class="count" id="count"></div>
 </div>
@@ -201,7 +201,7 @@ function loadAll(){
     }
     res[0].forEach(function(r){add('rs',r,rsBpm(r))});
     res[1].forEach(function(r){add('rf',r,rfBpm(r))});
-    res[2].forEach(function(r){if(r.game_key==='memorojo'){add('mr',r,parseInt(r.level,10)||0);return}var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g+(r.device==='phone'?'P':''),r,+r.bpm||0)});   // Memorojo: its level
+    res[2].forEach(function(r){if(r.game_key==='encadena'){add('mr',r,parseInt(r.level,10)||0);return}var g=r.game_key==='home-base'?'hb':r.game_key==='swipe-it'?'sw':'';if(g)add(g+(r.device==='phone'?'P':''),r,+r.bpm||0)});   // Encadena: its longest chain
     loaded=true; render();
   }).catch(function(){$('list').innerHTML='<div class="empty">Could not load the boards.</div>'});
 }
@@ -256,7 +256,7 @@ function render(){
   $('list').innerHTML=keys.length?keys.map(function(k){var p=players[k];
     return '<button class="row" type="button" data-k="'+esc(k)+'"><span class="nm">'+esc(p.name)+'</span><span class="v">'+cellRS(p)+'</span><span class="v">'+cellBpm(p.rf)+'</span><span class="v">'+cellTP(p.sw,p.swP)+'</span><span class="v">'+cellFt(p.mr)+'</span><span class="last">'+day(p.last)+'</span></button>';
   }).join(''):'<div class="empty">No players yet'+(currentAge?' in '+esc(currentAge):'')+(school?' at '+esc(school):'')+'.</div>';
-  groupAvg(keys,[{name:'⚡ Reaction Speed',c:'#FFD700',pick:function(p){return p.hb.length?p.hb:p.hbP.length?p.hbP:p.rs}},{name:'🔴 Reactific',c:'#00D9A5',pick:function(p){return p.rf}},{name:'👆 Swipe It',c:'#ff4757',pick:function(p){return p.sw.length?p.sw:p.swP}},{name:'🧠 Memorojo',c:'#e879f9',lv:1,pick:function(p){return p.mr}}]);
+  groupAvg(keys,[{name:'⚡ Reaction Speed',c:'#FFD700',pick:function(p){return p.hb.length?p.hb:p.hbP.length?p.hbP:p.rs}},{name:'🔴 Reactific',c:'#00D9A5',pick:function(p){return p.rf}},{name:'👆 Swipe It',c:'#ff4757',pick:function(p){return p.sw.length?p.sw:p.swP}},{name:'⛓️ Encadena',c:'#e879f9',lv:1,pick:function(p){return p.mr}}]);
   $('count').textContent=keys.length?keys.length+' player'+(keys.length>1?'s':'')+' · listed A–Z, not ranked':'';
   $('list').querySelectorAll('.row').forEach(function(b){b.onclick=function(){showPlayer(b.dataset.k)}});
 }
@@ -300,7 +300,7 @@ function showPlayer(k){
     block('🔴 Reactific · speed','#00D9A5',p.rf,'BPM','Fastest','No Reactific games yet.')+
     block('👆 Swipe It · tablet','#ffd35a',p.sw,'BPM','Fastest','No Swipe It on a tablet yet.')+
     (p.swP.length?block('📱 Swipe It · phone','#ffd35a',p.swP,'BPM','Fastest',''):'')+
-    block('🧠 Memorojo · level','#e879f9',p.mr,'level','Highest','No Memorojo yet.');
+    block('⛓️ Encadena · chain','#e879f9',p.mr,'level','Longest','No Encadena yet.');
 }
 $('backList').onclick=function(){$('player').hidden=true;$('view').hidden=false};
 </script>

@@ -149,7 +149,10 @@
   function hubLinks(){
     document.querySelectorAll('a[href="mobile-hub.html"]').forEach(function(a){ a.setAttribute('href', M.HUB) });
     // Cognitivo Gym's Fortress has its own file name
-    if (M.mode === 'gym') document.querySelectorAll('a[href="vr-fortress.html"]').forEach(function(a){ a.setAttribute('href', 'dynamic-memory-the-fortress.html') });
+    if (M.mode === 'gym') {
+      document.querySelectorAll('a[href="vr-fortress.html"]').forEach(function(a){ a.setAttribute('href', 'dynamic-memory-the-fortress.html') });
+      document.querySelectorAll('a[href="vr-encadena.html"]').forEach(function(a){ a.remove() });   // Encadena is a vreaction.com game; the gym has The Fortress
+    }
     // The Fortress is a gym game, not a Reaction Velocity one: no Fortress button on vreaction.com
     else document.querySelectorAll('a[href="vr-fortress.html"]').forEach(function(a){ a.remove() });
   }
