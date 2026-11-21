@@ -108,9 +108,10 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   <button class="big-btn" id="startBtn" type="button" data-t="start">▶ Start · 10 rounds</button>
   <div class="game-switcher">
     <span class="switcher-btn game-current">Reaction<br>Speed</span>
-    <a class="switcher-btn game-active" href="vr-reactific.html">Reactific</a>
     <a class="switcher-btn game-active" href="vr-swipe-it.html">Swipe<br>It</a>
     <a class="switcher-btn game-active" href="vr-encadena.html">Enca<br>dena</a>
+    <a class="switcher-btn game-active" href="vr-zona.html">Zona</a>
+    <a class="switcher-btn game-active" href="vr-zona-roja.html">Zona<br>Roja</a>
   </div>
 </div>
 
@@ -132,7 +133,7 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   <div class="card"><h3 data-t="prog">My Progress · Reaction Speed</h3><div id="prog"></div></div>
   <div class="btns">
     <button class="go" id="againBtn" type="button" data-t="again">Play again</button>
-    <a class="btn2" id="nextGameBtn" href="vr-reactific.html" data-t="next">Next game: Reactific →</a>
+    <a class="btn2" id="nextGameBtn" href="vr-zona.html" data-t="next">Next game: Zona →</a>
     <button class="btn2" id="nextPlayerBtn" type="button" data-t="nextp">Next Player</button>
     <a class="btn2" href="mobile-hub.html">← THE HUB</a>
   </div>
@@ -143,11 +144,11 @@ var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (remembered on this device) ── */
 var TX={
   es:{s1:'Mantén el pulgar en HOME',s2:'Espera: aparece una flecha',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 rondas',hint:'Mantén el pulgar en HOME. Cuando aparezca la flecha, suelta y deslízala hacia donde apunta — rápido. 10 rondas.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
-      rit:function(b){return '🥁 Tu Ritnome · '+b+' BPM'},lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Reactific →',nextp:'Siguiente jugador',
+      rit:function(b){return '🥁 Tu Ritnome · '+b+' BPM'},lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Zona →',nextp:'Siguiente jugador',
       hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',early:'muy temprano',
       'Too early':'Muy temprano','Too slow':'Muy lento','Lift off HOME first':'Suelta HOME primero','Missed the target':'Fallaste el objetivo','Off the arrow':'Fuera de la flecha','Wrong way':'Dirección equivocada','Swipe, don’t tap':'Desliza, no toques'},
   en:{s1:'Hold your thumb on HOME',s2:'Wait — an arrow appears',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 rounds',hint:'Hold your thumb on HOME. When the arrow appears, lift off and swipe it the way it points — fast. 10 rounds.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
-      rit:function(b){return '🥁 Your Ritnome · '+b+' BPM'},lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Reactific →',nextp:'Next Player',
+      rit:function(b){return '🥁 Your Ritnome · '+b+' BPM'},lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Zona →',nextp:'Next Player',
       hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',early:'too early',
       'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target','Off the arrow':'Off the arrow','Wrong way':'Wrong way','Swipe, don’t tap':'Swipe, don’t tap'}
 };

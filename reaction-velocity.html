@@ -180,6 +180,10 @@ footer{
 .quarter-card.g-ft .quarter-num{color:#a855f7}
 .quarter-card.g-mr{border-color:rgba(232,121,249,.6);background:rgba(232,121,249,.09)}
 .quarter-card.g-mr .quarter-num{color:#e879f9}
+.quarter-card.g-zn{border-color:rgba(56,189,248,.55);background:rgba(56,189,248,.09)}
+.quarter-card.g-zn .quarter-num{color:#38bdf8}
+.quarter-card.g-zr{border-color:rgba(251,113,133,.55);background:rgba(251,113,133,.09)}
+.quarter-card.g-zr .quarter-num{color:#fb7185}
 .quarter-card.g-sw{border-color:rgba(255,43,61,.55);background:rgba(255,43,61,.09)}
 .quarter-card.g-sw .quarter-num{color:#ff2b3d}
 </style>
@@ -208,20 +212,25 @@ footer{
         <div class="quarter-name">Reaction Speed</div>
         <div class="quarter-desc" id="desc2">Hold HOME. When the arrow appears, lift off and swipe it the way it points. No rhythm to guess — a true reaction.</div>
       </a>
-      <a class="quarter-card g-rf" href="vr-reactific.html">
+      <a class="quarter-card g-zn" href="vr-zona.html">
         <div class="quarter-num">Q2</div>
-        <div class="quarter-name">Reactific</div>
-        <div class="quarter-desc" id="desc1">Swipe only the red — touch anything else and it costs you. Tests restraint as much as speed.</div>
+        <div class="quarter-name">Zona</div>
+        <div class="quarter-desc" id="descZ">One spot of the 2-1-2 zone lights up on every beat at your Reaction Speed BPM — tap it in time. Each hit +1, each miss 1 off: your score out of 10 or 25.</div>
       </a>
-      <a class="quarter-card g-sw" href="vr-swipe-it.html">
+      <a class="quarter-card g-zr" href="vr-zona-roja.html">
         <div class="quarter-num">Q3</div>
-        <div class="quarter-name">Swipe It</div>
-        <div class="quarter-desc" id="descS">An arrow flashes once at your Reaction Speed BPM, in a new spot — swipe where it was, the way it pointed. Each swipe scores your BPM.</div>
+        <div class="quarter-name">Zona Roja</div>
+        <div class="quarter-desc" id="descZR">A spot lights up on every beat — red or another color. Tap only the red: +1. Touch another color, miss or come late: 1 off.</div>
       </a>
       <a class="quarter-card g-mr" href="vr-encadena.html">
         <div class="quarter-num">Q4</div>
         <div class="quarter-name">Encadena</div>
         <div class="quarter-desc" id="descM">The chain lights up in the 2-1-2 zone — swipe it back in order, the way each arrow pointed. One more every round.</div>
+      </a>
+      <a class="quarter-card g-sw" href="vr-swipe-it.html">
+        <div class="quarter-num">Q5</div>
+        <div class="quarter-name">Swipe It</div>
+        <div class="quarter-desc" id="descS">An arrow flashes once at your Reaction Speed BPM, in a new spot — swipe where it was, the way it pointed. Each swipe scores your BPM.</div>
       </a>
     </div>
 
@@ -269,6 +278,8 @@ var translations={
     desc1:'Swipe only the red — touch anything else and it costs you. Tests restraint as much as speed.',
     desc2:'Hold HOME. When the arrow appears, lift off and swipe it the way it points. No rhythm to guess — a true reaction.',
     descM:'The chain lights up in the 2-1-2 zone — swipe it back in order, the way each arrow pointed. One more every round.',
+    descZ:'One spot of the 2-1-2 zone lights up on every beat at your Reaction Speed BPM — tap it in time. Each hit +1, each miss 1 off: your score out of 10 or 25.',
+    descZR:'A spot lights up on every beat — red or another color. Tap only the red: +1. Touch another color, miss or come late: 1 off.',
     descF:'Watch the chain light up in the 2-1-2 zone, then repeat it back. Every round adds one more ball.',
     descS:'An arrow flashes once at your Reaction Speed BPM, in a new spot — swipe where it was, the way it pointed. Each swipe scores your BPM.',
     desc3:'An arrow flashes once, then it\'s gone — the four buttons reshuffle every round.',
@@ -282,6 +293,8 @@ var translations={
     desc1:'Desliza solo el rojo — tocar cualquier otra cosa te cuesta. Pone a prueba el control tanto como la velocidad.',
     desc2:'Mantén el dedo en HOME. Cuando aparezca la flecha, suelta y deslízala hacia donde apunta. Sin ritmo que adivinar: una reacción real.',
     descM:'La cadena se enciende en la zona 2-1-2 — deslízala en orden, hacia donde apuntaba cada flecha. Una más cada ronda.',
+    descZ:'En cada pulso, a tu BPM de Reaction Speed, se enciende un lugar de la zona 2-1-2: tócalo a tiempo. Cada acierto +1, cada fallo 1 menos: tu puntuación de 10 o de 25.',
+    descZR:'En cada pulso se enciende un lugar — rojo u otro color. Toca solo el rojo: +1. Tocar otro color, fallar o llegar tarde: 1 menos.',
     descF:'Mira la cadena encenderse en la zona 2-1-2 y repítela. Cada ronda añade una bola más.',
     descS:'Una flecha destella una vez a tu BPM de Reaction Speed, en otro lugar: desliza donde estaba, hacia donde apuntaba. Cada deslizamiento da tu BPM.',
     desc3:'Una flecha destella una vez y desaparece — los cuatro botones se reorganizan cada ronda.',
@@ -294,10 +307,11 @@ function t(key){return translations[currentLang][key]||translations.en[key]||key
 function updateUILanguage(){
   document.getElementById('arenaSub').textContent=t('arenaSub');
   document.getElementById('quartersLabel').textContent=t('quartersLabel');
-  document.getElementById('desc1').textContent=t('desc1');
   document.getElementById('desc2').textContent=t('desc2');
   document.getElementById('descS').textContent=t('descS');
   document.getElementById('descM').textContent=t('descM');
+  document.getElementById('descZ').textContent=t('descZ');
+  document.getElementById('descZR').textContent=t('descZR');
   document.getElementById('langEN').classList.toggle('active',currentLang==='en');
   document.getElementById('langES').classList.toggle('active',currentLang==='es');
 }

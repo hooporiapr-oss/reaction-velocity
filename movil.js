@@ -150,8 +150,10 @@
     document.querySelectorAll('a[href="mobile-hub.html"]').forEach(function(a){ a.setAttribute('href', M.HUB) });
     // Encadena replaced The Fortress on both sites: no Fortress button anywhere
     document.querySelectorAll('a[href="vr-fortress.html"]').forEach(function(a){ a.remove() });
-    // Zona and Zona Roja are Cognitivo Gym games: no buttons for them on vreaction.com
-    if (M.mode !== 'gym') document.querySelectorAll('a[href="vr-zona.html"],a[href="vr-zona-roja.html"]').forEach(function(a){ a.remove() });
+    // Zona and Zona Roja: Cognitivo Gym and vreaction.com (not the phone site)
+    if (M.mode !== 'gym' && M.mode !== 'rv') document.querySelectorAll('a[href="vr-zona.html"],a[href="vr-zona-roja.html"]').forEach(function(a){ a.remove() });
+    // vreaction.com: Reactific is off its hub, so no Reactific button in its games
+    if (M.mode === 'rv') document.querySelectorAll('a.switcher-btn[href="vr-reactific.html"]').forEach(function(a){ a.remove() });
     // Cognitivo Gym calls its tap test Ritnome BPM
     if (M.mode === 'gym') document.querySelectorAll('a.switcher-btn[href="vr-reaction-speed.html"]').forEach(function(a){ a.innerHTML = 'Ritnome<br>BPM' });
   }

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Zona Roja | Reaction Velocity</title>
+<!-- ZONA ROJA — Zona with Reactific's rule: tap only the red. Encadena's five spots
+     in the 2-1-2 zone; on every beat, at the player's Ritnome BPM, one spot lights up:
+     red, or another color (blue, green, orange, yellow, purple — it keeps changing).
+     Red: tap it before the next beat → a hit, +1. Wrong spot or too late → 1 off.
+     Any other color: leave it. Tapping a spot while it shows → 1 off. Letting it pass costs nothing.
+     The score never goes below 0. 10 or 25 REDS (the tabs; remembered on this device,
+     10 until picked); about one other color for every two reds, never three in a row.
+     Each red tap shows its own BPM. The score: out of 10 or out of 25.
+     Saves to vr_mobile_standings: game_key 'zona-roja-10' or 'zona-roja-25',
+     level = the score, hits, misses (incl. non-red taps), bpm = the BPM of the hits,
+     avg_ms, device. -->
+<script>try{if(sessionStorage.getItem('gym-plain')==='1')document.documentElement.classList.add('plain')}catch(e){}</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}
+html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.pill{padding:8px 14px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font:900 .72rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;text-decoration:none;cursor:pointer}
+.top{width:100%;display:flex;justify-content:space-between;align-items:center}
+.t{font-size:2rem;font-weight:900;font-style:italic;letter-spacing:.05em;text-transform:uppercase;text-align:center;margin-top:18px;text-shadow:0 0 30px rgba(0,229,255,.5)}
+.t span{color:#00e5ff}
+.sub{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin:6px 0 18px;text-align:center}
+.how{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.how div{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);font-size:.95rem;font-weight:700;line-height:1.3}
+.how b{flex:0 0 30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#00e5ff;color:#000;font-size:.95rem}
+.name-input{width:100%;max-width:320px;padding:14px;border-radius:14px;border:2px solid rgba(0,229,255,.4);background:rgba(255,255,255,.06);color:#fff;font-size:1.05rem;text-align:center}
+.go{width:100%;max-width:320px;margin-top:14px;padding:18px;border:0;border-radius:16px;background:linear-gradient(135deg,#00e5ff,#0091ff);color:#031018;font:900 1.15rem Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+/* the speed box (as in Reactific) */
+.bpm-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0 4px}
+.bpm-step{width:52px;height:52px;border-radius:50%;border:2px solid rgba(0,229,255,.5);background:rgba(0,229,255,.08);color:#fff;font:900 1.6rem Arial,sans-serif;cursor:pointer}
+.bpm-step:disabled{opacity:.3}
+#bpmInput{width:110px;padding:10px;border-radius:14px;border:2px solid rgba(0,229,255,.5);background:rgba(255,255,255,.06);color:#fff;font:900 1.6rem Arial,sans-serif;text-align:center}
+#bpmInput:disabled{opacity:.4}
+.bpm-unit{font-size:.8rem;font-weight:900;color:#9fb3c8;letter-spacing:.1em}
+#bpmNote{font-size:.78rem;color:#9fb3c8;text-align:center;min-height:1.2em;margin-bottom:6px}
+#goRS{display:none;margin:6px 0;padding:12px 18px;border-radius:14px;background:rgba(0,229,255,.12);border:2px solid #00e5ff;color:#fff;font:900 .9rem Arial,sans-serif;text-decoration:none}
+.go:disabled{opacity:.35}
+#countdown{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(0,4,12,.94)}
+#bigCount{font-size:9rem;font-weight:900;color:#00e5ff;text-shadow:0 0 50px rgba(0,229,255,.7)}
+/* play */
+#play{padding:0;touch-action:none}
+#bar{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 0;font-size:.8rem;font-weight:900;letter-spacing:.1em;color:#9fb3c8;pointer-events:none}
+#arrow{position:absolute;width:clamp(64px,10vmin,100px);height:clamp(64px,10vmin,100px);border-radius:50%;display:none;align-items:center;justify-content:center;
+  border:3px solid #00e5ff;background:rgba(0,229,255,.14);box-shadow:0 0 30px rgba(0,229,255,.55);pointer-events:none}
+#arrow svg{width:68%;height:68%}
+#arrow.hit{border-color:#3ddc84;background:rgba(61,220,132,.3);box-shadow:0 0 30px rgba(61,220,132,.7)}
+#arrow.miss{border-color:#ff6b6b;background:rgba(255,107,107,.25);box-shadow:0 0 30px rgba(255,107,107,.6)}
+/* end */
+#end{overflow-y:auto;justify-content:flex-start}
+#end>*{flex-shrink:0}   /* a long end screen scrolls instead of squeezing lines together */
+.big{font-size:4.2rem;font-weight:900;line-height:1;margin-top:10px;color:#00e5ff;text-shadow:0 0 30px rgba(0,229,255,.5)}
+.lab{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin:4px 0 10px}
+#pbMsg{text-align:center;margin:2px 0 10px;min-height:1em}
+.hm{font-size:.95rem;font-weight:800;margin-bottom:12px;color:#c8ccd4}
+.card{width:100%;max-width:380px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);padding:12px;margin-bottom:12px}
+.card h3{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin-bottom:8px}
+.taps{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.taps div{font-size:.82rem;font-weight:800;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.04)}
+.taps .x{color:#ff8a8a}
+.btns{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.btns .go{max-width:none;margin:0}
+.btn2{padding:15px;border-radius:16px;border:2px solid rgba(0,229,255,.45);background:transparent;color:#fff;font:900 .95rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;text-align:center;text-decoration:none;cursor:pointer}
+.dots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.dots div{font-size:.72rem;font-weight:800;padding:6px 4px;border-radius:8px;text-align:center;background:rgba(61,220,132,.14);color:#3ddc84}
+.dots div.x{background:rgba(255,107,107,.12);color:#ff8a8a}
+.lang{display:flex;gap:4px}
+.lg{padding:7px 11px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#9fb3c8;font:900 .72rem Arial,sans-serif;letter-spacing:.08em;cursor:pointer}
+.lg.on{background:#00e5ff;border-color:#00e5ff;color:#031018}
+#flash{position:absolute;left:0;right:0;bottom:calc(40px + env(safe-area-inset-bottom));text-align:center;font-size:1.3rem;font-weight:900;letter-spacing:.05em;pointer-events:none}
+#flash.good{color:#3ddc84}#flash.bad{color:#ff6b6b}
+#suggest{font-size:.85rem;color:#c8ccd4;text-align:center;margin:-4px 0 12px}
+/* ── PHONES ONLY (600 px wide and narrower): tablets never see these rules ── */
+@media (max-width:600px){
+  .screen>*{flex-shrink:0}
+}
+@media (max-width:600px) and (max-height:760px){
+  .t{font-size:1.7rem;margin-top:10px}
+  .sub{margin:4px 0 12px}
+  .how{gap:7px;margin-bottom:12px}
+  .how div{padding:9px 12px;font-size:.88rem}
+  .how b{flex-basis:26px;height:26px;font-size:.85rem}
+  .go{padding:15px;margin-top:10px}
+  .jg-como{margin:6px auto}
+  .bpm-row{margin:8px 0 2px}
+  .bpm-step{width:46px;height:46px}
+  #bpmInput{padding:7px;font-size:1.4rem}
+}
+/* ZONA ROJA: rose, like its card. The five spots of the 2-1-2 zone */
+.nTabs{display:inline-flex;margin:0 auto 12px;border:1.5px solid rgba(251,113,133,.5);border-radius:999px;overflow:hidden;flex-shrink:0}
+.nTabs button{padding:9px 18px;border:0;background:transparent;color:#fecdd3;font:900 .8rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.nTabs button.on{background:#fb7185;color:#031018}
+.spotE{position:absolute;border-radius:50%;border:2px dashed rgba(251,113,133,.35);background:rgba(251,113,133,.05);pointer-events:none}
+.zt{position:absolute;border-radius:50%;pointer-events:none;display:flex;align-items:center;justify-content:center;font:900 1.6rem Arial,sans-serif;color:#fff}
+.zt.lit{border:3px solid transparent}   /* the color is set per beat */
+.zt.hit{background:rgba(61,220,132,.35);border:3px solid #3ddc84;box-shadow:0 0 30px rgba(61,220,132,.7)}
+.zt.miss{background:rgba(255,107,107,.18);border:3px solid #ff6b6b}
+.zt small{position:absolute;top:100%;margin-top:6px;font-size:.85rem;font-weight:900;color:#3ddc84;white-space:nowrap}
+.zt.miss small{color:#ff8a8a}
+#score{color:#fb7185}
+.big{color:#fb7185;text-shadow:0 0 30px rgba(251,113,133,.5)}
+.taps{grid-template-columns:repeat(3,1fr)}
+.taps div{text-align:center;color:#3ddc84}
+</style>
+<!-- The player: one name for every game (see jugador.js) -->
+<script>(function(){var g=function(k){try{return sessionStorage.getItem(k)==='1'}catch(e){return false}};
+  // which sign-in: Reaction Mobile (phones), Reaction Velocity (vreaction.com) or Cognitivo Gym
+  var k=g('rm-gate-pass')?['mobile-hub.html','rm-']:g('reaction-velocity-gate-pass')?['reaction-velocity.html','reaction-velocity-']:['dynamic-hub.html','ritnome-'];
+  window.JUGADOR={modo:'juego',aqui:true,hub:k[0],escuela:k[1]+'school',categoria:k[1]+'category',tablas:['vr_mobile_standings','vr_reaction_speed_standings','vr_reactific_standings','dynamic_memory_quarter_standings'],lista:{url:'https://sdaphocueugzfvjovuxd.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M'}}})();</script>
+<script src="jugador.js"></script>
+<script>window.MOVIL={game:'zona-roja',title:'Zona Roja'};</script>
+<script src="movil.js"></script>
+<link rel="stylesheet" href="inicio.css">
+</head>
+<body>
+
+<div class="rx-intro rx-zr" id="intro">
+  <a class="intro-back" href="mobile-hub.html">← Exit</a>
+  <div class="box-lang-toggle"><button type="button" class="box-lang-btn lg" data-l="es">ES</button><button type="button" class="box-lang-btn lg" data-l="en">EN</button></div>
+  <div class="vrr-logo">ZONA <span>ROJA</span></div>
+  <div class="vrr-sub" id="who"></div>
+  <div class="tempo-hint" id="hint"></div>
+  <div class="nTabs" role="tablist"><button type="button" role="tab" id="n10">10</button><button type="button" role="tab" id="n25">25</button></div>
+  <div class="speed-label" data-t="speedLbl">Speed</div>
+  <div class="speed-row">
+    <a class="speed-btn free" id="goRS" href="vr-reaction-speed.html" data-t="goRS" style="display:none">⚡ Play Ritnome BPM first</a>
+    <label class="bpm-box locked" id="bpmBox"><button type="button" class="bpm-step" id="bpmDown" aria-label="Slower" disabled>−</button><input id="bpmInput" type="number" inputmode="numeric" min="10" max="300" placeholder="—" disabled aria-label="Speed in BPM"><button type="button" class="bpm-step" id="bpmUp" aria-label="Faster" disabled>+</button><span>BPM</span><small id="bpmNote"></small></label>
+  </div>
+  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
+  <button class="big-btn" id="startBtn" type="button" data-t="start">▶ Start</button>
+  <div class="game-switcher">
+    <a class="switcher-btn game-active" href="vr-reaction-speed.html">Reaction<br>Speed</a>
+    <a class="switcher-btn game-active" href="vr-reactific.html">Reactific</a>
+    <a class="switcher-btn game-active" href="vr-swipe-it.html">Swipe<br>It</a>
+    <a class="switcher-btn game-active" href="vr-encadena.html">Enca<br>dena</a>
+    <a class="switcher-btn game-active" href="vr-zona.html">Zona</a>
+    <span class="switcher-btn game-current">Zona<br>Roja</span>
+  </div>
+</div>
+
+<div id="countdown"><div id="bigCount">3</div></div>
+
+<div class="screen" id="play" hidden>
+  <div id="bar"><span id="cnt"></span><span id="spd"></span><span id="score"></span></div>
+  <div id="spots"></div>
+  <div id="zt" class="zt"></div>
+  <div id="flash"></div>
+</div>
+
+<div class="screen" id="end" hidden>
+  <div class="big" id="endBig">0/10</div>
+  <div class="lab" id="endLab">Score</div>
+  <div id="pbMsg"></div>
+  <div class="hm" id="endHm"></div>
+  <div class="card"><h3 data-t="tapsT">Tap by tap</h3><div class="taps" id="tapList"></div></div>
+  <div class="card"><h3 id="progT">My Progress · Zona Roja</h3><div id="prog"></div></div>
+  <div class="btns">
+    <button class="go" id="againBtn" type="button" data-t="again">Play again</button>
+    <button class="btn2" id="nextPlayerBtn" type="button" data-t="nextp">Next Player</button>
+    <a class="btn2" href="mobile-hub.html">← THE HUB</a>
+  </div>
+</div>
+
+<script>
+var $=function(id){return document.getElementById(id)};
+var TX={
+  es:{hint:function(n){return 'En cada pulso, a tu BPM Ritnome, se enciende un lugar de la zona 2-1-2. Toca SOLO el rojo antes del próximo pulso: +1. Otro color: ¡no lo toques! Tocar otro color, un lugar equivocado o llegar tarde: 1 menos. '+n+' rojos — tu puntuación es de '+n+'.'},
+      start:'▶ Empezar',speedLbl:'Velocidad',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',goRS:'⚡ Juega Ritnome BPM primero',
+      noRS:'aún no hay Ritnome BPM — juégalo primero',fromRS:'tu velocidad viene de Ritnome BPM',mine:'tu velocidad · − / + o escribe cualquier velocidad',rsNote:'tu BPM Ritnome · − / + o escribe cualquier velocidad',
+      targets:'rojos',score:'Puntos',reds:'Rojos',nrTaps:'toques en otro color',of:'de',lab:function(n){return 'Puntuación · de '+n},hits:'aciertos',misses:'fallos',at:'a',bpmHits:'BPM de los aciertos',
+      tapsT:'Toque por toque',prog:function(n){return 'Mi progreso · Zona Roja · '+n},again:'Jugar otra vez',nextp:'Siguiente jugador',
+      first:'PRIMERA MARCA',firstSub:'la que hay que superar la próxima vez',pb:'¡NUEVO RÉCORD PERSONAL!',was:'tu mejor era',best:'Tu mejor puntuación:',
+      againLine:'Juega otra vez para empezar tu línea de progreso.',wrong:'otro lugar',late:'tarde',notRed:'no era rojo'},
+  en:{hint:function(n){return 'On every beat, at your Ritnome BPM, one spot of the 2-1-2 zone lights up. Tap ONLY the red before the next beat: +1. Any other color: don’t touch it! Tapping another color, a wrong spot or too late: 1 off. '+n+' reds — your score is out of '+n+'.'},
+      start:'▶ Start',speedLbl:'Speed',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',goRS:'⚡ Play Ritnome BPM first',
+      noRS:'no Ritnome BPM yet — play it first',fromRS:'your speed comes from Ritnome BPM',mine:'your speed · − / + or type any speed',rsNote:'your Ritnome BPM · − / + or type any speed',
+      targets:'reds',score:'Score',reds:'Reds',nrTaps:'taps on another color',of:'of',lab:function(n){return 'Score · out of '+n},hits:'hits',misses:'misses',at:'at',bpmHits:'BPM of the hits',
+      tapsT:'Tap by tap',prog:function(n){return 'My Progress · Zona Roja · '+n},again:'Play again',nextp:'Next Player',
+      first:'FIRST MARK SET',firstSub:'the one to beat next time',pb:'NEW PERSONAL BEST!',was:'your best was',best:'Your best score:',
+      againLine:'Play again to start your progress line.',wrong:'wrong spot',late:'late',notRed:'not red'}
+};
+var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){}
+// vreaction.com: the speed comes from Reaction Speed; Cognitivo Gym calls it Ritnome BPM
+if(MOVIL.mode!=='gym'){['es','en'].forEach(function(l){Object.keys(TX[l]).forEach(function(k){
+  var w=function(x){return String(x).replace(/tu BPM Ritnome/g,'tu BPM de Reaction Speed').replace(/your Ritnome BPM/g,'your Reaction Speed BPM').replace(/Ritnome BPM/g,'Reaction Speed')};
+  var v=TX[l][k]; TX[l][k]=typeof v==='function'?(function(f){return function(){return w(f.apply(null,arguments))}})(v):w(v);
+})})}
+function T(k){var v=(TX[LANG]&&TX[LANG][k]);return v!=null?v:(TX.en[k]!=null?TX.en[k]:k)}
+// 10 or 25 targets: the tabs (remembered on this device; 10 until picked)
+var N=10; try{if(localStorage.getItem('rv-zona-roja-n')==='25')N=25}catch(e){}
+function GAME(){return 'zona-roja-'+N}
+function showN(){$('n10').classList.toggle('on',N===10);$('n25').classList.toggle('on',N===25);
+  $('n10').textContent='10 '+T('targets');$('n25').textContent='25 '+T('targets');$('hint').textContent=T('hint')(N)}
+function setN(n){N=n;try{localStorage.setItem('rv-zona-roja-n',String(n))}catch(e){}showN()}
+$('n10').onclick=function(){setN(10)}; $('n25').onclick=function(){setN(25)};
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-t]').forEach(function(el){var v=T(el.getAttribute('data-t'));if(typeof v==='string')el.textContent=v});
+  $('playerNameInputMain').placeholder=T('name');
+  document.querySelectorAll('#intro .intro-back').forEach(function(a){a.textContent=T('exit')});
+  document.querySelectorAll('#end a.btn2').forEach(function(a){a.textContent=T('hub')});
+  var np=document.querySelector('.jg-como a'); if(np)np.textContent=T('newp');
+  document.querySelectorAll('.lg').forEach(function(b){var on=b.getAttribute('data-l')===LANG;b.classList.toggle('on',on);b.classList.toggle('active',on)});
+  if(typeof refreshBox==='function'&&!$('intro').hidden)refreshBox(true);
+  showN();
+}
+document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(applyLang,0)});
+var BPM_MIN=10, BPM_MAX=300, GUESS_MS=80;
+var SPEED=0, BEAT_MS=0, state='idle', idx=-1, cur=null, score=0, taps=[], playerName='', timers=[], SPOTS=[], t0=0, seq=[], reds=0, lastCol=-1;
+var RED='#ff1e3c', OTHER=['#2f7bff','#00D9A5','#ff9500','#ffd60a','#a855f7'];   // Reactific's colors
+// the beats: N reds and about one other color for every two reds, mixed — never three others in a row, red first
+function makeSeq(){
+  var o=Math.round(N/2), a=[], i; for(i=0;i<N;i++)a.push(true); for(i=0;i<o;i++)a.push(false);
+  for(var t=0;t<200;t++){
+    for(i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),x=a[i];a[i]=a[j];a[j]=x}
+    var ok=a[0]===true, run=0; a.forEach(function(v){run=v?0:run+1;if(run>2)ok=false}); if(ok)break;
+  }
+  return a;
+}
+(function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)$('who').textContent=w})();
+function show(id){['intro','play','end'].forEach(function(s){$(s).hidden=(s!==id)})}
+function later(f,ms){var id=setTimeout(f,ms);timers.push(id);return id}
+function clearAll(){timers.forEach(clearTimeout);timers=[]}
+
+/* ── the speed box: opens on the player's current Reaction Speed BPM (as Swipe It) ── */
+function rsKey(x){return 'rv-rs-bpm:'+String(x||'').trim().toLowerCase()}
+function freeKey(x){return 'rv-free-bpm:'+String(x||'').trim().toLowerCase()}
+function savedBPM(x){try{var a=localStorage.getItem(rsKey(x)),b=localStorage.getItem(freeKey(x));if(MOVIL.mode==='gym'){var t=a;a=b;b=t}var v=parseInt(a,10);if(v>0)return v;v=parseInt(b,10);return isNaN(v)?0:v}catch(e){return 0}}
+var asked={}, touched=false;
+function askBest(x){
+  var k=String(x||'').trim().toLowerCase(); if(!k||asked[k])return; asked[k]=1;
+  var who='&hidden=is.false&school_name=eq.'+encodeURIComponent(MOVIL.school())+'&player_name=ilike.'+encodeURIComponent(String(x).trim().replace(/[*%,()]/g,''));
+  var H={headers:{apikey:MOVIL.SB_KEY,Authorization:'Bearer '+MOVIL.SB_KEY}};
+  function get(u){return fetch(MOVIL.SB_URL+u,H).then(function(r){return r.ok?r.json():[]}).catch(function(){return []})}
+  Promise.all([get('/rest/v1/vr_mobile_standings?select=bpm&game_key=eq.home-base'+who+'&order=admin_id.desc&limit=1'),get('/rest/v1/vr_reaction_speed_standings?select=speed&speed=like.free-*'+who+'&order=admin_id.desc&limit=1')]).then(function(res){
+    function keep(key,v){try{if(v>0&&!(parseInt(localStorage.getItem(key),10)>0))localStorage.setItem(key,String(v))}catch(e){}}
+    var rs=(res[0]&&res[0][0])?parseInt(res[0][0].bpm,10)||0:0;
+    var fr=(res[1]&&res[1][0])?parseInt(String(res[1][0].speed).split('-')[1],10)||0:0;
+    keep(rsKey(x),rs);keep(freeKey(x),fr);
+    if($('playerNameInputMain').value.trim().toLowerCase()===k&&!$('intro').hidden)refreshBox(true);
+  });
+}
+function boxBPM(){var v=parseInt($('bpmInput').value,10);return isNaN(v)?0:Math.max(BPM_MIN,Math.min(BPM_MAX,v))}
+function refreshBox(fromDb){
+  var x=$('playerNameInputMain').value, v=x.trim()?savedBPM(x):0;
+  if(!fromDb&&x.trim())askBest(x);
+  $('bpmDown').disabled=$('bpmUp').disabled=$('bpmInput').disabled=!v; $('startBtn').disabled=!v;
+  if(!v){$('bpmInput').value='';$('bpmNote').textContent=x.trim()?T('noRS'):T('fromRS');$('goRS').style.display=x.trim()?'block':'none';$('bpmBox').style.display=x.trim()?'none':'';$('bpmBox').classList.add('locked');return}
+  $('goRS').style.display='none'; $('bpmBox').style.display=''; $('bpmBox').classList.remove('locked'); $('bpmBox').classList.add('active');
+  if(!touched||!$('bpmInput').value)$('bpmInput').value=v;
+  $('bpmNote').textContent=touched?T('mine'):T('rsNote');
+}
+function step(d){if($('bpmInput').disabled)return;touched=true;$('bpmInput').value=Math.max(BPM_MIN,Math.min(BPM_MAX,boxBPM()+d));refreshBox(true)}
+$('bpmDown').onclick=function(){step(-5)}; $('bpmUp').onclick=function(){step(5)};
+$('bpmInput').addEventListener('input',function(){touched=true});
+$('bpmInput').addEventListener('change',function(){$('bpmInput').value=boxBPM()||'';refreshBox(true)});
+$('playerNameInputMain').addEventListener('input',function(){touched=false;$('bpmInput').value='';refreshBox()});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(refreshBox,0)});
+
+/* ── this player's past runs here, this length (best line and My Progress) ── */
+var past=null;
+function loadPast(x){
+  past=null;
+  var url=MOVIL.SB_URL+'/rest/v1/vr_mobile_standings?select=level,bpm,logged_at&hidden=is.false&game_key=eq.'+GAME()+'&school_name=eq.'+encodeURIComponent(MOVIL.school())+
+    '&player_name=ilike.'+encodeURIComponent(String(x).trim().replace(/[*%,()]/g,''))+'&order=admin_id.asc';
+  fetch(url,{headers:{apikey:MOVIL.SB_KEY,Authorization:'Bearer '+MOVIL.SB_KEY}}).then(function(r){return r.ok?r.json():null}).then(function(d){past=Array.isArray(d)?d:null}).catch(function(){});
+}
+function save(name,sc,bpm,hits,misses,avg){
+  var row={game_key:GAME(),device:MOVIL.device(),player_name:String(name).trim().slice(0,20),school_name:MOVIL.school()||null,category:MOVIL.category()||null,bpm:bpm||null,hits:hits,misses:misses,avg_ms:avg||null,level:sc};
+  function post(r){return fetch(MOVIL.SB_URL+'/rest/v1/vr_mobile_standings',{method:'POST',headers:{'Content-Type':'application/json',Prefer:'return=minimal',apikey:MOVIL.SB_KEY,Authorization:'Bearer '+MOVIL.SB_KEY},body:JSON.stringify(r)})}
+  post(row).then(function(res){if(!res.ok){delete row.category;return post(row)}}).catch(function(){});
+}
+
+/* ── the 2-1-2 zone: five fixed spots ── */
+function layout(){
+  var p=$('play').getBoundingClientRect(), r=Math.max(34,Math.min(56,Math.min(p.width,p.height)*0.06));
+  var cx=p.width/2, cy=p.height/2+10, dx=Math.min(p.width*0.30,200), dy=Math.min(p.height*0.24,190);
+  SPOTS=[[cx-dx,cy-dy],[cx+dx,cy-dy],[cx,cy],[cx-dx,cy+dy],[cx+dx,cy+dy]].map(function(q){return {x:q[0],y:q[1],r:r}});
+  $('spots').innerHTML=SPOTS.map(function(s){return '<div class="spotE" style="left:'+(s.x-s.r)+'px;top:'+(s.y-s.r)+'px;width:'+(2*s.r)+'px;height:'+(2*s.r)+'px"></div>'}).join('');
+}
+function mark(s,cls,txt,sub){
+  var z=$('zt'), S=SPOTS[s]; z.className='zt '+cls; z.style.display='flex';
+  z.style.left=(S.x-S.r)+'px'; z.style.top=(S.y-S.r)+'px'; z.style.width=z.style.height=(2*S.r)+'px';
+  z.innerHTML=(txt||'')+(sub?'<small>'+sub+'</small>':'');
+}
+function unmark(){$('zt').style.display='none'}
+function bar(){$('cnt').textContent=T('reds')+' '+reds+' / '+N;$('score').textContent=T('score')+' '+score}
+
+/* ── start: countdown, then one target per beat ── */
+$('startBtn').onclick=function(){
+  if(!MOVIL.guard())return;
+  var x=$('playerNameInputMain').value.trim(); if(!x){$('playerNameInputMain').focus();return}
+  SPEED=boxBPM(); if(!SPEED)return;
+  BEAT_MS=Math.round(60000/SPEED); playerName=x; MOVIL.unlock(); loadPast(x);
+  idx=-1; cur=null; score=0; taps=[]; reds=0; seq=makeSeq(); clearAll(); show('play'); layout(); unmark(); $('flash').textContent='';
+  $('spd').textContent=SPEED+' BPM'; bar();
+  var c=3; $('bigCount').textContent=c; $('countdown').style.display='flex'; state='count';
+  var iv=setInterval(function(){c--; if(c<=0){clearInterval(iv);$('countdown').style.display='none';state='run';beat()} else $('bigCount').textContent=c},1000);
+};
+$('againBtn').onclick=function(){show('intro');refreshBox(true);$('startBtn').click()};
+$('nextPlayerBtn').addEventListener('click',function(){show('intro');touched=false;$('bpmInput').value='';refreshBox()});
+addEventListener('resize',function(){if(!$('play').hidden)layout()});
+
+// one beat: the last target (if not tapped) is a miss; the next spot lights up
+function beat(){
+  if(state!=='run')return;
+  if(cur&&!cur.done){if(cur.red)result(false,'late',null);else unmark()}   // a red let go is a miss; another color let go is right
+  idx++;
+  if(idx>=seq.length){later(finish,700);return}
+  var last=cur?cur.s:-1, s; do{s=Math.floor(Math.random()*5)}while(s===last);
+  var red=seq[idx], col=RED; if(!red){var k;do{k=Math.floor(Math.random()*OTHER.length)}while(k===lastCol);lastCol=k;col=OTHER[k]} else reds++;
+  cur={s:s,done:false,red:red}; t0=performance.now();
+  mark(s,'lit'); var z=$('zt'); z.style.background=col; z.style.borderColor=col; z.style.boxShadow='0 0 34px '+col+'bb';
+  MOVIL.tick(idx===0); bar();
+  later(beat,BEAT_MS);
+}
+function result(ok,why,ms){
+  cur.done=true; var z=$('zt'); z.style.background=z.style.borderColor=z.style.boxShadow='';
+  if(ok){score++;taps.push({ok:true,ms:ms});mark(cur.s,'hit','✓',MOVIL.bpm(ms)+' BPM');MOVIL.hitSound()}
+  else{score=Math.max(0,score-1);taps.push({ok:false,why:why});mark(cur.s,'miss','✗',T(why));MOVIL.missSound();MOVIL.vibrate(60)}
+  bar();
+}
+var play=$('play');
+play.addEventListener('pointerdown',function(e){
+  e.preventDefault();
+  if(state!=='run'||!cur||cur.done)return;
+  var p=play.getBoundingClientRect(), x=e.clientX-p.left, y=e.clientY-p.top, best=-1, bd=1e9;
+  SPOTS.forEach(function(s,i){var d=Math.hypot(x-s.x,y-s.y);if(d<bd){bd=d;best=i}});
+  if(bd>SPOTS[0].r*2.2)return;                         // not near any spot: nothing happens
+  var ms=performance.now()-t0; if(ms<GUESS_MS)return;  // a tap left over from the beat before
+  if(!cur.red){result(false,'notRed',null);return}   // any tap while another color shows
+  if(best===cur.s)result(true,null,ms); else result(false,'wrong',null);
+});
+
+/* ── the end: the score out of 10 or 25 ── */
+function levelSvg(now){
+  var pts=(past||[]).filter(function(r){return r.level!=null}).map(function(r){return +r.level||0});
+  if(now!=null)pts.push(now); pts=pts.slice(-20);
+  if(pts.length<2)return '<div style="color:#8fa0b4;font-size:.82rem;text-align:center;padding:10px">'+T('againLine')+'</div>';
+  var W=340,Hh=150,L=26,R=10,Tp=12,B=20, lo=0, hi=N;
+  var X=function(i){return L+(W-L-R)*i/(pts.length-1)}, Y=function(v){return Tp+(Hh-Tp-B)*(hi-v)/(hi-lo)};
+  var s='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto;display:block">', st=N===10?2:5;
+  for(var y=0;y<=hi;y+=st)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="rgba(255,255,255,.08)"/><text x="'+(L-6)+'" y="'+(Y(y)+4)+'" fill="#8fa0b4" font-size="10" text-anchor="end">'+y+'</text>';
+  s+='<polyline fill="none" stroke="#fb7185" stroke-width="2.5" stroke-linejoin="round" points="'+pts.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1)}).join(' ')+'"/>';
+  pts.forEach(function(v,i){var l=i===pts.length-1;s+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="'+(l?5.5:3.5)+'" fill="'+(l?'#ffd35a':'#fb7185')+'"/>'});
+  return s+'</svg>';
+}
+function bestLine(now){
+  if(!past)return '';
+  var prev=-1;past.forEach(function(r){if(r.level!=null){var v=+r.level||0;if(v>prev)prev=v}});
+  var big='font-size:1.15rem;font-weight:900;letter-spacing:.06em;color:#ffd35a;text-shadow:0 0 18px rgba(255,211,90,.6)', small='font-size:.82rem;color:#c8ccd4;margin-top:3px';
+  if(prev<0)return '<div style="'+big+'">⭐ '+T('first')+'</div><div style="'+small+'">'+now+'/'+N+' — '+T('firstSub')+'</div>';
+  if(now>prev)return '<div style="'+big+'">⭐ '+T('pb')+'</div><div style="'+small+'">'+now+'/'+N+' · '+T('was')+' '+prev+'/'+N+'</div>';
+  return '<div style="'+small+'">'+T('best')+' '+prev+'/'+N+'</div>';
+}
+function finish(){
+  state='idle'; clearAll(); unmark(); $('flash').textContent='';
+  var hits=taps.filter(function(t){return t.ok}), ms=hits.map(function(t){return t.ms});
+  var avg=ms.length?ms.reduce(function(a,b){return a+b},0)/ms.length:0, bpm=avg?MOVIL.bpm(avg):0;
+  $('endBig').textContent=score+'/'+N;
+  $('endLab').textContent=T('lab')(N);
+  var nr=taps.filter(function(t){return t.why==='notRed'}).length;
+  $('endHm').textContent=hits.length+' '+T('hits')+' · '+(taps.length-hits.length-nr)+' '+T('misses')+' · '+nr+' '+T('nrTaps')+(bpm?' · '+bpm+' '+T('bpmHits'):'')+' · '+T('at')+' '+SPEED+' BPM';
+  $('tapList').innerHTML=taps.map(function(t,i){return '<div'+(t.ok?'':' class="x"')+'>'+(i+1)+' · '+(t.ok?'✓ '+MOVIL.bpm(t.ms):'✗ '+T(t.why))+'</div>'}).join('');
+  $('progT').textContent=T('prog')(N);
+  $('pbMsg').innerHTML=bestLine(score);
+  $('prog').innerHTML=levelSvg(score);
+  save(playerName,score,bpm,hits.length,taps.length-hits.length,Math.round(avg));
+  show('end');
+}
+applyLang();
+</script>
+</body>
+</html>
