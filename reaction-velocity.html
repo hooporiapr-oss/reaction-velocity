@@ -135,20 +135,8 @@ footer{
   cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);
 }
 
-/* Switch Program — lets a player back out of the current access
-   code and enter a different one, without needing to fully exit
-   and re-navigate to the gate manually first. Sits below the
-   language toggle (same top-left corner) to avoid overlapping it. */
-#switchProgramBtn{
-  position:fixed;top:56px;left:14px;z-index:30;padding:8px 14px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.45);color:#fff;font-size:.72rem;
-  font-weight:900;letter-spacing:.04em;cursor:pointer;backdrop-filter:blur(4px);
-}
-
-/* Cognitivo Gym — a direct link across to the platform's sibling
-   product. Right corner, below the sound toggle — deliberately
-   separate from Switch Program on the left, since this is a
-   cross-product link, not a same-product session action. */
+/* Cognitivo Gym — a direct link across to hooporia.mobi.
+   Right corner, below the sound toggle. */
 #dynamicMemoryTab{
   position:fixed;top:66px;right:14px;z-index:30;padding:8px 14px;border-radius:999px;
   border:1px solid rgba(124,58,237,.5);background:rgba(124,58,237,.15);color:#fff;font-size:.72rem;
@@ -193,8 +181,7 @@ footer{
 </head>
 <body>
 <button id="soundToggle" aria-label="Toggle sound" title="Toggle beat sound">🔊</button>
-<button id="switchProgramBtn" type="button">🔄 Switch Program</button>
-<a id="dynamicMemoryTab" href="https://cognogym.com">🧠 Cognitivo Gym</a>
+<a id="dynamicMemoryTab" href="https://hooporia.mobi">🧠 Cognitivo Gym</a>
 <div id="langToggle">
   <button class="lang-btn" id="langES">ES</button>
   <button class="lang-btn" id="langEN">EN</button>
@@ -251,18 +238,6 @@ soundBtn.addEventListener('click',function(e){
   muted=!muted;
   soundBtn.textContent=muted?'🔇':'🔊';
   soundBtn.style.opacity=muted?'.55':'1';
-});
-
-// Switch Program — clears the current access code's session so the
-// gate genuinely asks for a fresh one, rather than silently letting
-// a stale session back in. A confirm dialog guards against an
-// accidental tap losing access with no new code in hand yet.
-document.getElementById('switchProgramBtn').addEventListener('click',function(){
-  if(!confirm('Switch to a different program? You\'ll need a new access code to get back in.'))return;
-  sessionStorage.removeItem('reaction-velocity-gate-pass');
-  sessionStorage.removeItem('reaction-velocity-license');
-  sessionStorage.removeItem('reaction-velocity-school');
-  window.location.href='index.html';
 });
 
 // ══════════════════════════════════════════════════════
