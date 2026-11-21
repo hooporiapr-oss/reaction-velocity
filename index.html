@@ -43,6 +43,14 @@
   .enter-btn:active{transform:scale(.98)}
 
   .err{margin-top:14px;color:#ff8888;font-size:.85rem;font-weight:700;min-height:18px}
+  /* 👤 New player? Join here */
+  .join-link{display:inline-block;margin-top:18px;color:#00e5ff;font-size:.82rem;font-weight:800;letter-spacing:.04em;text-decoration:none;border-bottom:1px dashed rgba(0,229,255,.5);cursor:pointer;background:none;border-top:0;border-left:0;border-right:0;font-family:inherit}
+  .join-panel{display:none;margin-top:14px}
+  .join-panel.open{display:block}
+  .join-panel .code-input{margin-bottom:10px}
+  .join-done{display:none;margin-top:6px}
+  .join-done .big-code{font-size:2.2rem;font-weight:900;letter-spacing:.12em;color:#00e5ff;text-shadow:0 0 24px rgba(0,229,255,.5);margin:8px 0}
+  .join-done .hint{color:#c8ccd4;font-size:.9rem;line-height:1.5;margin-bottom:14px}
 
   .brandmark{margin-top:50px;font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#4a5058}
   .brandmark b{color:#8892a0;font-style:italic}
@@ -64,6 +72,23 @@
       <input class="code-input" id="gate-code" maxlength="40" placeholder="• • • •" autocomplete="off" onkeydown="if(event.key==='Enter')tryEnter()">
       <button class="enter-btn" onclick="tryEnter()">Enter Reaction Velocity →</button>
       <div class="err" id="gate-err"></div>
+      <button type="button" class="join-link" id="join-open" onclick="openJoin()">👤 New player? Join here</button>
+    </div>
+
+    <!-- 👤 NEW PLAYER: the school code from the class + the kid's name → the kid's own code -->
+    <div class="code-panel join-panel" id="join-panel">
+      <div class="code-label">School code (from your class)</div>
+      <input class="code-input" id="join-school" maxlength="40" placeholder="• • • •" autocomplete="off">
+      <div class="code-label">Player's first and last name</div>
+      <input class="code-input" id="join-name" maxlength="20" placeholder="Ana Rivera" autocomplete="off" style="text-transform:none;letter-spacing:.02em" onkeydown="if(event.key==='Enter')tryJoin()">
+      <button class="enter-btn" onclick="tryJoin()">Get my player code →</button>
+      <div class="err" id="join-err"></div>
+      <div class="join-done" id="join-done">
+        <div class="code-label" id="join-who"></div>
+        <div class="big-code" id="join-code"></div>
+        <div class="hint">✏️ Write this code down — it is yours. Next time, type it in the Access Code box: the games will know it's you.</div>
+        <button class="enter-btn" onclick="enterJoined()">Play now →</button>
+      </div>
     </div>
 
     <div class="brandmark">Powered by <b>Gostar Digital</b></div>
@@ -187,6 +212,51 @@ function tryEnter(){
     checking = false;
     reject('Connection problem — please try again');
   });
+}
+
+// ── 👤 New player? Join here ──
+function openJoin(){
+  $('code-panel').style.display = 'none'; $('join-panel').classList.add('open');
+  $('gate-sub').textContent = 'New Player'; $('join-school').focus();
+}
+var joining = false, joinedCode = '';
+function tryJoin(){
+  if (joining) return;
+  var sc = $('join-school').value.trim(), nm = $('join-name').value.trim().replace(/\s+/g, ' ');
+  function bad(m){ $('join-err').style.color = '#ff8888'; $('join-err').textContent = m; }
+  if (!sc){ bad('Type the school code from your class'); $('join-school').focus(); return; }
+  if (nm.split(' ').length < 2){ bad('Type the first and last name'); $('join-name').focus(); return; }
+  joining = true; $('join-err').style.color = ''; $('join-err').textContent = 'Making your code…';
+  fetch(SUPABASE_URL + '/rest/v1/rpc/rv_join', {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_school_code: sc, p_name: nm })
+  })
+  .then(function(r){ if (!r.ok) throw new Error('join'); return r.json(); })
+  .then(function(d){
+    joining = false;
+    if (!d || !d.ok){
+      var why = d && d.reason;
+      return bad(why === 'closed' ? 'This school code does not take new players — ask your teacher for your code.'
+               : why === 'exists' ? 'This player is already signed up — ask your teacher for the code.'
+               : why === 'name'   ? 'Type the first and last name (letters only).'
+               : why === 'busy'   ? 'Too many new players today — please try again tomorrow.'
+               : 'Check the school code with your teacher.');
+    }
+    joinedCode = d.code;
+    $('join-err').textContent = '';
+    ['join-school','join-name'].forEach(function(id){ $(id).style.display = 'none'; });
+    $('join-panel').querySelectorAll('.code-label:not(#join-who), .join-panel > .enter-btn').forEach(function(x){ x.style.display = 'none'; });
+    $('join-who').textContent = '👤 ' + d.name + (d.school ? ' · ' + d.school : '');
+    $('join-code').textContent = d.code;
+    $('join-done').style.display = 'block';
+  })
+  .catch(function(){ joining = false; bad('Connection problem — please try again'); });
+}
+// the new code signs in like any code
+function enterJoined(){
+  $('join-panel').classList.remove('open'); $('code-panel').style.display = '';
+  $('gate-code').value = joinedCode; tryEnter();
 }
 
 function reject(msg){
