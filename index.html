@@ -79,8 +79,10 @@
     <div class="code-panel join-panel" id="join-panel">
       <div class="code-label">School code (from your class)</div>
       <input class="code-input" id="join-school" maxlength="40" placeholder="• • • •" autocomplete="off">
-      <div class="code-label">Player's first and last name</div>
-      <input class="code-input" id="join-name" maxlength="20" placeholder="Ana Rivera" autocomplete="off" style="text-transform:none;letter-spacing:.02em" onkeydown="if(event.key==='Enter')tryJoin()">
+      <div class="code-label">Player's first name</div>
+      <input class="code-input" id="join-name" maxlength="14" placeholder="Ana" autocomplete="off" style="text-transform:none;letter-spacing:.02em" onkeydown="if(event.key==='Enter')tryJoin()">
+      <div class="code-label">Last name or initial (optional)</div>
+      <input class="code-input" id="join-last" maxlength="12" placeholder="R" autocomplete="off" style="text-transform:none;letter-spacing:.02em" onkeydown="if(event.key==='Enter')tryJoin()">
       <button class="enter-btn" onclick="tryJoin()">Get my player code →</button>
       <div class="err" id="join-err"></div>
       <div class="join-done" id="join-done">
@@ -222,10 +224,13 @@ function openJoin(){
 var joining = false, joinedCode = '';
 function tryJoin(){
   if (joining) return;
-  var sc = $('join-school').value.trim(), nm = $('join-name').value.trim().replace(/\s+/g, ' ');
+  // the first name (one word) is required; a last name or an initial is optional — "Ana", "Ana R", "Ana Rivera"
+  var first = $('join-name').value.trim().split(/\s+/)[0] || '', last = $('join-last').value.trim().replace(/\s+/g, ' ');
+  if (/^[a-zà-ÿ]$/i.test(last)) last = last.toUpperCase();
+  var sc = $('join-school').value.trim(), nm = (first + (last ? ' ' + last : '')).slice(0, 20);
   function bad(m){ $('join-err').style.color = '#ff8888'; $('join-err').textContent = m; }
   if (!sc){ bad('Type the school code from your class'); $('join-school').focus(); return; }
-  if (nm.split(' ').length < 2){ bad('Type the first and last name'); $('join-name').focus(); return; }
+  if (!first){ bad('Type the player\'s first name'); $('join-name').focus(); return; }
   joining = true; $('join-err').style.color = ''; $('join-err').textContent = 'Making your code…';
   fetch(SUPABASE_URL + '/rest/v1/rpc/rv_join', {
     method: 'POST',
@@ -239,13 +244,13 @@ function tryJoin(){
       var why = d && d.reason;
       return bad(why === 'closed' ? 'This school code does not take new players — ask your teacher for your code.'
                : why === 'exists' ? 'This player is already signed up — ask your teacher for the code.'
-               : why === 'name'   ? 'Type the first and last name (letters only).'
+               : why === 'name'   ? 'Type the first name (letters only) — and a last name or initial if you like.'
                : why === 'busy'   ? 'Too many new players today — please try again tomorrow.'
                : 'Check the school code with your teacher.');
     }
     joinedCode = d.code;
     $('join-err').textContent = '';
-    ['join-school','join-name'].forEach(function(id){ $(id).style.display = 'none'; });
+    ['join-school','join-name','join-last'].forEach(function(id){ $(id).style.display = 'none'; });
     $('join-panel').querySelectorAll('.code-label:not(#join-who), .join-panel > .enter-btn').forEach(function(x){ x.style.display = 'none'; });
     $('join-who').textContent = '👤 ' + d.name + (d.school ? ' · ' + d.school : '');
     $('join-code').textContent = d.code;

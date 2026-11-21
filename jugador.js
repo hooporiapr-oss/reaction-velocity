@@ -38,11 +38,11 @@
   /* the words, in the games' language (Spanish unless EN was chosen) */
   var W = {
     es: { title:'¿Quién juega?', every:'Todos los juegos usarán este nombre', same:'Mismo jugador: ', choose:'Escoge un jugador',
-          or:'— o un jugador nuevo —', ph:'Nombre del jugador nuevo', errBoth:'Escoge un jugador o escribe un nombre nuevo',
+          or:'— o un jugador nuevo —', ph:'Nombre (obligatorio)', ph2:'Apellido o inicial (opcional)', errBoth:'Escoge un jugador o escribe un nombre nuevo',
           errName:'Escribe el nombre del jugador', cont:'Continuar →', newp:'Nuevo jugador' },
     en: { title:'Who’s playing?', every:'Every game will use this name', same:'Same player: ', choose:'Choose a player',
-          or:'— or a new player —', ph:'New player name', errBoth:'Choose a player or type a new name',
-          errName:'Type the player’s name', cont:'Continue →', newp:'New player' }
+          or:'— or a new player —', ph:'First name (required)', ph2:'Last name or initial (optional)', errBoth:'Choose a player or type a new name',
+          errName:'Type the player’s first name', cont:'Continue →', newp:'New player' }
   };
   function L(k){ var l = 'es'; try { if (localStorage.getItem('rs-lang') === 'en') l = 'en' } catch(e){} return W[l][k] }
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
@@ -148,15 +148,17 @@
       (hay ? '<label class="jg-si"><input type="checkbox" id="jg-mismo"' + (nuevo ? '' : ' checked') + '> ' + L('same') + esc(nombre) + '</label>' : '') +
       '<select class="jg-lista" id="jg-lista" aria-label="' + L('choose') + '" style="display:none"></select>' +
       '<div class="jg-o" id="jg-o" style="display:none">' + L('or') + '</div>' +
-      '<input class="jg-nom" id="jg-nom" maxlength="20" autocomplete="off" placeholder="' + L('ph') + '">' +
+      '<input class="jg-nom" id="jg-nom" maxlength="14" autocomplete="off" placeholder="' + L('ph') + '">' +
+      '<input class="jg-nom" id="jg-ape" maxlength="12" autocomplete="off" placeholder="' + L('ph2') + '" style="margin-top:8px">' +
       '<div class="jg-err" id="jg-err"></div>' +
       '<button type="button" id="jg-ok">' + L('cont') + '</button></div>';
     document.body.appendChild(capa);
     var mismo = document.getElementById('jg-mismo'), campo = document.getElementById('jg-nom');
     var sel = document.getElementById('jg-lista'), o = document.getElementById('jg-o'), hayLista = false;
+    var ape = document.getElementById('jg-ape');    // last name or initial: optional
     function ver(){
       var otro = !(mismo && mismo.checked);
-      campo.style.display = otro ? 'block' : 'none';
+      campo.style.display = ape.style.display = otro ? 'block' : 'none';
       sel.style.display = o.style.display = (otro && hayLista) ? 'block' : 'none';
       if (otro && !hayLista) campo.focus();
     }
@@ -169,12 +171,16 @@
     });
     sel.addEventListener('change', function(){ if (sel.value) { campo.value = ''; document.getElementById('jg-err').textContent = '' } });
     campo.addEventListener('input', function(){ if (campo.value) sel.value = '' });
+    ape.addEventListener('input', function(){ if (ape.value) sel.value = '' });
     function seguir(){
       if (mismo && mismo.checked) { guardar(nombre) }
       else if (sel.value) { guardar(sel.value) }
       else {
-        var n = campo.value.trim();
-        if (!n) { document.getElementById('jg-err').textContent = hayLista ? L('errBoth') : L('errName'); campo.focus(); return }
+        // the first name (one word) is required; the last name or an initial is optional — "Ana", "Ana R", "Ana Rivera"
+        var pri = campo.value.trim().split(/\s+/)[0] || '', ap = ape.value.trim().replace(/\s+/g, ' ');
+        if (/^[a-zà-ÿ]$/i.test(ap)) ap = ap.toUpperCase();
+        var n = (pri + (ap ? ' ' + ap : '')).slice(0, 20);
+        if (!pri) { document.getElementById('jg-err').textContent = hayLista ? L('errBoth') : L('errName'); campo.focus(); return }
         // a typed name already on the list keeps the list's spelling
         if (jugadores) jugadores.forEach(function(x){ if (x.toLowerCase() === n.toLowerCase()) n = x });
         guardar(n);
@@ -185,6 +191,7 @@
     }
     document.getElementById('jg-ok').addEventListener('click', seguir);
     campo.addEventListener('keydown', function(e){ if (e.key === 'Enter') seguir() });
+    ape.addEventListener('keydown', function(e){ if (e.key === 'Enter') seguir() });
   }
   function chip(){
     var c = document.getElementById('jg-chip');
