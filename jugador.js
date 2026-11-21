@@ -115,7 +115,8 @@
     '#jg-chip span{overflow:hidden;text-overflow:ellipsis}' +
     '#jg-chip button{border:none;border-radius:999px;padding:7px 12px;background:#00e5ff;color:#031018;font:900 .72rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}' +
     '.jg-como{display:inline-flex;align-items:center;gap:10px;margin:10px auto;padding:10px 16px;border-radius:999px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.2);color:#fff;font:800 .95rem Arial,sans-serif}' +
-    '.jg-como a{color:#00e5ff;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;text-decoration:none}';
+    '.jg-como a{color:#00e5ff;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;text-decoration:none}' +
+    '.jg-escuela{display:block;margin:-4px auto 8px;color:#9fd8e6;font:800 .8rem Arial,sans-serif;letter-spacing:.03em;text-align:center}';
   document.head.appendChild(css);
 
   function grupo(){
@@ -202,6 +203,8 @@
     var como = document.createElement('div'); como.className = 'jg-como';
     como.innerHTML = '<span>👤 ' + esc(nombre) + '</span><a href="' + esc(HUB) + '?nuevo=1">' + L('newp') + '</a>';
     campo.parentNode.insertBefore(como, campo.nextSibling);
+    // which school this device is signed in to, under the player
+    if (escuela) { var dl = document.createElement('div'); dl.className = 'jg-escuela'; dl.textContent = '🏫 ' + grupo(); como.parentNode.insertBefore(dl, como.nextSibling) }
     // aqui: the next player's name is asked right here; the game then
     // opens on its start screen for them, as if just arrived from the hub.
     alListo = function(){
