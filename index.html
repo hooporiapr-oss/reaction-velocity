@@ -152,6 +152,22 @@ function tryEnter(){
     .catch(function(){ return null })
     .then(function(cat){
       sessionStorage.setItem('reaction-velocity-category', (typeof cat === 'string' ? cat : '') || '');
+      // 👤 a player code (License Admin → Player codes) carries the kid's name:
+      // every game then plays as that kid — no "Who's playing?", no list of classmates.
+      return fetch(SUPABASE_URL + '/rest/v1/rpc/license_player', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_code: input, p_product: PRODUCT })
+      })
+      .then(function(r){ return r.ok ? r.json() : null })
+      .catch(function(){ return null })
+      .then(function(kid){
+        kid = (typeof kid === 'string' ? kid.trim() : '');
+        if (kid) { sessionStorage.setItem('reaction-velocity-player', kid); try { localStorage.setItem('gym-player', kid) } catch(e){} sessionStorage.setItem('gym-player-ok', '1') }
+        else sessionStorage.removeItem('reaction-velocity-player');
+      });
+    })
+    .then(function(){
       // TARGETS — a code can be set to plain circles (License Admin → Targets),
       // the school look: no basketball seams, no Fortress court. No answer = basketballs.
       return fetch(SUPABASE_URL + '/rest/v1/rpc/license_plain', {

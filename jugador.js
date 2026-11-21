@@ -51,6 +51,11 @@
   var listo = ss('gym-player-ok') === '1' && !!nombre;
   var categoria = C.categoria ? ss(C.categoria) : '';
   var escuela = C.escuela ? ss(C.escuela) : '';
+  // 👤 a player code (vreaction.com): the code carries the kid's name, stored at sign-in
+  // next to the school ('…-school' → '…-player'). Then the name is fixed: never asked,
+  // no list of classmates, no "New player" / "Next player".
+  var fijo = C.escuela ? ss(String(C.escuela).replace(/school$/, 'player')) : '';
+  if (fijo) { nombre = fijo.slice(0, 20); listo = true; ls('gym-player', nombre); ss('gym-player-ok', '1'); ss('hoop-player-name', nombre) }
   var original = window.fetch;
 
   /* The players already saved at this school and age group, A to Z.
@@ -184,7 +189,8 @@
   function chip(){
     var c = document.getElementById('jg-chip');
     if (!c) { c = document.createElement('div'); c.id = 'jg-chip'; document.body.appendChild(c) }
-    c.innerHTML = '<span>👤 ' + esc(nombre) + (categoria ? ' · ' + esc(categoria) : '') + '</span><button type="button" id="jg-otro">' + L('newp') + '</button>';
+    c.innerHTML = '<span>👤 ' + esc(nombre) + (categoria ? ' · ' + esc(categoria) : '') + '</span>' + (fijo ? '' : '<button type="button" id="jg-otro">' + L('newp') + '</button>');
+    if (fijo) return;
     document.getElementById('jg-otro').onclick = function(){ c.remove(); ss('gym-player-ok', ''); ss('gym-player-new', '1'); listo = false };
   }
 
@@ -201,7 +207,7 @@
     campo.value = nombre;
     campo.style.display = 'none';
     var como = document.createElement('div'); como.className = 'jg-como';
-    como.innerHTML = '<span>👤 ' + esc(nombre) + '</span><a href="' + esc(HUB) + '?nuevo=1">' + L('newp') + '</a>';
+    como.innerHTML = '<span>👤 ' + esc(nombre) + '</span>' + (fijo ? '' : '<a href="' + esc(HUB) + '?nuevo=1">' + L('newp') + '</a>');
     campo.parentNode.insertBefore(como, campo.nextSibling);
     // which school this device is signed in to, under the player
     if (escuela) { var dl = document.createElement('div'); dl.className = 'jg-escuela'; dl.textContent = '🏫 ' + grupo(); como.parentNode.insertBefore(dl, como.nextSibling) }
@@ -212,13 +218,15 @@
       como.querySelector('span').textContent = '👤 ' + nombre;
       campo.dispatchEvent(new Event('input', { bubbles: true }));
     };
-    if (C.aqui) como.querySelector('a').addEventListener('click', function(e){ e.preventDefault(); preguntar(true) });
+    if (fijo) {                                         // a player code: this kid only — no next player
+      var st = document.createElement('style'); st.textContent = '#nextPlayerBtn{display:none!important}'; document.head.appendChild(st);
+    } else if (C.aqui) como.querySelector('a').addEventListener('click', function(e){ e.preventDefault(); preguntar(true) });
     // Some games empty the name box between rounds; it is put back before any tap reaches the game.
     document.addEventListener('pointerdown', function(){ if (!campo.value) campo.value = nombre }, true);
     document.addEventListener('click', function(e){
       if (!campo.value) campo.value = nombre;
       // "Next player" now means a new player at the hub's question.
-      if (e.target.closest && e.target.closest('#nextPlayerBtn')) {
+      if (!fijo && e.target.closest && e.target.closest('#nextPlayerBtn')) {
         if (C.aqui) { preguntar(true); return }          // the game's own button takes it back to its start screen
         e.stopPropagation(); e.preventDefault();
         location.href = HUB + '?nuevo=1';
@@ -232,7 +240,7 @@
       if (nuevo) { try { history.replaceState(null, '', location.pathname) } catch(e){} }
       // The hub never asks: whoever signs in (a coach) is not a player.
       // "New player" from a game: the next game that opens asks, box unticked.
-      if (nuevo) { ss('gym-player-ok', ''); ss('gym-player-new', '1'); listo = false }
+      if (nuevo && !fijo) { ss('gym-player-ok', ''); ss('gym-player-new', '1'); listo = false }
       if (listo) chip();
     } else {
       enJuego();
