@@ -138,6 +138,17 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   <div id="home">HOME</div>
 </div>
 
+<!-- 3 misses: the run stops here (nothing is saved) and the kid starts over -->
+<div class="screen" id="over" hidden>
+  <div class="big" id="overBig" style="color:#ff6b6b;text-shadow:0 0 30px rgba(255,107,107,.5);margin-top:16vh">✗ ✗ ✗</div>
+  <div class="lab" id="overT" data-t="overT">3 misses</div>
+  <div class="hm" id="overHm"></div>
+  <div class="btns top">
+    <button class="go" id="overAgain" type="button" data-t="overAgain">Start over</button>
+    <a class="btn2" href="mobile-hub.html">← THE HUB</a>
+  </div>
+</div>
+
 <div class="screen" id="end" hidden>
   <div class="big" id="endBpm">0</div>
   <div class="lab" data-t="lab">Reaction Speed BPM</div>
@@ -161,13 +172,13 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (remembered on this device) ── */
 var TX={
-  es:{s1:'Busca HOME — cambia de lugar — y mantenlo',s2:'La flecha se mueve y cambia de dirección — espera a que se detenga y su marco parpadee',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 aciertos',hint:'Busca HOME — cada ronda está en una de las cuatro esquinas — y mantenlo con cualquier mano. Cuando la flecha se detenga, suelta y deslízala hacia donde apunta — rápido. Juegas hasta 10 aciertos — los fallos no cuentan para los 10.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
+  es:{s1:'Busca HOME — cambia de lugar — y mantenlo',s2:'La flecha se mueve y cambia de dirección — espera a que se detenga y su marco parpadee',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 aciertos',hint:'Busca HOME — cada ronda está en una de las cuatro esquinas — y mantenlo con cualquier mano. Cuando la flecha se detenga, suelta y deslízala hacia donde apunta — rápido. Juegas hasta 10 aciertos — los fallos no cuentan para los 10, y con 3 fallos se empieza de nuevo.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
       rit:function(b){return '🥁 Tu Ritnome · '+b+' BPM'},hmT:'Aciertos y fallos · partida por partida',lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Zona →',nextp:'Siguiente jugador',
-      hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',missN:'fallos',miss1:'fallo',early:'muy temprano',
+      hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',missN:'fallos',miss1:'fallo',overT:'3 fallos — se acabó',overAgain:'▶ Empezar de nuevo',overHm:function(h){return 'Llevabas '+h+' '+(h===1?'acierto':'aciertos')+'. Con 3 fallos se empieza de nuevo.'},early:'muy temprano',
       'Too early':'Muy temprano','Too slow':'Muy lento','Lift off HOME first':'Suelta HOME primero','Missed the target':'Fallaste el objetivo','Off the arrow':'Fuera de la flecha','Wrong way':'Dirección equivocada','Swipe, don’t tap':'Desliza, no toques'},
-  en:{s1:'Find HOME — it moves — and hold it',s2:'The arrow moves and changes direction — wait until it stops and its frame flashes',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 hits',hint:'Find HOME — each round it is in one of the four corners — and hold it with either hand. When the arrow stops, lift off and swipe it the way it points — fast. You play until 10 hits — misses don’t count toward the 10.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
+  en:{s1:'Find HOME — it moves — and hold it',s2:'The arrow moves and changes direction — wait until it stops and its frame flashes',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 hits',hint:'Find HOME — each round it is in one of the four corners — and hold it with either hand. When the arrow stops, lift off and swipe it the way it points — fast. You play until 10 hits — misses don’t count toward the 10, and 3 misses means you start over.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
       rit:function(b){return '🥁 Your Ritnome · '+b+' BPM'},hmT:'Hits & misses · run by run',lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Zona →',nextp:'Next Player',
-      hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',missN:'misses',miss1:'miss',early:'too early',
+      hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',missN:'misses',miss1:'miss',overT:'3 misses — game over',overAgain:'▶ Start over',overHm:function(h){return 'You had '+h+' '+(h===1?'hit':'hits')+'. 3 misses and you start over.'},early:'too early',
       'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target','Off the arrow':'Off the arrow','Wrong way':'Wrong way','Swipe, don’t tap':'Swipe, don’t tap'}
 };
 var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){}
@@ -196,11 +207,12 @@ var DIRS={up:0,right:90,down:180,left:270}, NAMES=['up','right','down','left'], 
 var state='idle', round=0, results=[], homeId=null, homeHeld=false, waitT=null, slowT=null, t0=0, playerName='';
 (function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)$('who').textContent=w})();
 
-function show(id){['intro','play','end'].forEach(function(s){$(s).hidden=(s!==id)})}
+function show(id){['intro','play','over','end'].forEach(function(s){$(s).hidden=(s!==id)})}
 function msg(t,c){var m=$('msg');m.textContent=t||'';m.className=c||''}
 // the run goes on until ROUNDS hits; misses (too early, wrong way, too slow…) don't count toward them
+var MAX_MISS=3;   // 3 misses (too early, wrong way, too slow…) end the run: start over
 function hitCount(){return results.filter(function(r){return r.ok}).length}
-function bar(){var h=hitCount(),m=results.length-h;$('rnd').textContent=h+' / '+ROUNDS+' '+(T('hits'));$('hits').textContent=m+' '+(m===1?T('miss1'):T('missN'))}
+function bar(){var h=hitCount(),m=results.length-h;$('rnd').textContent=h+' / '+ROUNDS+' '+(T('hits'));$('hits').textContent=m+' / '+MAX_MISS+' '+T('missN')}
 
 $('startBtn').onclick=function(){
   if(!MOVIL.guard())return;
@@ -284,7 +296,8 @@ function done(ok,ms,why){
   results.push({ok:ok,ms:ms,why:why});
   if(ok){MOVIL.hitSound();msg(MOVIL.bpm(ms)+' BPM','good')}else{MOVIL.missSound();MOVIL.vibrate(80);msg(T(why),'bad')}
   round++; bar();
-  setTimeout(function(){hitCount()>=ROUNDS?finish():arm()},750);
+  var miss=results.length-hitCount();
+  setTimeout(function(){miss>=MAX_MISS?over():hitCount()>=ROUNDS?finish():arm()},750);
 }
 
 // HOME: press and hold
@@ -343,6 +356,12 @@ function hmView(bpm,h,m){
   }).join('');
   return s+key+'<div style="display:flex;flex-direction:column;gap:6px">'+rows+'</div>';
 }
+function over(){
+  state='idle'; clearTimeout(waitT);clearTimeout(slowT);clearTimeout(moveT); homeHeld=false; homeId=null; swipe=null;
+  $('overHm').textContent=T('overHm')(hitCount());
+  show('over');
+}
+$('overAgain').onclick=function(){$('startBtn').click()};
 function finish(){
   state='idle'; clearTimeout(waitT);clearTimeout(slowT);clearTimeout(moveT); homeHeld=false; homeId=null; swipe=null;
   var hits=results.filter(function(r){return r.ok}), misses=results.length-hits.length;
@@ -367,20 +386,20 @@ $('end').addEventListener('click',function(e){if(window.RITNOME&&e.target.closes
 // The end-screen buttons act the moment a finger lifts off them, without waiting for the
 // phone's click (which some phones drop or delay right after a game). A finger that
 // slides (scrolling the results) does nothing; the click that follows is not doubled.
-(function(){
+['end','over'].forEach(function(scr){
   var down=null, fired=0;
-  $('end').addEventListener('pointerdown',function(e){var b=e.target.closest('.btns a,.btns button');down=b?{b:b,x:e.clientX,y:e.clientY}:null},true);
-  $('end').addEventListener('pointerup',function(e){
+  $(scr).addEventListener('pointerdown',function(e){var b=e.target.closest('.btns a,.btns button');down=b?{b:b,x:e.clientX,y:e.clientY}:null},true);
+  $(scr).addEventListener('pointerup',function(e){
     var d=down; down=null; if(!d||e.pointerType==='mouse')return;
     if(e.target.closest('.btns a,.btns button')!==d.b||Math.hypot(e.clientX-d.x,e.clientY-d.y)>12)return;
     fired=Date.now(); e.preventDefault();
     d.b.click();
   },true);
-  $('end').addEventListener('click',function(e){
+  $(scr).addEventListener('click',function(e){
     if(!e.isTrusted||!fired)return;
     if(Date.now()-fired<700&&e.target.closest('.btns a,.btns button')){e.preventDefault();e.stopImmediatePropagation()}
   },true);
-})();
+});
 </script>
 </body>
 </html>
