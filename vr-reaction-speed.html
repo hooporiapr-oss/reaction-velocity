@@ -7,7 +7,7 @@
 <!-- REACTION SPEED (built as Home Base; the old tap game is vr-reaction-speed-classic.html).
      Same file in reaction-velocity and cognitivo-gym-paradiso: it opens with a
      Reaction Velocity code, a Cognitivo Gym code or a Reaction Mobile code.
-     Hold a thumb on HOME. After a random wait an arrow appears, the same
+     Hold a thumb on HOME. The arrow scrolls around, turning, and after a random time stops, the same
      arrow and size as Swipe It, pointing up, down, left or right: lift off
      and swipe it the way it points. The time from the arrow to the swipe is
      the reaction, shown in BPM. Lifting early, or a swipe under 120 ms (a
@@ -47,6 +47,10 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 /* the arrow: the same arrow and size as Swipe It (it replaces the ball / circle) */
 #tgt,html.plain #tgt{background:rgba(0,229,255,.14);border:3px solid #00e5ff;box-shadow:0 0 30px rgba(0,229,255,.55);align-items:center;justify-content:center}
 #tgt svg{width:68%;height:68%;pointer-events:none}
+/* when the arrow stops: a strobing frame around it — swipe now */
+#tgt{z-index:2}
+#tgt.strobe::after{content:'';position:absolute;inset:-14px;border:4px solid #fff;border-radius:14px;box-shadow:0 0 18px rgba(255,255,255,.8);pointer-events:none;animation:strobe .18s steps(1) infinite}
+@keyframes strobe{50%{border-color:#00e5ff;box-shadow:none;opacity:.25}}
 #home{position:absolute;left:50%;top:75%;width:clamp(110px,16vmin,160px);height:clamp(110px,16vmin,160px);transform:translate(-50%,-50%);border-radius:50%;
   display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem;letter-spacing:.12em;
   border:3px solid #00e5ff;background:rgba(0,229,255,.1);color:#00e5ff;box-shadow:0 0 30px rgba(0,229,255,.35)}
@@ -155,11 +159,11 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (remembered on this device) ── */
 var TX={
-  es:{s1:'Busca HOME — cambia de lugar — y mantenlo',s2:'Espera: aparece una flecha',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 rondas',hint:'Busca HOME — cada ronda está en una de las cuatro esquinas — y mantenlo con cualquier mano. Cuando aparezca la flecha, suelta y deslízala hacia donde apunta — rápido. 10 rondas.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
+  es:{s1:'Busca HOME — cambia de lugar — y mantenlo',s2:'La flecha se mueve y cambia de dirección — espera a que se detenga y su marco parpadee',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 rondas',hint:'Busca HOME — cada ronda está en una de las cuatro esquinas — y mantenlo con cualquier mano. Cuando la flecha se detenga, suelta y deslízala hacia donde apunta — rápido. 10 rondas.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
       rit:function(b){return '🥁 Tu Ritnome · '+b+' BPM'},lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Zona →',nextp:'Siguiente jugador',
       hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',early:'muy temprano',
       'Too early':'Muy temprano','Too slow':'Muy lento','Lift off HOME first':'Suelta HOME primero','Missed the target':'Fallaste el objetivo','Off the arrow':'Fuera de la flecha','Wrong way':'Dirección equivocada','Swipe, don’t tap':'Desliza, no toques'},
-  en:{s1:'Find HOME — it moves — and hold it',s2:'Wait — an arrow appears',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 rounds',hint:'Find HOME — each round it is in one of the four corners — and hold it with either hand. When the arrow appears, lift off and swipe it the way it points — fast. 10 rounds.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
+  en:{s1:'Find HOME — it moves — and hold it',s2:'The arrow moves and changes direction — wait until it stops and its frame flashes',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 rounds',hint:'Find HOME — each round it is in one of the four corners — and hold it with either hand. When the arrow stops, lift off and swipe it the way it points — fast. 10 rounds.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
       rit:function(b){return '🥁 Your Ritnome · '+b+' BPM'},lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Zona →',nextp:'Next Player',
       hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',early:'too early',
       'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target','Off the arrow':'Off the arrow','Wrong way':'Wrong way','Swipe, don’t tap':'Swipe, don’t tap'}
@@ -205,7 +209,7 @@ $('againBtn').onclick=function(){$('startBtn').click()};
 $('nextPlayerBtn').addEventListener('click',function(){show('intro')});
 
 // HOME's spot each round: one of the four corners, at random (never the center) — never 3 rounds
-// in a row in the same spot. Either hand. The clock only starts when the arrow appears,
+// in a row in the same spot. Either hand. The clock only starts when the arrow stops,
 // so finding HOME never counts against the BPM.
 var homeAt=[];
 // the four corners, measured from the play area (HOME's center): 0 upper left · 1 upper right · 2 lower left · 3 lower right
@@ -222,34 +226,57 @@ function moveHome(){
 }
 addEventListener('resize',function(){if(homeAt.length)putHome(homeAt[homeAt.length-1])});
 function arm(){
-  clearTimeout(waitT);clearTimeout(slowT);
+  clearTimeout(waitT);clearTimeout(slowT);clearTimeout(moveT);
   state='armed'; $('tgt').style.display='none';
   var moved=homeHeld?false:moveHome();                  // a thumb still down: it stays put until lifted
   $('home').className=moved?'ready moved':'ready'; bar();
   msg(homeHeld?T('relift'):T('hold'));
 }
-function place(){
-  var p=$('play').getBoundingClientRect(), r=parseFloat(getComputedStyle($('tgt')).width)/2||42, home=$('home').getBoundingClientRect();
+// a spot on the play area clear of HOME (and, for the arrow's starting point, well away from where it stops)
+function clearXY(p,r,home,from){
   var top=70+r, bottom=p.height-24-r, left=r+8, right=p.width-r-8;
-  var hx=home.left+home.width/2-p.left, hy=home.top+home.height/2-p.top, keep=home.width/2+r+36, x, y, best=null, bd=-1;
-  for(var i=0;i<60;i++){   // a spot clear of HOME (the farthest one tried, if the screen is tight)
+  var hx=home.left+home.width/2-p.left, hy=home.top+home.height/2-p.top, keep=home.width/2+r+36, far=Math.min(p.width,p.height)*.35;
+  var x, y, best=null, bs=-1;
+  for(var i=0;i<80;i++){   // the best one tried, if the screen is tight
     x=left+Math.random()*(right-left); y=top+Math.random()*(bottom-top);
-    var d=Math.hypot(x-hx,y-hy); if(d>=keep){best=null;break} if(d>bd){bd=d;best=[x,y]}
+    var d=Math.hypot(x-hx,y-hy), f=from?Math.hypot(x-from[0],y-from[1]):far, sc=Math.min(d/keep,f/far);
+    if(sc>=1)return [x,y]; if(sc>bs){bs=sc;best=[x,y]}
   }
-  if(best){x=best[0];y=best[1]}
-  want=NAMES[Math.floor(Math.random()*4)]; swipe=null;
-  var t=$('tgt'); t.querySelector('svg').style.transform='rotate('+DIRS[want]+'deg)';
-  t.style.left=(x-r)+'px'; t.style.top=(y-r)+'px'; t.style.display='flex'; t.dataset.cx=x+p.left; t.dataset.cy=y+p.top; t.dataset.r=r;
+  return best;
 }
-function light(){
-  if(state!=='holding')return;
-  place(); msg(''); t0=performance.now(); state='live';
+// While HOME is held the arrow scrolls around the screen, pointing a new way on every
+// leg. After the random wait it makes its final stop: the strobing frame comes on, its
+// direction is the one to swipe, and only then does the clock start.
+var moveT;
+function geo(){var p=$('play').getBoundingClientRect();return {p:p,r:parseFloat(getComputedStyle($('tgt')).width)/2||42,home:$('home').getBoundingClientRect()}}
+function aim(d){$('tgt').querySelector('svg').style.transform='rotate('+DIRS[d]+'deg)'}
+function startMove(){
+  var g=geo(), t=$('tgt'), at=clearXY(g.p,g.r,g.home), last=null, left=WAIT_MIN+Math.random()*(WAIT_MAX-WAIT_MIN);
+  t.classList.remove('strobe'); t.style.transition='none'; t.style.left=(at[0]-g.r)+'px'; t.style.top=(at[1]-g.r)+'px'; t.style.display='flex';
+  function turn(){var d; do{d=NAMES[Math.floor(Math.random()*4)]}while(d===last); last=d; aim(d)}
+  turn(); msg('');
+  function leg(){
+    if(state!=='holding')return;
+    if(left<=0){stop(at,g);return}
+    var dur=Math.min(left,380+Math.random()*320); left-=dur;
+    var nx=clearXY(g.p,g.r,g.home,at); at=nx;
+    t.style.transition='left '+dur+'ms ease-in-out,top '+dur+'ms ease-in-out';
+    t.style.left=(nx[0]-g.r)+'px'; t.style.top=(nx[1]-g.r)+'px'; turn();
+    moveT=setTimeout(leg,dur);
+  }
+  void t.offsetWidth; leg();
+}
+function stop(xy,g){
+  var t=$('tgt'); t.style.transition='none';
+  want=NAMES[Math.floor(Math.random()*4)]; swipe=null; aim(want);
+  t.dataset.cx=xy[0]+g.p.left; t.dataset.cy=xy[1]+g.p.top; t.dataset.r=g.r;
+  t.classList.add('strobe'); t0=performance.now(); state='live';
   slowT=setTimeout(function(){done(false,0,'Too slow')},TOO_SLOW);
 }
 function done(ok,ms,why){
   if(state!=='live'&&state!=='holding')return;
-  clearTimeout(waitT);clearTimeout(slowT);
-  state='between'; $('tgt').style.display='none';
+  clearTimeout(waitT);clearTimeout(slowT);clearTimeout(moveT);
+  state='between'; $('tgt').style.display='none'; $('tgt').classList.remove('strobe');
   results.push({ok:ok,ms:ms,why:why});
   if(ok){MOVIL.hitSound();msg(MOVIL.bpm(ms)+' BPM','good')}else{MOVIL.missSound();MOVIL.vibrate(80);msg(T(why),'bad')}
   round++; bar();
@@ -260,7 +287,7 @@ function done(ok,ms,why){
 $('home').addEventListener('pointerdown',function(e){
   e.preventDefault();
   homeHeld=true; homeId=e.pointerId; $('home').className='held';
-  if(state==='armed'){state='holding';msg(T('wait'));waitT=setTimeout(light,WAIT_MIN+Math.random()*(WAIT_MAX-WAIT_MIN))}
+  if(state==='armed'){state='holding';startMove()}
 });
 function homeUp(e){
   if(e.pointerId!==homeId)return;
