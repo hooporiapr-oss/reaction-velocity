@@ -56,7 +56,7 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 .nTabs{display:inline-flex;margin:4px auto 12px;border:1.5px solid rgba(0,229,255,.5);border-radius:999px;overflow:hidden;flex-shrink:0}
 .nTabs button{padding:9px 18px;border:0;background:transparent;color:#a5f3fc;font:900 .8rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 .nTabs button.on{background:#00e5ff;color:#031018}
-/* HOME moves each round: left, right, top or bottom — it slides there and flashes so it's easy to find */
+/* HOME moves each round: one of the four corners — it slides there and flashes so it's easy to find */
 #home{transition:left .25s ease,top .25s ease}
 #home.moved{animation:found .6s ease-out 1,pulse 1.1s ease-in-out .6s infinite}
 @keyframes found{0%{box-shadow:0 0 0 0 rgba(0,229,255,.9);transform:translate(-50%,-50%) scale(.6)}70%{box-shadow:0 0 0 26px rgba(0,229,255,0);transform:translate(-50%,-50%) scale(1.12)}100%{box-shadow:0 0 30px rgba(0,229,255,.35);transform:translate(-50%,-50%) scale(1)}}
@@ -155,11 +155,11 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (remembered on this device) ── */
 var TX={
-  es:{s1:'Busca HOME — cambia de lugar — y mantenlo',s2:'Espera: aparece una flecha',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 rondas',hint:'Busca HOME — cada ronda puede estar a la izquierda, a la derecha, arriba o abajo — y mantenlo con cualquier mano. Cuando aparezca la flecha, suelta y deslízala hacia donde apunta — rápido. 10 rondas.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
+  es:{s1:'Busca HOME — cambia de lugar — y mantenlo',s2:'Espera: aparece una flecha',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 rondas',hint:'Busca HOME — cada ronda está en una de las cuatro esquinas — y mantenlo con cualquier mano. Cuando aparezca la flecha, suelta y deslízala hacia donde apunta — rápido. 10 rondas.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
       rit:function(b){return '🥁 Tu Ritnome · '+b+' BPM'},lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Zona →',nextp:'Siguiente jugador',
       hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',early:'muy temprano',
       'Too early':'Muy temprano','Too slow':'Muy lento','Lift off HOME first':'Suelta HOME primero','Missed the target':'Fallaste el objetivo','Off the arrow':'Fuera de la flecha','Wrong way':'Dirección equivocada','Swipe, don’t tap':'Desliza, no toques'},
-  en:{s1:'Find HOME — it moves — and hold it',s2:'Wait — an arrow appears',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 rounds',hint:'Find HOME — each round it can be left, right, top or bottom — and hold it with either hand. When the arrow appears, lift off and swipe it the way it points — fast. 10 rounds.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
+  en:{s1:'Find HOME — it moves — and hold it',s2:'Wait — an arrow appears',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 rounds',hint:'Find HOME — each round it is in one of the four corners — and hold it with either hand. When the arrow appears, lift off and swipe it the way it points — fast. 10 rounds.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
       rit:function(b){return '🥁 Your Ritnome · '+b+' BPM'},lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Zona →',nextp:'Next Player',
       hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',early:'too early',
       'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target','Off the arrow':'Off the arrow','Wrong way':'Wrong way','Swipe, don’t tap':'Swipe, don’t tap'}
@@ -204,15 +204,15 @@ $('startBtn').onclick=function(){
 $('againBtn').onclick=function(){$('startBtn').click()};
 $('nextPlayerBtn').addEventListener('click',function(){show('intro')});
 
-// HOME's spot each round: left, right, upper or lower, at random (never the center) — never 3 rounds
+// HOME's spot each round: one of the four corners, at random (never the center) — never 3 rounds
 // in a row in the same spot. Either hand. The clock only starts when the arrow appears,
 // so finding HOME never counts against the BPM.
 var homeAt=[];
-// the four spots, measured from the play area (HOME's center): 0 left · 1 right · 2 upper · 3 lower
+// the four corners, measured from the play area (HOME's center): 0 upper left · 1 upper right · 2 lower left · 3 lower right
 function spotXY(k){
   var p=$('play').getBoundingClientRect(), s=$('home').offsetWidth||130, h=s/2, W=p.width, H=p.height;
-  var safe=parseFloat(getComputedStyle($('play')).paddingBottom)||0, edge=Math.max(16,W*.06), up=64+h, down=H-46-safe-h, mid=(up+down)/2;
-  return [[edge+h,mid],[W-edge-h,mid],[W/2,up],[W/2,down]][k];
+  var safe=parseFloat(getComputedStyle($('play')).paddingBottom)||0, edge=Math.max(16,W*.06), up=64+h, down=H-46-safe-h;
+  return [[edge+h,up],[W-edge-h,up],[edge+h,down],[W-edge-h,down]][k];
 }
 function putHome(k){var c=spotXY(k);$('home').style.left=c[0]+'px';$('home').style.top=c[1]+'px'}
 function moveHome(){
