@@ -171,7 +171,7 @@ document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b
 applyLang();
 document.addEventListener('DOMContentLoaded',function(){setTimeout(applyLang,0)});   // after jugador.js adds the player chip
 var GUESS_MS=120;   // faster than any human reaction: a guess, counted as too early
-var ROUNDS=10, WAIT_MIN=1000, WAIT_MAX=3500, TOO_SLOW=2000;   // a swipe takes a little longer than a tap: 2 s
+var ROUNDS=10, WAIT_MIN=1000, WAIT_MAX=3500, TOO_SLOW=10000;   // a BPM test: every swipe gets its BPM, however slow — the 10 s stop only ends a round left untouched
 var DIRS={up:0,right:90,down:180,left:270}, NAMES=['up','right','down','left'], want='up', swipe=null;
 var state='idle', round=0, results=[], homeId=null, homeHeld=false, waitT=null, slowT=null, t0=0, playerName='';
 (function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)$('who').textContent=w})();
