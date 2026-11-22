@@ -99,6 +99,7 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 }
 .btns.top{margin:6px 0 14px}
 .btns .go,.btns .btn2{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.btns .pressing{transform:scale(.97);filter:brightness(1.25)}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
 <script>(function(){var g=function(k){try{return sessionStorage.getItem(k)==='1'}catch(e){return false}};
@@ -383,23 +384,45 @@ function finish(){
 }
 // leaving the end screen (Play again, next game, next player, the hub) stops the congas
 $('end').addEventListener('click',function(e){if(window.RITNOME&&e.target.closest('a,button')&&!e.target.closest('#ritnome'))RITNOME.stop()},true);
-// The end-screen buttons act the moment a finger lifts off them, without waiting for the
-// phone's click (which some phones drop or delay right after a game). A finger that
-// slides (scrolling the results) does nothing; the click that follows is not doubled.
-['end','over'].forEach(function(scr){
-  var down=null, fired=0;
-  $(scr).addEventListener('pointerdown',function(e){var b=e.target.closest('.btns a,.btns button');down=b?{b:b,x:e.clientX,y:e.clientY}:null},true);
-  $(scr).addEventListener('pointerup',function(e){
-    var d=down; down=null; if(!d||e.pointerType==='mouse')return;
-    if(e.target.closest('.btns a,.btns button')!==d.b||Math.hypot(e.clientX-d.x,e.clientY-d.y)>12)return;
-    fired=Date.now(); e.preventDefault();
-    d.b.click();
+// The score-page buttons (and the start-over ones) must ALWAYS answer a tap. So they are
+// not left to the phone's own click: the whole page listens for a finger lifting (pointer
+// AND touch, whichever the phone sends), finds the button under that spot by its position
+// on screen — even if something invisible were lying on top of it — and runs it at once.
+// A finger that slides (scrolling the results) does nothing; one tap never acts twice.
+(function(){
+  var start=null, last=0;
+  function scr(){return !$('end').hidden?$('end'):!$('over').hidden?$('over'):null}
+  function btnAt(x,y){
+    var s=scr(); if(!s)return null;
+    var bs=s.querySelectorAll('.btns a,.btns button');
+    for(var i=0;i<bs.length;i++){var r=bs[i].getBoundingClientRect(); if(r.width&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return bs[i]}
+    return null;
+  }
+  function pt(e){var t=e.changedTouches&&e.changedTouches[0]||e;return [t.clientX,t.clientY]}
+  function down(e){var p=pt(e),b=btnAt(p[0],p[1]);start=b?{b:b,x:p[0],y:p[1]}:null;if(b)b.classList.add('pressing')}
+  function up(e){
+    var s=start; start=null; if(!s)return; s.b.classList.remove('pressing');
+    if(e.pointerType==='mouse')return;                       // a mouse: its own click is fine
+    var p=pt(e); if(Math.hypot(p[0]-s.x,p[1]-s.y)>14||btnAt(p[0],p[1])!==s.b)return;
+    if(Date.now()-last<700)return; last=Date.now();
+    if(e.cancelable)e.preventDefault();
+    run(s.b);
+  }
+  function run(b){
+    if(window.RITNOME)RITNOME.stop();
+    if(b.tagName==='A'){var h=b.getAttribute('href');location.href=h+(/\?/.test(h)?'&':'?')+'r='+Date.now().toString(36)}
+    else b.click();
+  }
+  ['pointerdown','touchstart'].forEach(function(k){document.addEventListener(k,function(e){if(scr()&&(k==='touchstart'||e.pointerType!=='mouse'))down(e)},{capture:true,passive:true})});
+  document.addEventListener('pointerup',function(e){if(scr())up(e)},true);
+  document.addEventListener('touchend',function(e){if(scr())up(e)},{capture:true,passive:false});
+  document.addEventListener('pointercancel',function(){if(start)start.b.classList.remove('pressing');start=null},true);
+  // the click a phone may still send afterwards is not run a second time
+  document.addEventListener('click',function(e){
+    if(!e.isTrusted||Date.now()-last>700)return;
+    var s=scr(); if(s&&e.target.closest&&e.target.closest('.btns a,.btns button')){e.preventDefault();e.stopImmediatePropagation()}
   },true);
-  $(scr).addEventListener('click',function(e){
-    if(!e.isTrusted||!fired)return;
-    if(Date.now()-fired<700&&e.target.closest('.btns a,.btns button')){e.preventDefault();e.stopImmediatePropagation()}
-  },true);
-});
+})();
 </script>
 </body>
 </html>
