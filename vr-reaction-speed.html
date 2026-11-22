@@ -159,13 +159,13 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (remembered on this device) ── */
 var TX={
-  es:{s1:'Busca HOME — cambia de lugar — y mantenlo',s2:'La flecha se mueve y cambia de dirección — espera a que se detenga y su marco parpadee',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 rondas',hint:'Busca HOME — cada ronda está en una de las cuatro esquinas — y mantenlo con cualquier mano. Cuando la flecha se detenga, suelta y deslízala hacia donde apunta — rápido. 10 rondas.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
+  es:{s1:'Busca HOME — cambia de lugar — y mantenlo',s2:'La flecha se mueve y cambia de dirección — espera a que se detenga y su marco parpadee',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 aciertos',hint:'Busca HOME — cada ronda está en una de las cuatro esquinas — y mantenlo con cualquier mano. Cuando la flecha se detenga, suelta y deslízala hacia donde apunta — rápido. Juegas hasta 10 aciertos — los fallos no cuentan para los 10.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
       rit:function(b){return '🥁 Tu Ritnome · '+b+' BPM'},lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Zona →',nextp:'Siguiente jugador',
-      hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',early:'muy temprano',
+      hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',missN:'fallos',miss1:'fallo',early:'muy temprano',
       'Too early':'Muy temprano','Too slow':'Muy lento','Lift off HOME first':'Suelta HOME primero','Missed the target':'Fallaste el objetivo','Off the arrow':'Fuera de la flecha','Wrong way':'Dirección equivocada','Swipe, don’t tap':'Desliza, no toques'},
-  en:{s1:'Find HOME — it moves — and hold it',s2:'The arrow moves and changes direction — wait until it stops and its frame flashes',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 rounds',hint:'Find HOME — each round it is in one of the four corners — and hold it with either hand. When the arrow stops, lift off and swipe it the way it points — fast. 10 rounds.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
+  en:{s1:'Find HOME — it moves — and hold it',s2:'The arrow moves and changes direction — wait until it stops and its frame flashes',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 hits',hint:'Find HOME — each round it is in one of the four corners — and hold it with either hand. When the arrow stops, lift off and swipe it the way it points — fast. You play until 10 hits — misses don’t count toward the 10.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
       rit:function(b){return '🥁 Your Ritnome · '+b+' BPM'},lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Zona →',nextp:'Next Player',
-      hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',early:'too early',
+      hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',missN:'misses',miss1:'miss',early:'too early',
       'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target','Off the arrow':'Off the arrow','Wrong way':'Wrong way','Swipe, don’t tap':'Swipe, don’t tap'}
 };
 var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){}
@@ -181,7 +181,7 @@ function applyLang(){
   var np=document.querySelector('.jg-como a'); if(np)np.textContent=T('newp');   // the player chip (jugador.js)
   document.querySelectorAll('.lg').forEach(function(b){var on=b.getAttribute('data-l')===LANG;b.classList.toggle('on',on);b.classList.toggle('active',on)});
   $('n10').classList.toggle('on',ROUNDS===10);$('n25').classList.toggle('on',ROUNDS===25);
-  $('n10').textContent='10 '+(LANG==='es'?'rondas':'rounds');$('n25').textContent='25 '+(LANG==='es'?'rondas':'rounds');
+  $('n10').textContent='10 '+(LANG==='es'?'aciertos':'hits');$('n25').textContent='25 '+(LANG==='es'?'aciertos':'hits');
 }
 function setRounds(n){ROUNDS=n;try{localStorage.setItem('rv-rs-rounds',String(n))}catch(e){}applyLang()}
 $('n10').onclick=function(){setRounds(10)}; $('n25').onclick=function(){setRounds(25)};
@@ -196,7 +196,9 @@ var state='idle', round=0, results=[], homeId=null, homeHeld=false, waitT=null, 
 
 function show(id){['intro','play','end'].forEach(function(s){$(s).hidden=(s!==id)})}
 function msg(t,c){var m=$('msg');m.textContent=t||'';m.className=c||''}
-function bar(){$('rnd').textContent=Math.min(round+1,ROUNDS)+' / '+ROUNDS;var h=results.filter(function(r){return r.ok}).length;$('hits').textContent=h+' '+(h===1?T('hit'):T('hits'))}
+// the run goes on until ROUNDS hits; misses (too early, wrong way, too slow…) don't count toward them
+function hitCount(){return results.filter(function(r){return r.ok}).length}
+function bar(){var h=hitCount(),m=results.length-h;$('rnd').textContent=h+' / '+ROUNDS+' '+(T('hits'));$('hits').textContent=m+' '+(m===1?T('miss1'):T('missN'))}
 
 $('startBtn').onclick=function(){
   if(!MOVIL.guard())return;
@@ -280,7 +282,7 @@ function done(ok,ms,why){
   results.push({ok:ok,ms:ms,why:why});
   if(ok){MOVIL.hitSound();msg(MOVIL.bpm(ms)+' BPM','good')}else{MOVIL.missSound();MOVIL.vibrate(80);msg(T(why),'bad')}
   round++; bar();
-  setTimeout(function(){round>=ROUNDS?finish():arm()},750);
+  setTimeout(function(){hitCount()>=ROUNDS?finish():arm()},750);
 }
 
 // HOME: press and hold
@@ -323,7 +325,7 @@ function finish(){
   var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0, bpm=MOVIL.bpm(avg);
   var early=results.filter(function(r){return r.why==='Too early'}).length;
   $('endBpm').textContent=bpm||'—';
-  $('endHm').textContent=hits.length+' / '+ROUNDS+' '+T('hits')+(early?' · '+early+' '+T('early'):'');
+  $('endHm').textContent=hits.length+' '+T('hits')+' · '+misses+' '+(misses===1?T('miss1'):T('missN'))+(early?' ('+early+' '+T('early')+')':'');
   $('taps').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x"')+'>'+(i+1)+' · '+(r.ok?MOVIL.bpm(r.ms)+' BPM':MOVIL.esc(T(r.why)))+'</div>'}).join('');
   $('pbMsg').innerHTML=MOVIL.bestHtml(bpm,LANG);
   $('prog').innerHTML=MOVIL.progressSvg(bpm,LANG);
