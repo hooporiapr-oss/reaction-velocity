@@ -154,6 +154,7 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   <div class="card" id="ritCard" hidden><h3 id="ritTitle">🥁 Ritnome</h3><div id="ritnome"></div></div>
   <div class="card"><h3 data-t="taps">Tap by tap</h3><div class="taps" id="taps"></div></div>
   <div class="card"><h3 data-t="prog">My Progress · Reaction Speed</h3><div id="prog"></div></div>
+  <div class="card"><h3 data-t="hmT">Hits &amp; misses · run by run</h3><div id="hmView"></div></div>
 </div>
 
 <script>
@@ -161,11 +162,11 @@ var $=function(id){return document.getElementById(id)};
 /* ── language: opens in Spanish; EN / ES on the start screen (remembered on this device) ── */
 var TX={
   es:{s1:'Busca HOME — cambia de lugar — y mantenlo',s2:'La flecha se mueve y cambia de dirección — espera a que se detenga y su marco parpadee',s3:'Suelta y deslízala hacia donde apunta',start:'▶ Empezar · 10 aciertos',hint:'Busca HOME — cada ronda está en una de las cuatro esquinas — y mantenlo con cualquier mano. Cuando la flecha se detenga, suelta y deslízala hacia donde apunta — rápido. Juegas hasta 10 aciertos — los fallos no cuentan para los 10.',name:'Tu nombre',hub:'← EL HUB',exit:'← Salir',newp:'Nuevo jugador',
-      rit:function(b){return '🥁 Tu Ritnome · '+b+' BPM'},lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Zona →',nextp:'Siguiente jugador',
+      rit:function(b){return '🥁 Tu Ritnome · '+b+' BPM'},hmT:'Aciertos y fallos · partida por partida',lab:'BPM de Reaction Speed',taps:'Toque a toque',prog:'Mi progreso · Reaction Speed',again:'Jugar otra vez',next:'Siguiente juego: Zona →',nextp:'Siguiente jugador',
       hold:'Mantén HOME',wait:'Espera…',relift:'Suelta y vuelve a mantener HOME',hit:'acierto',hits:'aciertos',missN:'fallos',miss1:'fallo',early:'muy temprano',
       'Too early':'Muy temprano','Too slow':'Muy lento','Lift off HOME first':'Suelta HOME primero','Missed the target':'Fallaste el objetivo','Off the arrow':'Fuera de la flecha','Wrong way':'Dirección equivocada','Swipe, don’t tap':'Desliza, no toques'},
   en:{s1:'Find HOME — it moves — and hold it',s2:'The arrow moves and changes direction — wait until it stops and its frame flashes',s3:'Lift off and swipe it the way it points',start:'▶ Start · 10 hits',hint:'Find HOME — each round it is in one of the four corners — and hold it with either hand. When the arrow stops, lift off and swipe it the way it points — fast. You play until 10 hits — misses don’t count toward the 10.',name:'Your name',hub:'← THE HUB',exit:'← Exit',newp:'New player',
-      rit:function(b){return '🥁 Your Ritnome · '+b+' BPM'},lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Zona →',nextp:'Next Player',
+      rit:function(b){return '🥁 Your Ritnome · '+b+' BPM'},hmT:'Hits & misses · run by run',lab:'Reaction Speed BPM',taps:'Tap by tap',prog:'My Progress · Reaction Speed',again:'Play again',next:'Next game: Zona →',nextp:'Next Player',
       hold:'Hold HOME',wait:'Wait for it…',relift:'Lift off, then hold HOME again',hit:'hit',hits:'hits',missN:'misses',miss1:'miss',early:'too early',
       'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target','Off the arrow':'Off the arrow','Wrong way':'Wrong way','Swipe, don’t tap':'Swipe, don’t tap'}
 };
@@ -320,6 +321,28 @@ $('play').addEventListener('pointermove',function(e){
 });
 addEventListener('pointerup',function(e){if(state==='live'&&swipe&&e.pointerId===swipe.id){swipe=null;done(false,0,'Swipe, don’t tap')}});
 
+// Hits & misses, run by run: this run added to the player's past runs (newest on the right),
+// a bar per run (hits green, misses red), then the latest runs as a list with their BPM.
+function hmView(bpm,h,m){
+  var es=LANG==='es', runs=(MOVIL.past||[]).map(function(r){return {bpm:+r.bpm||0,h:+r.hits||0,m:+r.misses||0,at:r.logged_at}});
+  runs.push({bpm:bpm,h:h,m:m,at:new Date().toISOString(),now:1}); runs=runs.slice(-12);
+  var mx=Math.max.apply(null,runs.map(function(r){return r.h+r.m}))||1, W=340, H=150, L=26, B=18, T=8, bw=(W-L-6)/runs.length;
+  var Y=function(v){return T+(H-T-B)*(1-v/mx)}, s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+  [0,Math.round(mx/2),mx].forEach(function(v){s+='<line x1="'+L+'" x2="'+(W-4)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="rgba(255,255,255,.08)"/><text x="'+(L-5)+'" y="'+(Y(v)+4)+'" fill="#8fa0b4" font-size="10" text-anchor="end">'+v+'</text>'});
+  runs.forEach(function(r,i){
+    var x=L+i*bw+bw*.18, w=bw*.64, yh=Y(r.h), ym=Y(r.h+r.m);
+    s+='<rect x="'+x.toFixed(1)+'" y="'+yh.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(Y(0)-yh).toFixed(1)+'" rx="2" fill="#3ddc84"'+(r.now?' stroke="#ffd35a" stroke-width="2"':'')+'/>';
+    if(r.m)s+='<rect x="'+x.toFixed(1)+'" y="'+ym.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(yh-ym).toFixed(1)+'" rx="2" fill="#ff6b6b"/>';
+  });
+  s+='<text x="'+L+'" y="'+(H-4)+'" fill="#8fa0b4" font-size="10">'+(es?'antes':'earlier')+'</text><text x="'+(W-4)+'" y="'+(H-4)+'" fill="#ffd35a" font-size="10" text-anchor="end">'+(es?'hoy':'today')+'</text></svg>';
+  var key='<div style="display:flex;gap:14px;justify-content:center;font-size:.75rem;color:#c8ccd4;margin:6px 0 10px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3ddc84;margin-right:5px"></i>'+(es?'aciertos':'hits')+'</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ff6b6b;margin-right:5px"></i>'+(es?'fallos':'misses')+'</span></div>';
+  var day=function(iso){try{return new Date(iso).toLocaleDateString(es?'es':'en',{day:'numeric',month:'short'})}catch(e){return ''}};
+  var rows=runs.slice(-8).reverse().map(function(r){
+    return '<div style="display:grid;grid-template-columns:1.1fr 1fr .8fr .8fr;gap:6px;padding:8px 10px;border-radius:10px;background:'+(r.now?'rgba(255,211,90,.12)':'rgba(255,255,255,.04)')+';font-size:.85rem;font-weight:800">'+
+      '<span style="color:'+(r.now?'#ffd35a':'#c8ccd4')+'">'+(r.now?(es?'Ahora':'Now'):MOVIL.esc(day(r.at)))+'</span><span>'+(r.bpm||'—')+' BPM</span><span style="color:#3ddc84">✓ '+r.h+'</span><span style="color:#ff6b6b">✗ '+r.m+'</span></div>';
+  }).join('');
+  return s+key+'<div style="display:flex;flex-direction:column;gap:6px">'+rows+'</div>';
+}
 function finish(){
   state='idle'; clearTimeout(waitT);clearTimeout(slowT);clearTimeout(moveT); homeHeld=false; homeId=null; swipe=null;
   var hits=results.filter(function(r){return r.ok}), misses=results.length-hits.length;
@@ -330,6 +353,7 @@ function finish(){
   $('taps').innerHTML=results.map(function(r,i){return '<div'+(r.ok?'':' class="x"')+'>'+(i+1)+' · '+(r.ok?MOVIL.bpm(r.ms)+' BPM':MOVIL.esc(T(r.why)))+'</div>'}).join('');
   $('pbMsg').innerHTML=MOVIL.bestHtml(bpm,LANG);
   $('prog').innerHTML=MOVIL.progressSvg(bpm,LANG);
+  $('hmView').innerHTML=hmView(bpm,hits.length,misses);
   if(hits.length)MOVIL.save(playerName,bpm,hits.length,misses,Math.round(avg));
   // Reactific and Swipe It start at this player's CURRENT Reaction Speed BPM (this run)
   if(bpm>0){try{localStorage.setItem('rv-rs-bpm:'+playerName.trim().toLowerCase(),String(bpm))}catch(e){}}
