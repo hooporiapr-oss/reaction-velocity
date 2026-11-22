@@ -107,6 +107,8 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 .lvbar{display:flex;gap:4px;justify-content:center;margin:4px 0 12px}
 .lvbar i{width:16px;height:16px;border-radius:4px;background:rgba(255,255,255,.1)}
 .lvbar i.on{background:#e879f9;box-shadow:0 0 8px rgba(232,121,249,.7)}
+.btns.top{margin:6px 0 14px}
+.btns .go,.btns .btn2{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
 <script>(function(){var g=function(k){try{return sessionStorage.getItem(k)==='1'}catch(e){return false}};
@@ -162,13 +164,14 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
   <div class="lvbar" id="lvbar"></div>
   <div id="pbMsg"></div>
   <div class="hm" id="endHm"></div>
-  <div class="card"><h3 data-t="dots">Round by round</h3><div class="dots" id="dots"></div></div>
-  <div class="card"><h3 data-t="prog">My Progress · Encadena</h3><div id="prog"></div></div>
-  <div class="btns">
+  <!-- the buttons sit right under the score, so they are on screen without scrolling -->
+  <div class="btns top">
     <button class="go" id="againBtn" type="button" data-t="again">Play again</button>
     <button class="btn2" id="nextPlayerBtn" type="button" data-t="nextp">Next Player</button>
     <a class="btn2" href="mobile-hub.html">← THE HUB</a>
   </div>
+  <div class="card"><h3 data-t="dots">Round by round</h3><div class="dots" id="dots"></div></div>
+  <div class="card"><h3 data-t="prog">My Progress · Encadena</h3><div id="prog"></div></div>
 </div>
 
 <script>

@@ -92,6 +92,8 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   .bpm-step{width:46px;height:46px}
   #bpmInput{padding:7px;font-size:1.4rem}
 }
+.btns.top{margin:6px 0 14px}
+.btns .go,.btns .btn2{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 </style>
 <!-- The player: one name for every game (see jugador.js) -->
 <script>(function(){var g=function(k){try{return sessionStorage.getItem(k)==='1'}catch(e){return false}};
@@ -136,16 +138,17 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   <div class="lab" data-t="lab">Reaction Speed BPM</div>
   <div id="pbMsg"></div>
   <div class="hm" id="endHm"></div>
-  <!-- Ritnome: our congas play the speed the kid just got — touch to play -->
-  <div class="card" id="ritCard" hidden><h3 id="ritTitle">🥁 Ritnome</h3><div id="ritnome"></div></div>
-  <div class="card"><h3 data-t="taps">Tap by tap</h3><div class="taps" id="taps"></div></div>
-  <div class="card"><h3 data-t="prog">My Progress · Reaction Speed</h3><div id="prog"></div></div>
-  <div class="btns">
+  <!-- the buttons sit right under the score, so they are on screen without scrolling -->
+  <div class="btns top">
     <button class="go" id="againBtn" type="button" data-t="again">Play again</button>
     <a class="btn2" id="nextGameBtn" href="vr-zona.html" data-t="next">Next game: Zona →</a>
     <button class="btn2" id="nextPlayerBtn" type="button" data-t="nextp">Next Player</button>
     <a class="btn2" href="mobile-hub.html">← THE HUB</a>
   </div>
+  <!-- Ritnome: our congas play the speed the kid just got — touch to play -->
+  <div class="card" id="ritCard" hidden><h3 id="ritTitle">🥁 Ritnome</h3><div id="ritnome"></div></div>
+  <div class="card"><h3 data-t="taps">Tap by tap</h3><div class="taps" id="taps"></div></div>
+  <div class="card"><h3 data-t="prog">My Progress · Reaction Speed</h3><div id="prog"></div></div>
 </div>
 
 <script>
