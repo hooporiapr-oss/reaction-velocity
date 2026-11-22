@@ -66,7 +66,8 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 @keyframes found{0%{box-shadow:0 0 0 0 rgba(0,229,255,.9);transform:translate(-50%,-50%) scale(.6)}70%{box-shadow:0 0 0 26px rgba(0,229,255,0);transform:translate(-50%,-50%) scale(1.12)}100%{box-shadow:0 0 30px rgba(0,229,255,.35);transform:translate(-50%,-50%) scale(1)}}
 @keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.07)}}
 /* end */
-#end{overflow-y:auto;justify-content:flex-start}
+#end{overflow-y:auto;justify-content:flex-start;z-index:5;-webkit-overflow-scrolling:touch}
+#play[hidden] *{pointer-events:none}
 #end>*{flex-shrink:0}   /* a long end screen scrolls instead of squeezing lines together */
 .big{font-size:4.2rem;font-weight:900;line-height:1;margin-top:10px;color:#00e5ff;text-shadow:0 0 30px rgba(0,229,255,.5)}
 .lab{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#9fb3c8;margin:4px 0 10px}
@@ -320,7 +321,7 @@ $('play').addEventListener('pointermove',function(e){
 addEventListener('pointerup',function(e){if(state==='live'&&swipe&&e.pointerId===swipe.id){swipe=null;done(false,0,'Swipe, don’t tap')}});
 
 function finish(){
-  state='idle';
+  state='idle'; clearTimeout(waitT);clearTimeout(slowT);clearTimeout(moveT); homeHeld=false; homeId=null; swipe=null;
   var hits=results.filter(function(r){return r.ok}), misses=results.length-hits.length;
   var avg=hits.length?hits.reduce(function(a,r){return a+r.ms},0)/hits.length:0, bpm=MOVIL.bpm(avg);
   var early=results.filter(function(r){return r.why==='Too early'}).length;
@@ -339,6 +340,23 @@ function finish(){
 }
 // leaving the end screen (Play again, next game, next player, the hub) stops the congas
 $('end').addEventListener('click',function(e){if(window.RITNOME&&e.target.closest('a,button')&&!e.target.closest('#ritnome'))RITNOME.stop()},true);
+// The end-screen buttons act the moment a finger lifts off them, without waiting for the
+// phone's click (which some phones drop or delay right after a game). A finger that
+// slides (scrolling the results) does nothing; the click that follows is not doubled.
+(function(){
+  var down=null, fired=0;
+  $('end').addEventListener('pointerdown',function(e){var b=e.target.closest('.btns a,.btns button');down=b?{b:b,x:e.clientX,y:e.clientY}:null},true);
+  $('end').addEventListener('pointerup',function(e){
+    var d=down; down=null; if(!d||e.pointerType==='mouse')return;
+    if(e.target.closest('.btns a,.btns button')!==d.b||Math.hypot(e.clientX-d.x,e.clientY-d.y)>12)return;
+    fired=Date.now(); e.preventDefault();
+    d.b.click();
+  },true);
+  $('end').addEventListener('click',function(e){
+    if(!e.isTrusted||!fired)return;
+    if(Date.now()-fired<700&&e.target.closest('.btns a,.btns button')){e.preventDefault();e.stopImmediatePropagation()}
+  },true);
+})();
 </script>
 </body>
 </html>
