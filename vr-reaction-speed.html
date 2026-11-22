@@ -14,7 +14,7 @@
      guess, not a reaction) = too early (a miss); touching while still on
      HOME, off the arrow, the wrong way, a tap instead of a swipe, or no
      swipe within 2 seconds = a miss.
-     10 rounds. Saves to vr_mobile_standings (game_key 'home-base', with the
+     10 or 25 rounds (the tabs). Saves to vr_mobile_standings (game_key 'home-base', with the
      device). Its BPM is what Reactific and Swipe It start from. -->
 <script>try{if(sessionStorage.getItem('gym-plain')==='1')document.documentElement.classList.add('plain')}catch(e){}</script>
 <style>
@@ -52,6 +52,10 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   border:3px solid #00e5ff;background:rgba(0,229,255,.1);color:#00e5ff;box-shadow:0 0 30px rgba(0,229,255,.35)}
 #home.ready{animation:pulse 1.1s ease-in-out infinite}
 #home.held{background:#00e5ff;color:#031018;animation:none}
+/* 10 or 25 rounds: the tabs on the start screen */
+.nTabs{display:inline-flex;margin:4px auto 12px;border:1.5px solid rgba(0,229,255,.5);border-radius:999px;overflow:hidden;flex-shrink:0}
+.nTabs button{padding:9px 18px;border:0;background:transparent;color:#a5f3fc;font:900 .8rem Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.nTabs button.on{background:#00e5ff;color:#031018}
 /* HOME moves each round: left, center or right — it slides there and flashes so it's easy to find */
 #home{transition:left .25s ease}
 #home.moved{animation:found .6s ease-out 1,pulse 1.1s ease-in-out .6s infinite}
@@ -108,6 +112,7 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   <div class="vrr-logo">REACTION <span>SPEED</span></div>
   <div class="vrr-sub" id="who">Reaction Velocity</div>
   <div class="tempo-hint" data-t="hint">Hold your thumb on HOME. When a target lights up, lift off and tap it — fast. 10 rounds.</div>
+  <div class="nTabs" role="tablist"><button type="button" role="tab" id="n10">10</button><button type="button" role="tab" id="n25">25</button></div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="startBtn" type="button" data-t="start">▶ Start · 10 rounds</button>
   <div class="game-switcher">
@@ -157,7 +162,9 @@ var TX={
       'Too early':'Too early','Too slow':'Too slow','Lift off HOME first':'Lift off HOME first','Missed the target':'Missed the target','Off the arrow':'Off the arrow','Wrong way':'Wrong way','Swipe, don’t tap':'Swipe, don’t tap'}
 };
 var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){}
-function T(k){return (TX[LANG]&&TX[LANG][k])||TX.en[k]||k}
+// 10 or 25 rounds: the tabs on the start screen (remembered on this device; 10 until picked)
+var ROUNDS=10; try{if(localStorage.getItem('rv-rs-rounds')==='25')ROUNDS=25}catch(e){}
+function T(k){var v=(TX[LANG]&&TX[LANG][k])||TX.en[k]||k;return (k==='start'||k==='hint')?String(v).replace(/\b10\b/g,ROUNDS):v}
 function applyLang(){
   document.documentElement.lang=LANG;
   document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=T(el.getAttribute('data-t'))});
@@ -166,12 +173,16 @@ function applyLang(){
   document.querySelectorAll('#end a.btn2:not(#nextGameBtn)').forEach(function(a){a.textContent=T('hub')});
   var np=document.querySelector('.jg-como a'); if(np)np.textContent=T('newp');   // the player chip (jugador.js)
   document.querySelectorAll('.lg').forEach(function(b){var on=b.getAttribute('data-l')===LANG;b.classList.toggle('on',on);b.classList.toggle('active',on)});
+  $('n10').classList.toggle('on',ROUNDS===10);$('n25').classList.toggle('on',ROUNDS===25);
+  $('n10').textContent='10 '+(LANG==='es'?'rondas':'rounds');$('n25').textContent='25 '+(LANG==='es'?'rondas':'rounds');
 }
+function setRounds(n){ROUNDS=n;try{localStorage.setItem('rv-rs-rounds',String(n))}catch(e){}applyLang()}
+$('n10').onclick=function(){setRounds(10)}; $('n25').onclick=function(){setRounds(25)};
 document.querySelectorAll('.lg').forEach(function(b){b.onclick=function(){LANG=b.getAttribute('data-l');try{localStorage.setItem('rs-lang',LANG)}catch(e){}applyLang()}});
 applyLang();
 document.addEventListener('DOMContentLoaded',function(){setTimeout(applyLang,0)});   // after jugador.js adds the player chip
 var GUESS_MS=120;   // faster than any human reaction: a guess, counted as too early
-var ROUNDS=10, WAIT_MIN=1000, WAIT_MAX=3500, TOO_SLOW=10000;   // a BPM test: every swipe gets its BPM, however slow — the 10 s stop only ends a round left untouched
+var WAIT_MIN=1000, WAIT_MAX=3500, TOO_SLOW=10000;   // a BPM test: every swipe gets its BPM, however slow — the 10 s stop only ends a round left untouched
 var DIRS={up:0,right:90,down:180,left:270}, NAMES=['up','right','down','left'], want='up', swipe=null;
 var state='idle', round=0, results=[], homeId=null, homeHeld=false, waitT=null, slowT=null, t0=0, playerName='';
 (function(){var w=[MOVIL.school(),MOVIL.category()].filter(Boolean).join(' · ');if(w)$('who').textContent=w})();
