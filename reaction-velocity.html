@@ -159,6 +159,18 @@ footer{
 @media (max-width:600px){
   #stage{align-items:flex-start;padding:108px 14px 84px}
 }
+/* ── TABLETS & COMPUTERS: start below the fixed Cognitivo Gym tab so it never covers the title ── */
+@media (min-width:601px){
+  #stage{padding:104px 24px 24px}
+}
+/* ── TABLETS SIDEWAYS (and short laptop screens): the five stations in two columns, so they,
+      Coach View and the footer all fit on one screen without scrolling ── */
+@media (min-width:601px) and (max-height:860px) and (orientation:landscape){
+  .quarter-grid{grid-template-columns:1fr 1fr;max-width:820px;margin-bottom:14px}
+  .quarter-grid .quarter-card:last-child{grid-column:1 / -1;max-width:calc(50% - 5px);justify-self:center;width:100%}
+  #coachLink{margin-top:6px}
+  #stage{padding-bottom:72px}   /* clear of the player pill at the bottom */
+}
 /* each game card in its game's color (as on its start screen): Reaction Speed gold, Reactific green, The Fortress purple, Swipe It red */
 .quarter-card.g-rs{border-color:rgba(255,196,0,.55);background:rgba(255,196,0,.09)}
 .quarter-card.g-rs .quarter-num{color:#ffc400}
