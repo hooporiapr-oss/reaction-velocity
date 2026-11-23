@@ -45,6 +45,8 @@
   .err{margin-top:14px;color:#ff8888;font-size:.85rem;font-weight:700;min-height:18px}
   /* 👤 New player? Join here */
   .join-link{display:inline-block;margin-top:18px;color:#00e5ff;font-size:.82rem;font-weight:800;letter-spacing:.04em;text-decoration:none;border-bottom:1px dashed rgba(0,229,255,.5);cursor:pointer;background:none;border-top:0;border-left:0;border-right:0;font-family:inherit}
+  .coach-tab{display:block;width:max-content;margin:14px auto 0;padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.18);color:#9aa3b2;font-size:.7rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;text-decoration:none}
+  .coach-tab:hover{color:#fff;border-color:rgba(255,255,255,.4)}
   .join-panel{display:none;margin-top:14px}
   .join-panel.open{display:block}
   .join-panel .code-input{margin-bottom:10px}
@@ -73,6 +75,8 @@
       <button class="enter-btn" onclick="tryEnter()">Enter Reaction Velocity →</button>
       <div class="err" id="gate-err"></div>
       <button type="button" class="join-link" id="join-open" onclick="openJoin()">👤 New player? Join here</button>
+      <!-- 🧑‍🏫 coaches: the one Coach View for every site, on hooporia.mobi -->
+      <a class="coach-tab" href="https://hooporia.mobi/coach.html?from=vreaction">🧑‍🏫 Coach View</a>
     </div>
 
     <!-- 👤 NEW PLAYER: the school code from the class + the kid's name → the kid's own code -->
