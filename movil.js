@@ -102,12 +102,12 @@
       .then(function(x){ M.past = Array.isArray(x) ? x : null; return M.past }).catch(function(){ return null });
   };
 
-  M.save = function(name, bpm, hits, misses, avgMs){
+  M.save = function(name, bpm, hits, misses, avgMs, trainingBpm){
     return fetch(SB_URL + '/rest/v1/' + TABLE, {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }, H),
       body: JSON.stringify({ game_key: M.game, device: M.device(), player_name: String(name).trim().slice(0, 20), school_name: M.school() || null,
-        bpm: bpm, hits: hits, misses: misses, avg_ms: avgMs || null })
+        bpm: bpm, hits: hits, misses: misses, avg_ms: avgMs || null, training_bpm: Number.isInteger(trainingBpm) && trainingBpm >= 10 && trainingBpm <= 300 ? trainingBpm : null })
     }).catch(function(){});
   };
 
