@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),crypto=require('node:crypto');
 const {chromium}=require('playwright');
 const root=process.cwd(),prefix='ritnome/v0.1.0-dev/',manifest=JSON.parse(fs.readFileSync(prefix+'manifest.json','utf8'));
-const hub=process.argv[2];assert.ok(['mobile-hub.html','fortress-mobile-hub.html'].includes(hub));
+const hub=process.argv[2];assert.ok(['mobile-hub.html','fortress-mobile-hub.html','reaction-velocity.html','reaction-velocity-hub.html'].includes(hub));
 assert.equal(manifest.version,'0.1.0-dev');assert.equal(manifest.status,'development_only');
 assert.deepEqual(Object.keys(manifest.files).sort(),['authenticated-ritnome.js','index.html','ritnome-audio.js','ritnome-clock.js','ritnome-warmup.js']);
 for(const [name,digest] of Object.entries(manifest.files))assert.equal(crypto.createHash('sha256').update(fs.readFileSync(prefix+name)).digest('hex'),digest,name);
@@ -22,11 +22,13 @@ const server=http.createServer((req,res)=>{try{
  await page.route('**/*',route=>{if(new URL(route.request().url()).origin!==origin){if(inRitnome)external.push(route.request().url());return route.abort()}return route.continue()});
  await page.addInitScript(({hub})=>{
   if(location.pathname!=='/'+hub)return;
-  sessionStorage.setItem(hub==='mobile-hub.html'?'rm-gate-pass':'fortress-mobile-gate-pass','1');
+  sessionStorage.setItem(hub==='mobile-hub.html'?'rm-gate-pass':hub==='fortress-mobile-hub.html'?'fortress-mobile-gate-pass':'reaction-velocity-gate-pass','1');
   sessionStorage.setItem('gym-player-ok','1');localStorage.setItem('gym-player','Synthetic Test');
   if(hub==='fortress-mobile-hub.html'){localStorage.setItem('hooporia-player',JSON.stringify({name:'Synthetic Test',age:12,grade:'6',school:localStorage.getItem('rct-mobile-school')||'',key:'synthetic-test-only'}));sessionStorage.removeItem('hm-fresh-login')}
  },{hub});
  await page.goto(origin+'/'+hub);
+ if(hub==='reaction-velocity.html')assert.equal(await page.locator('.quarter-grid .quarter-card').count(),5);
+ if(hub==='reaction-velocity-hub.html')assert.equal(await page.locator('.quarter-grid .quarter-card').count(),4);
  const link=page.locator('a[href^="'+prefix+'index.html"]');await link.waitFor({state:'visible'});
  const storage=await page.evaluate(()=>({local:Object.entries(localStorage).sort(),session:Object.entries(sessionStorage).sort()}));
  await Promise.all([page.waitForURL(u=>u.origin===origin&&u.pathname==='/'+prefix+'index.html'),link.click()]);
