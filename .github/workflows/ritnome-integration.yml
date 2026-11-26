@@ -6,6 +6,8 @@ on:
     paths:
       - 'ritnome/**'
       - 'mobile-hub.html'
+      - 'reaction-velocity.html'
+      - 'reaction-velocity-hub.html'
       - 'tests/ritnome-integration.test.cjs'
       - '.github/workflows/ritnome-integration.yml'
 permissions:
@@ -24,4 +26,8 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/ritnome-browser" --no-save --ignore-scripts playwright@1.56.1
           node "$RUNNER_TEMP/ritnome-browser/node_modules/playwright/cli.js" install --with-deps chromium
       - name: Verify installed Ritnome and flagship hub
-        run: NODE_PATH="$RUNNER_TEMP/ritnome-browser/node_modules" node tests/ritnome-integration.test.cjs mobile-hub.html
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/ritnome-browser/node_modules"
+          for hub in mobile-hub.html reaction-velocity.html reaction-velocity-hub.html; do
+            node tests/ritnome-integration.test.cjs "$hub"
+          done
