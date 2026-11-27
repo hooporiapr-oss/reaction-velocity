@@ -111,6 +111,23 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
 <script src="movil.js"></script>
 <script src="ritnome.js"></script>
 <link rel="stylesheet" href="inicio.css">
+<style>
+#comfortToggle{display:block;min-height:48px;margin:10px auto;padding:10px 16px;border:2px solid #80dcd8;border-radius:12px;background:#142329;color:#fff;font:700 1rem Arial,sans-serif;cursor:pointer}
+#comfortToggle[aria-pressed="true"]{background:#80dcd8;color:#102025}
+#comfortToggle:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#comfortNote{display:none;color:#e4f5f3;font-size:1rem;line-height:1.45;max-width:420px;margin:8px auto;text-align:center;padding:0 8px}
+html.comfort #comfortNote{display:block}
+html.comfort #intro{overflow-y:auto;max-height:100dvh}
+html.comfort #intro .tempo-hint{font-size:1.05rem;line-height:1.5;color:#fff}
+html.comfort #intro button,html.comfort #intro a,html.comfort #end button,html.comfort #end a,html.comfort #over button,html.comfort #over a{min-height:48px}
+html.comfort #msg{font-size:1.2rem;letter-spacing:0;color:#fff;text-shadow:0 1px 4px #000}
+html.comfort #bar{font-size:1rem;letter-spacing:0;color:#fff}
+html.comfort #home{font-size:1.15rem;letter-spacing:0;box-shadow:none;animation:none!important;transition:none}
+html.comfort #tgt,html.comfort.plain #tgt{border-color:#fff;background:#16444c;box-shadow:none}
+html.comfort #tgt svg path{fill:#fff}
+html.comfort #tgt.strobe::after{animation:none;border:5px solid #fff;opacity:1;box-shadow:none}
+@media(prefers-reduced-motion:reduce){#tgt.strobe::after{animation:none;opacity:1}#home.ready,#home.moved{animation:none;transition:none}}
+</style>
 </head>
 <body>
 
@@ -120,7 +137,7 @@ html.plain #tgt{background:radial-gradient(circle at 35% 35%,#ff6b7f,#ff1e3c);bo
   <div class="vrr-logo">REACTION <span>SPEED</span></div>
   <div class="vrr-sub" id="who">Reaction Velocity</div>
   <div class="tempo-hint" data-t="hint">Hold your thumb on HOME. When a target lights up, lift off and tap it — fast. 10 rounds.</div>
-  <div class="nTabs" role="tablist"><button type="button" role="tab" id="n10">10</button><button type="button" role="tab" id="n25">25</button></div>
+  <button type="button" id="comfortToggle" aria-pressed="false">Modo cómodo</button><p id="comfortNote">Señales de alto contraste y sin destellos. La flecha aún se mueve. Las reglas y el tiempo de medición son los mismos.</p><div class="nTabs" role="tablist"><button type="button" role="tab" id="n10">10</button><button type="button" role="tab" id="n25">25</button></div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="startBtn" type="button" data-t="start">▶ Start · 10 rounds</button>
   <div class="game-switcher">
@@ -186,6 +203,8 @@ var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){
 // 10 or 25 rounds: the tabs on the start screen (remembered on this device; 10 until picked)
 var ROUNDS=10; try{if(localStorage.getItem('rv-rs-rounds')==='25')ROUNDS=25}catch(e){}
 function T(k){var v=(TX[LANG]&&TX[LANG][k])||TX.en[k]||k;return (k==='start'||k==='hint')?String(v).replace(/\b10\b/g,ROUNDS):v}
+function comfortLabels(){var on=document.documentElement.classList.contains('comfort'),es=LANG==='es';$('comfortToggle').textContent=es?'Modo cómodo: '+(on?'Activado':'Desactivado'):'Comfort mode: '+(on?'On':'Off');$('comfortToggle').setAttribute('aria-pressed',String(on));$('comfortNote').textContent=es?'Señales de alto contraste y sin destellos. La flecha aún se mueve. Las reglas y el tiempo de medición son los mismos.':'High-contrast cues without flashing. The arrow still moves. The rules and measurement timing remain the same.';if(on){document.querySelector('[data-t="hint"]').textContent=es?'Mantén HOME. Cuando la flecha se detenga y aparezca el marco blanco fijo, suelta y deslízala en la dirección indicada. Completa '+ROUNDS+' aciertos. Con 3 fallos se comienza de nuevo.':'Hold HOME. When the arrow stops and a steady white frame appears, lift off and swipe in the direction shown. Complete '+ROUNDS+' hits. Three misses restart the activity.'}}
+$('comfortToggle').onclick=function(){document.documentElement.classList.toggle('comfort');applyLang()};
 function applyLang(){
   document.documentElement.lang=LANG;
   document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=T(el.getAttribute('data-t'))});
@@ -195,7 +214,7 @@ function applyLang(){
   var np=document.querySelector('.jg-como a'); if(np)np.textContent=T('newp');   // the player chip (jugador.js)
   document.querySelectorAll('.lg').forEach(function(b){var on=b.getAttribute('data-l')===LANG;b.classList.toggle('on',on);b.classList.toggle('active',on)});
   $('n10').classList.toggle('on',ROUNDS===10);$('n25').classList.toggle('on',ROUNDS===25);
-  $('n10').textContent='10 '+(LANG==='es'?'aciertos':'hits');$('n25').textContent='25 '+(LANG==='es'?'aciertos':'hits');
+  $('n10').textContent='10 '+(LANG==='es'?'aciertos':'hits');$('n25').textContent='25 '+(LANG==='es'?'aciertos':'hits'); comfortLabels();
 }
 function setRounds(n){ROUNDS=n;try{localStorage.setItem('rv-rs-rounds',String(n))}catch(e){}applyLang()}
 $('n10').onclick=function(){setRounds(10)}; $('n25').onclick=function(){setRounds(25)};
