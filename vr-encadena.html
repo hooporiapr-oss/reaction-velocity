@@ -119,6 +119,26 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
 <script>window.MOVIL={game:'encadena',title:'Encadena'};</script>
 <script src="movil.js"></script>
 <link rel="stylesheet" href="inicio.css">
+<script>try{if(sessionStorage.getItem('rv-comfort')==='1')document.documentElement.classList.add('comfort')}catch(e){}</script>
+<style>
+#comfortToggle{display:block;min-height:48px;margin:10px auto;padding:10px 16px;border:2px solid #80dcd8;border-radius:12px;background:#142329;color:#fff;font:700 1rem Arial,sans-serif;cursor:pointer}
+#comfortToggle[aria-pressed="true"]{background:#80dcd8;color:#102025}
+#comfortToggle:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#comfortNote{display:none;color:#e4f5f3;font-size:1rem;line-height:1.45;max-width:420px;margin:8px auto;text-align:center;padding:0 8px}
+html.comfort #comfortNote{display:block}
+html.comfort #intro{overflow-y:auto;max-height:100dvh}
+html.comfort #intro .tempo-hint,html.comfort #intro .modeNote{font-size:1.05rem;line-height:1.5;color:#fff}
+html.comfort #intro button,html.comfort #intro a,html.comfort #end button,html.comfort #end a{min-height:48px}
+html.comfort #intro .bpm-step{min-width:48px}
+html.comfort #bar{font-size:1rem;letter-spacing:0;color:#fff}
+html.comfort #flash{font-size:1.2rem;letter-spacing:0;text-shadow:none}
+html.comfort #play .spotE{border-color:#c4d1dc;border-width:2px;background:#19232d}
+html.comfort #play #arrow,html.comfort #play #zt{box-shadow:none!important;outline:2px solid #fff;outline-offset:2px}
+html.comfort #play #arrow:not(.hit):not(.miss) svg{filter:drop-shadow(0 0 1px #fff)}
+html.comfort #play .zt small{font-size:1rem;text-shadow:0 1px 3px #000}
+html.comfort #play .mr-now,html.comfort #play .mr-level{letter-spacing:0;text-shadow:none}
+html.comfort #play #arrow,html.comfort #play #zt,html.comfort #play .spotE{animation:none!important}
+</style>
 </head>
 <body>
 
@@ -130,6 +150,7 @@ html,body{height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;ov
   <div class="tempo-hint" data-t="hint">The chain lights up in the 2-1-2 zone, one red spot per beat at your speed. Then repeat it back in order. Every round adds one more. One mistake ends it.</div>
   <div class="modeTabs" role="tablist"><button type="button" id="modeEasy" role="tab" data-t="easy">Easy</button><button type="button" id="modeFull" role="tab" data-t="full">Full</button></div>
   <div class="modeNote" id="modeNote"></div>
+  <button type="button" id="comfortToggle" aria-pressed="false">Modo cómodo</button><p id="comfortNote">Controles más claros y señales de alto contraste. Puedes ajustar el BPM a tu ritmo. Las reglas no cambian.</p>
   <div class="speed-label" data-t="speedLbl">Speed</div>
   <div class="speed-row">
     <a class="speed-btn free" id="goRS" href="vr-reaction-speed.html" data-t="goRS" style="display:none">⚡ Play Reaction Speed first</a>
@@ -200,7 +221,10 @@ var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){
 // Cognitivo Gym calls its tap test Ritnome BPM
 if(MOVIL.mode==='gym'){TX.en.goRS='⚡ Play Ritnome BPM first';TX.es.goRS='⚡ Juega Ritnome BPM primero'}
 function T(k){return (TX[LANG]&&TX[LANG][k])||TX.en[k]||k}
+function comfortLabels(){var on=document.documentElement.classList.contains('comfort'),es=LANG==='es';$('comfortToggle').textContent=es?'Modo cómodo: '+(on?'Activado':'Desactivado'):'Comfort mode: '+(on?'On':'Off');$('comfortToggle').setAttribute('aria-pressed',String(on));$('comfortNote').textContent=es?'Controles más claros y señales de alto contraste. Puedes ajustar el BPM a tu ritmo. Las reglas no cambian.':'Clearer controls and high-contrast cues. You can adjust BPM to your pace. The rules remain the same.'}
+$('comfortToggle').onclick=function(){document.documentElement.classList.toggle('comfort');try{sessionStorage.setItem('rv-comfort',document.documentElement.classList.contains('comfort')?'1':'0')}catch(e){}applyLang()};
 function applyLang(){
+  comfortLabels();
   document.documentElement.lang=LANG;
   document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=T(el.getAttribute('data-t'))});
   $('playerNameInputMain').placeholder=T('name');

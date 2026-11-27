@@ -128,6 +128,7 @@ html.comfort #tgt svg path{fill:#fff}
 html.comfort #tgt.strobe::after{animation:none;border:5px solid #fff;opacity:1;box-shadow:none}
 @media(prefers-reduced-motion:reduce){#tgt.strobe::after{animation:none;opacity:1}#home.ready,#home.moved{animation:none;transition:none}}
 </style>
+<script>try{if(sessionStorage.getItem('rv-comfort')==='1')document.documentElement.classList.add('comfort')}catch(e){}</script>
 </head>
 <body>
 
@@ -204,7 +205,7 @@ var LANG='es'; try{if(localStorage.getItem('rs-lang')==='en')LANG='en'}catch(e){
 var ROUNDS=10; try{if(localStorage.getItem('rv-rs-rounds')==='25')ROUNDS=25}catch(e){}
 function T(k){var v=(TX[LANG]&&TX[LANG][k])||TX.en[k]||k;return (k==='start'||k==='hint')?String(v).replace(/\b10\b/g,ROUNDS):v}
 function comfortLabels(){var on=document.documentElement.classList.contains('comfort'),es=LANG==='es';$('comfortToggle').textContent=es?'Modo cómodo: '+(on?'Activado':'Desactivado'):'Comfort mode: '+(on?'On':'Off');$('comfortToggle').setAttribute('aria-pressed',String(on));$('comfortNote').textContent=es?'Señales de alto contraste y sin destellos. La flecha aún se mueve. Las reglas y el tiempo de medición son los mismos.':'High-contrast cues without flashing. The arrow still moves. The rules and measurement timing remain the same.';if(on){document.querySelector('[data-t="hint"]').textContent=es?'Mantén HOME. Cuando la flecha se detenga y aparezca el marco blanco fijo, suelta y deslízala en la dirección indicada. Completa '+ROUNDS+' aciertos. Con 3 fallos se comienza de nuevo.':'Hold HOME. When the arrow stops and a steady white frame appears, lift off and swipe in the direction shown. Complete '+ROUNDS+' hits. Three misses restart the activity.'}}
-$('comfortToggle').onclick=function(){document.documentElement.classList.toggle('comfort');applyLang()};
+$('comfortToggle').onclick=function(){document.documentElement.classList.toggle('comfort');try{sessionStorage.setItem('rv-comfort',document.documentElement.classList.contains('comfort')?'1':'0')}catch(e){}applyLang()};
 function applyLang(){
   document.documentElement.lang=LANG;
   document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=T(el.getAttribute('data-t'))});
