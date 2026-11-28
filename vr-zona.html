@@ -247,9 +247,10 @@ function clearAll(){timers.forEach(clearTimeout);timers=[]}
 /* ── the speed box: opens on the player's current Reaction Speed BPM (as Swipe It) ── */
 function rsKey(x){return 'rv-rs-bpm:'+String(x||'').trim().toLowerCase()}
 function freeKey(x){return 'rv-free-bpm:'+String(x||'').trim().toLowerCase()}
-function savedBPM(x){try{var a=localStorage.getItem(rsKey(x)),b=localStorage.getItem(freeKey(x));if(MOVIL.mode==='gym'){var t=a;a=b;b=t}var v=parseInt(a,10);if(v>0)return v;v=parseInt(b,10);return isNaN(v)?0:v}catch(e){return 0}}
+function savedBPM(x){if(MOVIL.inst)return 60; /* institutional senior preset: 60 BPM, adjustable */ try{var a=localStorage.getItem(rsKey(x)),b=localStorage.getItem(freeKey(x));if(MOVIL.mode==='gym'){var t=a;a=b;b=t}var v=parseInt(a,10);if(v>0)return v;v=parseInt(b,10);return isNaN(v)?0:v}catch(e){return 0}}
 var asked={}, touched=false;
 function askBest(x){
+  if(MOVIL.inst)return;   // institutional: never query the athlete database
   var k=String(x||'').trim().toLowerCase(); if(!k||asked[k])return; asked[k]=1;
   var who='&hidden=is.false&school_name=eq.'+encodeURIComponent(MOVIL.school())+'&player_name=ilike.'+encodeURIComponent(String(x).trim().replace(/[*%,()]/g,''));
   var H={headers:{apikey:MOVIL.SB_KEY,Authorization:'Bearer '+MOVIL.SB_KEY}};
@@ -388,5 +389,6 @@ function finish(){
 }
 applyLang();
 </script>
+<script>window.INSTITUCIONAL={endId:'end',bpmId:'endBig'};</script><script src="institucional.js"></script>
 </body>
 </html>
