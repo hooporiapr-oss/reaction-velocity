@@ -17,6 +17,8 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(prep, 0) }); else setTimeout(prep, 0);
   var games = 0, swipes = 0, lastBpm = 0, R = null;
+  // the setting a result was achieved at (so progress compares like with like): comfort mode, or the speed box
+  function setting(){ try { if (typeof C.setting === 'function') return String(C.setting()).slice(0, 40); var sp = $('bpmInput'); if (sp && sp.value) return 'bpm' + sp.value; return document.documentElement.classList.contains('comfort') ? 'comfort' : 'default'; } catch(e){ return 'default'; } }
   document.addEventListener('pointerup', function(){ swipes++ }, true);
   function watchEnd(){
     var end = $(C.endId || 'end'); if (!end) return;
@@ -25,7 +27,7 @@
       var now = !!shown(end); var rise = now && !was; was = now; if (!rise) return;
       games++;
       var b = parseInt((($(C.bpmId) || {}).textContent || ''), 10); if (b > 0) lastBpm = b;
-      if (R) R.checkpoint({});
+      if (R) { R.checkpoint({}); var pr = { setting: setting(), result: { bpm: b > 0 ? b : 0 } }; if (b > 0) pr.personal_bpm = b; R.progress(pr); }
     }).observe(end, { attributes: true, attributeFilter: [C.endAttr || 'hidden'] });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchEnd); else watchEnd();
