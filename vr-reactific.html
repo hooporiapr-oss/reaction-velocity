@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <script>
-if (sessionStorage.getItem('reaction-velocity-gate-pass') !== '1') {
+/* Institutional launch from the Ritnome desk (code in the URL fragment): no sign-in code, no player, and no network call
+   to anything but the institutional service — every other request this page knows how to make is refused here. */
+window.RITNOME_INST = /(^|[#&])rl=/.test(location.hash);
+if (window.RITNOME_INST) {
+  (function(){ var f = window.fetch; window.fetch = function(u){ try { var h = new URL(String(u && u.url || u), location.href).host; if (h !== 'institutional.ritnome.com') return Promise.reject(new Error('institutional mode')); } catch(e){} return f.apply(this, arguments); }; })();
+} else if (sessionStorage.getItem('reaction-velocity-gate-pass') !== '1') {
   window.location.replace('index.html');
 }
 </script>
@@ -767,9 +772,10 @@ function freeKey(n){return 'rv-free-bpm:'+String(n||'').trim().toLowerCase()}   
 // RS_FIRST: 'new' on vreaction.com (hold-lift-tap Reaction Speed first, the old Free Tap as a fallback);
 // Cognitivo Gym (tablets) keeps the tap Reaction Speed, so its Free Tap comes first there.
 var RS_FIRST='new';
-function savedFreeBPM(n){try{var a=localStorage.getItem(rsKey(n)),b=localStorage.getItem(freeKey(n));if(RS_FIRST==='classic'){var t=a;a=b;b=t}var v=parseInt(a,10);if(v>0)return v;v=parseInt(b,10);return isNaN(v)?0:v}catch(e){return 0}}
+function savedFreeBPM(n){if(window.RITNOME_INST)return 60; /* institutional senior preset */ try{var a=localStorage.getItem(rsKey(n)),b=localStorage.getItem(freeKey(n));if(RS_FIRST==='classic'){var t=a;a=b;b=t}var v=parseInt(a,10);if(v>0)return v;v=parseInt(b,10);return isNaN(v)?0:v}catch(e){return 0}}
 var dbAsked={};
 function askBestFree(n){
+  if(window.RITNOME_INST)return;   // institutional: no athlete database
   var k=String(n||'').trim().toLowerCase(); if(!k||dbAsked[k])return;
   dbAsked[k]=1;
   var school=sessionStorage.getItem('reaction-velocity-school')||'';
@@ -1258,5 +1264,6 @@ window.addEventListener('beforeunload',function(){
   }
 });
 </script>
+<script>window.INSTITUCIONAL={endId:'screen-end',endTest:function(e){return e.style.display==='flex'},endAttr:'style'};</script><script src="institucional.js"></script>
 </body>
 </html>

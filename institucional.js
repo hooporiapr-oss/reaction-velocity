@@ -20,17 +20,18 @@
   document.addEventListener('pointerup', function(){ swipes++ }, true);
   function watchEnd(){
     var end = $(C.endId || 'end'); if (!end) return;
+    var shown = typeof C.endTest === 'function' ? C.endTest : function(e){ return !e.hidden }, was = false;
     new MutationObserver(function(){
-      if (end.hidden) return;
+      var now = !!shown(end); var rise = now && !was; was = now; if (!rise) return;
       games++;
       var b = parseInt((($(C.bpmId) || {}).textContent || ''), 10); if (b > 0) lastBpm = b;
       if (R) R.checkpoint({});
-    }).observe(end, { attributes: true, attributeFilter: ['hidden'] });
+    }).observe(end, { attributes: true, attributeFilter: [C.endAttr || 'hidden'] });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchEnd); else watchEnd();
   document.addEventListener('ritnome:ready', function(){
     R = window.RitnomeInstitutional; if (!R || R.mode !== 'active') { R = null; return; }
     R.collect = function(){ var o = { games_completed: games, interactions: swipes }; if (lastBpm) o.personal_bpm = lastBpm; return o; };
-    R.start({ mode: 'individual' });
+    R.start({ mode: C.mode || 'individual' });
   });
 })();
