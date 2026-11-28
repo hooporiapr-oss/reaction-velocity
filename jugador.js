@@ -31,6 +31,8 @@
    ══════════════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
+  // Institutional launch (Ritnome desk): no player chip and no athlete list — this script does nothing.
+  if (/(^|[#&])rl=/.test(location.hash) || window.RITNOME_INST === true) { window.RITNOME_INST = true; return; }
   var C = window.JUGADOR || {};
   var HUB = C.hub || 'index.html';
   function ls(k, v){ try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v) } catch(e){ return '' } }

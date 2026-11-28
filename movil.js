@@ -29,7 +29,10 @@
   M.SB_URL = SB_URL; M.SB_KEY = SB_KEY; M.TABLE = TABLE;
   function ss0(k){ try { return sessionStorage.getItem(k) || '' } catch(e){ return '' } }
   // Which sign-in: a Reaction Mobile code wins if both are present on this device.
-  M.mode = ss0('rm-gate-pass') === '1' ? 'mobile' : ss0('reaction-velocity-gate-pass') === '1' ? 'rv' : ss0('ritnome-gate-pass') === '1' ? 'gym' : '';
+  /* Institutional mode (Ritnome desk launch, code in the URL fragment): no sign-in code, no athlete database at all —
+     nothing is read from or written to it; reporting goes through the institutional script instead. */
+  M.inst = window.RITNOME_INST = /(^|[#&])rl=/.test(location.hash) || window.RITNOME_INST === true;
+  M.mode = M.inst ? 'inst' : ss0('rm-gate-pass') === '1' ? 'mobile' : ss0('reaction-velocity-gate-pass') === '1' ? 'rv' : ss0('ritnome-gate-pass') === '1' ? 'gym' : '';
   var K = M.mode === 'mobile' ? { hub: 'mobile-hub.html', school: 'rm-school', cat: 'rm-category' }
         : M.mode === 'gym'    ? { hub: 'dynamic-hub.html', school: 'ritnome-school', cat: 'ritnome-category' }      // Cognitivo Gym
         :                       { hub: 'reaction-velocity.html', school: 'reaction-velocity-school', cat: 'reaction-velocity-category' };
@@ -53,7 +56,7 @@
       g.style.cssText = 'position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:28px;text-align:center;background:#000;color:#fff;font:800 1.1rem Arial,sans-serif';
       document.body.appendChild(g);
     }
-    if (M.mode !== 'mobile') { g.style.display = 'none'; return true }   // Reaction Velocity code: any device, any way up
+    if (M.mode !== 'mobile') { g.style.display = 'none'; return true }   // institutional: any device too   // Reaction Velocity code: any device, any way up
     if (!M.isPhone()) {
       g.innerHTML = '<div style="font-size:3rem">📱</div><div>Reaction Mobile is made for phones.</div><div style="font-size:.85rem;color:#9fb3c8;font-weight:700">Open it on a phone. On a tablet, play Reaction Speed at vreaction.com.</div>';
       g.style.display = 'flex'; return false;
@@ -95,6 +98,7 @@
   M.device = function(){ return M.isPhone() ? 'phone' : 'tablet' };
   M.loadPast = function(name){
     M.past = null;
+    if (M.inst) return Promise.resolve(null);
     var n = String(name || '').trim(); if (!n) return Promise.resolve(null);
     var url = SB_URL + '/rest/v1/' + TABLE + '?select=bpm,hits,misses,logged_at&hidden=is.false&game_key=eq.' + M.game +
       '&device=eq.' + M.device() + '&school_name=eq.' + encodeURIComponent(M.school()) + '&player_name=ilike.' + encodeURIComponent(n.replace(/[*%,()]/g, '')) + '&order=admin_id.asc';
@@ -103,6 +107,7 @@
   };
 
   M.save = function(name, bpm, hits, misses, avgMs){
+    if (M.inst) return Promise.resolve();
     return fetch(SB_URL + '/rest/v1/' + TABLE, {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }, H),
@@ -145,6 +150,7 @@
 
   // No sign-in on this device: back to the code box.
   if (!M.mode) location.replace('index.html');
+  if (M.inst) M.HUB = 'https://institutional.ritnome.com/desk';
   // Every "← THE HUB" link goes to the hub of the sign-in used.
   function hubLinks(){
     document.querySelectorAll('a[href="mobile-hub.html"]').forEach(function(a){ a.setAttribute('href', M.HUB) });
